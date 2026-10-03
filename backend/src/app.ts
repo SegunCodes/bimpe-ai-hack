@@ -2,6 +2,7 @@ import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { env } from "./config/env";
 import { ensureDatabase } from "./db/schema";
+import { pool } from "./db/pool";
 import { errorHandler } from "./middleware/errorHandler";
 import { runInBackground } from "./utils/background";
 import { devRoutes } from "./modules/dev/dev.routes";
@@ -17,7 +18,39 @@ export function createApp(): express.Express {
   const health = (_req: Request, res: Response): void => {
     res.json({ ok: true, mockMode: env.mockCalls });
   };
-  app.get(["/", "/health", "/api/health"], health);
+  app.get(["/health", "/api/health"], health);
+
+  // Deployment check: says whether settings are present and the database answers.
+  // Reports error *types* only, never URLs, hosts or passwords.
+  app.get("/", async (_req: Request, res: Response) => {
+    let database = "not configured (set DATABASE_URL)";
+    if (env.databaseUrl) {
+      try {
+        await pool.query("SELECT 1");
+        await ensureDatabase();
+        database = "ok";
+      } catch (error) {
+        const code = (error as { code?: string }).code || "";
+        const reasons: Record<string, string> = {
+          ENOTFOUND: "host not found (check the connection string)",
+          ECONNREFUSED: "connection refused (check the connection string)",
+          ETIMEDOUT: "timed out reaching the database",
+          "28P01": "wrong username or password",
+          "3D000": "database name does not exist",
+          "28000": "access denied"
+        };
+        database = `error: ${reasons[code] || code || (error as Error).message.slice(0, 120)}`;
+      }
+    }
+    res.json({
+      ok: database === "ok",
+      service: "tellero-call-api",
+      database,
+      mockMode: env.mockCalls,
+      cronSecretSet: Boolean(env.tick.cronSecret),
+      bimpeKeySet: Boolean(env.bimpe.apiKey)
+    });
+  });
 
   // Tables are created on the first request an instance serves (cheap no-op afterwards).
   app.use((_req: Request, _res: Response, next: NextFunction) => {
