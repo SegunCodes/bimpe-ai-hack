@@ -48,7 +48,8 @@ The API listens on `http://localhost:3001`.
    - `CRON_SECRET` = a long random value (e.g. from `openssl rand -hex 24`)
    - `MOCK_CALLS` = `true` for demos (`false` with the BimpeAI settings below for real calls)
    - BimpeAI: `BIMPE_API_KEY`, `BIMPE_DELIVERY_AGENT_ID`, `BIMPE_ONBOARDING_AGENT_ID`, `BIMPE_IS_TEST_CALL`, `WEBHOOK_SECRET`
-3. Deploy, then open `https://<your-api>.vercel.app/health`. You should see `{"ok":true,...}`.
+3. Deploy, then open `https://<your-api>.vercel.app/`. This self-check shows `"database": "ok"` when everything is connected, or the *type* of problem (never the address or password). It also lists the names of any database settings it can see.
+   - Created the database from Vercel's **Storage** tab? That works too: the backend finds `DATABASE_URL` / `POSTGRES_URL` even when Vercel adds a prefix (e.g. `STORAGE_URL_DATABASE_URL`), and prefers the pooled one.
 4. Set `PUBLIC_BASE_URL` to that address and redeploy.
 
 **3. Cron (every minute, free)**
