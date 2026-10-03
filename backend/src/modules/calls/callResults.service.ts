@@ -1,12 +1,10 @@
 import { extractFromTranscript } from "../../integrations/transcriptExtractor";
+import { env } from "../../config/env";
 import { CallResult } from "../../types/models";
 import { callsRepository } from "./calls.repository";
-import { createCall } from "./calls.service";
 import { customersRepository } from "../customers/customers.repository";
 import { ordersRepository } from "../orders/orders.repository";
 
-const RETRY_DELAY_MS = 60_000;
-const MAX_ATTEMPTS = 2;
 
 /** Returns null when the outcome cannot be determined. */
 export function outcomeFrom(extracted: Record<string, unknown> | undefined, status: string): string | null {
@@ -54,18 +52,19 @@ export async function applyCallResult(result: CallResult): Promise<void> {
   }
 }
 
-async function applyDeliveryOutcome(customerId: number, orderId: number, outcome: string, data: Record<string, unknown>): Promise<void> {
+async function applyDeliveryOutcome(_customerId: number, orderId: number, outcome: string, data: Record<string, unknown>): Promise<void> {
   const orderStatus = outcome === "verified" ? "confirmed" : outcome;
   await ordersRepository.applyDeliveryResult(orderId, orderStatus, data);
 
   if (outcome !== "no_answer") return;
+  // Retries live in the database (status 'scheduled' + call_at), so they survive a restart.
+  // The order scheduler picks them up; after the last attempt the order stays 'no_answer'.
+  const { maxAttempts, retryDelayMinutes } = env.scheduler;
   const attempts = await ordersRepository.getAttempts(orderId);
-  if (attempts < MAX_ATTEMPTS) {
-    setTimeout(() => {
-      createCall("delivery", customerId, orderId).catch((error: unknown) => console.error("Retry call failed:", error));
-    }, RETRY_DELAY_MS).unref();
-  } else {
-    await ordersRepository.markFailed(orderId);
+  if (attempts < maxAttempts) {
+    const retryAt = new Date(Date.now() + retryDelayMinutes * 60_000);
+    const hhmm = retryAt.toLocaleTimeString("en-GB", { timeZone: "Africa/Lagos", hour: "2-digit", minute: "2-digit" });
+    await ordersRepository.scheduleRetry(orderId, retryAt, `No answer. Retry ${attempts + 1} of ${maxAttempts} at ${hhmm} (Lagos).`);
   }
 }
 
