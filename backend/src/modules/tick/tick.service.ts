@@ -2,6 +2,7 @@ import { env } from "../../config/env";
 import { dispatchQueued } from "../calls/calls.dispatch";
 import { settleMockCalls } from "../calls/calls.mock";
 import { checkLiveCalls } from "../calls/calls.poller";
+import { repairUndeterminedCalls } from "../calls/callResults.service";
 import { runSchedulerTick } from "../orders/orders.scheduler";
 
 export interface TickSummary {
@@ -9,6 +10,7 @@ export interface TickSummary {
   dialled: number;
   mockSettled: number;
   liveFinished: number;
+  repaired: number;
   ms: number;
 }
 
@@ -21,6 +23,7 @@ let lastStartedAt = 0;
  *   1. start calls for scheduled orders whose time has come (and no-answer retries)
  *   2. dial any calls still waiting in the queue
  *   3. demo mode: give finished fake calls their result; live mode: ask BimpeAI about live calls
+ *   4. re-read a few calls whose result could not be worked out earlier
  */
 export function runTick(): Promise<TickSummary> {
   if (running) return running;
@@ -31,7 +34,8 @@ export function runTick(): Promise<TickSummary> {
     const dialled = await dispatchQueued(10);
     const mockSettled = await settleMockCalls();
     const liveFinished = await checkLiveCalls();
-    return { scheduled, dialled, mockSettled, liveFinished, ms: Date.now() - started };
+    const repaired = await repairUndeterminedCalls();
+    return { scheduled, dialled, mockSettled, liveFinished, repaired, ms: Date.now() - started };
   })().finally(() => {
     running = null;
   });

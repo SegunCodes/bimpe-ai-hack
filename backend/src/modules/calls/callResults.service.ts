@@ -1,6 +1,7 @@
 import { extractFromTranscript } from "../../integrations/transcriptExtractor";
+import { extractWithRules } from "../../integrations/transcriptRules";
 import { env } from "../../config/env";
-import { CallResult } from "../../types/models";
+import { CallResult, CallType } from "../../types/models";
 import { callsRepository } from "./calls.repository";
 import { customersRepository } from "../customers/customers.repository";
 import { ordersRepository } from "../orders/orders.repository";
@@ -14,6 +15,16 @@ function storedReport(value: unknown): Record<string, unknown> | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Works out what happened on a call from its transcript: Claude when ANTHROPIC_API_KEY is set,
+ * otherwise (or if that fails) the built-in rules, which need no extra service.
+ */
+async function readTranscript(callType: CallType, transcript: string): Promise<Record<string, unknown>> {
+  const fromAi = await extractFromTranscript(callType, transcript);
+  if (outcomeFrom(fromAi, "") !== null) return fromAi;
+  return extractWithRules(callType, transcript);
 }
 
 /** Returns null when the outcome cannot be determined. */
@@ -36,7 +47,7 @@ export async function applyCallResult(result: CallResult): Promise<void> {
   // Prefer, in order: what the provider sent, what the agent reported mid-call via our
   // "Save call result" tool, then a best-effort read of the transcript.
   let extracted = result.extracted ?? storedReport(call.extracted_json);
-  if (!extracted && result.transcript) extracted = await extractFromTranscript(call.call_type, result.transcript);
+  if (!extracted && result.transcript) extracted = await readTranscript(call.call_type, result.transcript);
   let outcome = outcomeFrom(extracted, result.status);
   if (outcome === null) {
     // Never guess "confirmed". Flag it so staff review the transcript.
@@ -84,4 +95,41 @@ async function applyOnboardingOutcome(customerId: number, outcome: string, data:
   if (outcome === "no_answer") await customersRepository.setStatus(customerId, "no_answer");
   else if (outcome === "failed") await customersRepository.setStatus(customerId, "called");
   else await customersRepository.applyOnboarding(customerId, data);
+}
+
+/**
+ * Re-reads calls that were flagged "result could not be determined" (for example, calls that
+ * finished before the transcript rules existed) and records the outcome where it is now clear.
+ * Runs a few per tick; each call is re-read at most once.
+ */
+export async function repairUndeterminedCalls(limit = 5): Promise<number> {
+  let repaired = 0;
+  for (const call of await callsRepository.findUndetermined(limit)) {
+    const extracted = await readTranscript(call.call_type, call.transcript as string);
+    const outcome = outcomeFrom(extracted, "");
+    if (outcome === null || outcome === "failed") {
+      const previous = storedReport(call.extracted_json) || {};
+      const notes = outcome === "failed" ? extracted.notes ?? extracted.outcome_notes : undefined;
+      await callsRepository.rewriteResult(call.id, "failed", "failed", {
+        ...previous,
+        ...(outcome === "failed" ? extracted : {}),
+        ...(notes ? { outcome_notes: notes } : {}),
+        rechecked: true
+      });
+      continue;
+    }
+
+    await callsRepository.rewriteResult(call.id, "completed", outcome, { ...extracted, rechecked: true });
+    repaired++;
+    if (call.call_type === "onboarding") {
+      await applyOnboardingOutcome(call.customer_id, outcome, extracted);
+    } else if (call.order_id !== null) {
+      // Only touch the order if it still shows this call's failure; never undo a newer result.
+      const order = await ordersRepository.findById(call.order_id);
+      if (order && order.status === "failed") {
+        await ordersRepository.applyDeliveryResult(call.order_id, outcome === "verified" ? "confirmed" : outcome, extracted);
+      }
+    }
+  }
+  return repaired;
 }

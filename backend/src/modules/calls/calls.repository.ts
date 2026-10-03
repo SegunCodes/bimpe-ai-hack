@@ -103,6 +103,16 @@ export const callsRepository = {
   },
 
   /** Returns false if the call was not in progress (already completed: idempotency guard). */
+  /** Calls flagged "result could not be determined" that have not been re-read yet. */
+  findUndetermined: (limit: number) =>
+    rows<Call>(`SELECT * FROM calls WHERE status = 'failed' AND transcript IS NOT NULL
+      AND extracted_json LIKE '%could not be determined%' AND extracted_json NOT LIKE '%"rechecked"%'
+      ORDER BY id DESC LIMIT ?`, [limit]),
+
+  rewriteResult: async (id: number, status: "completed" | "failed", outcome: string, extracted: Record<string, unknown>): Promise<void> => {
+    await run("UPDATE calls SET status = ?, outcome = ?, extracted_json = ? WHERE id = ?", [status, outcome, JSON.stringify(extracted), id]);
+  },
+
   async complete(id: number, data: {
     status: "completed" | "failed";
     outcome: string;
