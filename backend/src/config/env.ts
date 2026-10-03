@@ -3,6 +3,23 @@ import "dotenv/config";
 /** "true", "True", " 1 ", "yes" all count as on. */
 const flag = (value: string | undefined): boolean => /^(true|1|yes|on)$/i.test((value || "").trim());
 
+/**
+ * The database URL. Accepts DATABASE_URL / POSTGRES_URL, and also the prefixed names Vercel's
+ * Neon integration creates when a custom prefix is chosen (e.g. STORAGE_DATABASE_URL).
+ * Pooled URLs are preferred over the *_UNPOOLED / *_NON_POOLING variants.
+ */
+function findDatabaseUrl(): string {
+  const direct = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL;
+  if (direct) return direct.trim();
+  const names = Object.keys(process.env).sort();
+  const pick = names.find((n) => /DATABASE_URL$/.test(n)) || names.find((n) => /POSTGRES_URL$/.test(n));
+  return (pick ? process.env[pick] || "" : "").trim();
+}
+
+/** Names (never values) of database-looking settings, for the deployment self-check. */
+export const databaseSettingNames = (): string[] =>
+  Object.keys(process.env).filter((n) => /(DATABASE|POSTGRES|NEON|^PG)/i.test(n)).sort();
+
 export const env = {
   // 3001 so the API and the Next.js frontend (port 3000) can run side by side.
   port: Number(process.env.PORT || 3001),
@@ -21,7 +38,7 @@ export const env = {
   },
   webhookSecret: process.env.WEBHOOK_SECRET || "",
   // DATABASE_URL, or the POSTGRES_URL that Vercel's Neon integration also creates.
-  databaseUrl: (process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL || "").trim(),
+  databaseUrl: findDatabaseUrl(),
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY,
     model: process.env.ANTHROPIC_MODEL

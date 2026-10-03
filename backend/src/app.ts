@@ -1,6 +1,6 @@
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
-import { env } from "./config/env";
+import { databaseSettingNames, env } from "./config/env";
 import { ensureDatabase } from "./db/schema";
 import { pool } from "./db/pool";
 import { errorHandler } from "./middleware/errorHandler";
@@ -46,6 +46,7 @@ export function createApp(): express.Express {
       ok: database === "ok",
       service: "tellero-call-api",
       database,
+      databaseSettingsFound: databaseSettingNames(),
       mockMode: env.mockCalls,
       cronSecretSet: Boolean(env.tick.cronSecret),
       bimpeKeySet: Boolean(env.bimpe.apiKey)
