@@ -6,6 +6,16 @@ import { customersRepository } from "../customers/customers.repository";
 import { ordersRepository } from "../orders/orders.repository";
 
 
+function storedReport(value: unknown): Record<string, unknown> | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Returns null when the outcome cannot be determined. */
 export function outcomeFrom(extracted: Record<string, unknown> | undefined, status: string): string | null {
   const value = extracted?.outcome ?? extracted?.status ?? status;
@@ -23,7 +33,9 @@ export async function applyCallResult(result: CallResult): Promise<void> {
   const call = await callsRepository.findByProviderId(result.providerCallId);
   if (!call || call.status === "completed" || call.status === "failed") return;
 
-  let extracted = result.extracted;
+  // Prefer, in order: what the provider sent, what the agent reported mid-call via our
+  // "Save call result" tool, then a best-effort read of the transcript.
+  let extracted = result.extracted ?? storedReport(call.extracted_json);
   if (!extracted && result.transcript) extracted = await extractFromTranscript(call.call_type, result.transcript);
   let outcome = outcomeFrom(extracted, result.status);
   if (outcome === null) {

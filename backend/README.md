@@ -87,6 +87,29 @@ Quick test (calls on the next tick in mock mode):
 curl -X POST http://localhost:3001/api/orders -H 'Content-Type: application/json' -d "{\"customer_id\":1,\"item\":\"Phone case\",\"seller\":\"Lagos Gadgets\",\"address_on_file\":\"10 Admiralty Way, Lekki\",\"delivery_window\":\"Today 2pm-5pm\",\"call_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"call_plan\":\"now\"}"
 ```
 
+## Connect the BimpeAI agent (one-time, re-runnable)
+
+BimpeAI's call endpoint only takes a phone number, so the agent learns who it is calling, and reports back what the customer said, through two tools on this API:
+
+- `GET /api/agent-tools/context?phone=+234…`: the call_id, call type, customer name, preferred language, item, seller, address on file and delivery window
+- `POST /api/agent-tools/result`: outcome, cleaned address, landmark, new time, notes (onboarding: language, best time, consent). It is applied to the order when the call ends, in preference to guessing from the transcript.
+
+Both require `Authorization: Bearer <agent tool secret>`. The secret is derived from `CRON_SECRET` (override with `AGENT_TOOL_SECRET`), and the setup below hands it to BimpeAI. `/api/agent-context` needs the same secret, because it returns customer details.
+
+**Run the setup** after `BIMPE_API_KEY` and the agent ID(s) are set in Vercel: open
+
+```text
+https://<your-api>.vercel.app/api/admin/bimpe-setup?key=<CRON_SECRET>
+```
+
+For each agent it:
+1. makes sure the agent runs a workflow the team owns (copies a public one if needed);
+2. writes the Tellero call script (`src/modules/bimpeSetup/agentPrompt.ts`) as its system prompt;
+3. sets the business name, description, timezone (Africa/Lagos) and persona;
+4. registers this API as the "Tellero orders" custom integration with the two tools.
+
+It prints a step-by-step report. Re-run it whenever you change the script or the API address (set `PUBLIC_BASE_URL` if you use a custom domain).
+
 ## BimpeAI webhook
 
 Install ngrok, then in another terminal run:

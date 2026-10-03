@@ -71,6 +71,24 @@ export const callsRepository = {
       [olderThanSeconds]
     ),
 
+  /** The call the agent is most likely on: the customer's active call, else the most recent active call. */
+  findActiveForAgent: (phone: string | null) =>
+    one<Call & { phone: string }>(
+      `SELECT c.*, cu.phone FROM calls c JOIN customers cu ON cu.id = c.customer_id
+       WHERE c.status IN ('queued','in_progress') AND c.created_at > now() - interval '30 minutes'
+       ${phone ? "AND cu.phone = ?" : ""}
+       ORDER BY (c.status = 'in_progress') DESC, c.created_at DESC, c.id DESC LIMIT 1`,
+      phone ? [phone] : []
+    ),
+
+  /** Merges what the agent reported during the call into extracted_json (applied when the call ends). */
+  saveAgentReport: async (id: number, report: Record<string, unknown>): Promise<void> => {
+    const current = await one<{ extracted_json: string | null }>("SELECT extracted_json FROM calls WHERE id = ?", [id]);
+    let merged: Record<string, unknown> = {};
+    try { merged = current?.extracted_json ? JSON.parse(current.extracted_json) : {}; } catch { merged = {}; }
+    await run("UPDATE calls SET extracted_json = ? WHERE id = ?", [JSON.stringify({ ...merged, ...report, reported_by_agent: true }), id]);
+  },
+
   /** Marks that we just checked this call, so other calls get their turn next tick. */
   touch: async (id: number): Promise<void> => {
     await run("UPDATE calls SET updated_at = now() WHERE id = ?", [id]);

@@ -1,6 +1,22 @@
 import { one, rows, run } from "../../db/pool";
 import { Customer } from "../../types/models";
 
+const LANGUAGE_CODES: Record<string, string> = {
+  en: "en", english: "en",
+  pcm: "pcm", pidgin: "pcm", "nigerian pidgin": "pcm", "pidgin english": "pcm",
+  yo: "yo", yoruba: "yo", "yorùbá": "yo",
+  ha: "ha", hausa: "ha",
+  ig: "ig", igbo: "ig"
+};
+const languageCode = (value: unknown): string | null =>
+  typeof value === "string" ? LANGUAGE_CODES[value.trim().toLowerCase()] ?? null : null;
+const consentValue = (value: unknown): number | null => {
+  if (typeof value === "boolean") return Number(value);
+  if (typeof value === "string" && /^(yes|true|y|1)$/i.test(value.trim())) return 1;
+  if (typeof value === "string" && /^(no|false|n|0)$/i.test(value.trim())) return 0;
+  return null;
+};
+
 export const customersRepository = {
   findAll: () => rows<Customer>("SELECT * FROM customers ORDER BY created_at DESC, id DESC"),
 
@@ -22,9 +38,9 @@ export const customersRepository = {
       consent_to_calls = COALESCE(?, consent_to_calls), status = 'verified' WHERE id = ?`, [
       data.address ?? data.cleaned_address ?? null,
       data.landmark ?? null,
-      data.language ?? null,
+      languageCode(data.language),
       data.best_time_to_call ?? null,
-      typeof data.consent_to_calls === "boolean" ? Number(data.consent_to_calls) : null,
+      consentValue(data.consent_to_calls),
       customerId
     ]);
   },

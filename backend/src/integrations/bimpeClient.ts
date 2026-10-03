@@ -45,7 +45,7 @@ export async function startCall(input: StartCallInput): Promise<{ providerCallId
   void input.metadata;
   void setAgentContextViaPromptUpdate;
 
-  const response = await fetch(`https://api.bimpe.ai/api/v1/console/agents/${encodeURIComponent(agentIdFor(input.callType))}/calls`, {
+  const response = await fetch(`${env.bimpe.apiBase}/agents/${encodeURIComponent(agentIdFor(input.callType))}/calls`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${env.bimpe.apiKey}`,
@@ -88,7 +88,7 @@ interface BimpeCallLog {
  */
 export async function getCall(callType: CallType, providerCallId: string): Promise<ParsedWebhook | null> {
   if (!env.bimpe.apiKey) throw new Error("BIMPE_API_KEY is required to fetch calls");
-  const url = `https://api.bimpe.ai/api/v1/console/agents/${encodeURIComponent(agentIdFor(callType))}/calls/${encodeURIComponent(providerCallId)}`;
+  const url = `${env.bimpe.apiBase}/agents/${encodeURIComponent(agentIdFor(callType))}/calls/${encodeURIComponent(providerCallId)}`;
   const response = await fetch(url, { headers: { Authorization: `Bearer ${env.bimpe.apiKey}` } });
   const payload = await response.json().catch(() => ({})) as {
     message?: string;

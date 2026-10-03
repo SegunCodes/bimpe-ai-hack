@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { createHash } from "node:crypto";
 
 /** "true", "True", " 1 ", "yes" all count as on. */
 const flag = (value: string | undefined): boolean => /^(true|1|yes|on)$/i.test((value || "").trim());
@@ -36,6 +37,17 @@ export const env = {
     /** Minimum gap between ticks triggered by dashboard requests. */
     minGapMs: Number(process.env.TICK_MIN_GAP_MS || 5_000)
   },
+  /** Public address of this API (used to tell BimpeAI where our tools live). */
+  publicBaseUrl: (process.env.PUBLIC_BASE_URL || "").trim().replace(/\/+$/, ""),
+  agentTools: {
+    /**
+     * Bearer token BimpeAI sends when its agent calls our tools mid-call.
+     * Defaults to a value derived from CRON_SECRET so no extra setting is needed.
+     */
+    secret:
+      (process.env.AGENT_TOOL_SECRET || "").trim() ||
+      (process.env.CRON_SECRET ? createHash("sha256").update(`tellero-agent-tools:${process.env.CRON_SECRET}`).digest("hex") : "")
+  },
   webhookSecret: process.env.WEBHOOK_SECRET || "",
   // DATABASE_URL, or the POSTGRES_URL that Vercel's Neon integration also creates.
   databaseUrl: findDatabaseUrl(),
@@ -44,6 +56,8 @@ export const env = {
     model: process.env.ANTHROPIC_MODEL
   },
   bimpe: {
+    /** BimpeAI Console API base (override only for testing). */
+    apiBase: (process.env.BIMPE_API_BASE || "https://api.bimpe.ai/api/v1/console").replace(/\/+$/, ""),
     apiKey: process.env.BIMPE_API_KEY,
     agentId: process.env.BIMPE_AGENT_ID,
     deliveryAgentId: process.env.BIMPE_DELIVERY_AGENT_ID,
