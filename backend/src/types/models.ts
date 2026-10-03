@@ -23,6 +23,12 @@ export interface Order {
   cleaned_address: string | null;
   landmark: string | null;
   delivery_window: string;
+  /** Start of the delivery slot, ISO 8601 UTC */
+  delivery_at: string | null;
+  /** When the next automatic call is due, ISO 8601 UTC; null when none is planned */
+  call_at: string | null;
+  /** The timing rule the owner picked, e.g. "2h_before" (display only) */
+  call_plan: string | null;
   status: string;
   reschedule_time: string | null;
   outcome_notes: string | null;

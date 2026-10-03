@@ -1,8 +1,14 @@
 import "dotenv/config";
 
 export const env = {
-  port: Number(process.env.PORT || 3000),
+  // 3001 so the API and the Next.js frontend (port 3000) can run side by side.
+  port: Number(process.env.PORT || 3001),
   mockCalls: process.env.MOCK_CALLS === "true",
+  scheduler: {
+    intervalMs: Number(process.env.SCHEDULER_INTERVAL_MS || 15_000),
+    retryDelayMinutes: Number(process.env.RETRY_DELAY_MINUTES || 30),
+    maxAttempts: Number(process.env.MAX_CALL_ATTEMPTS || 3)
+  },
   webhookSecret: process.env.WEBHOOK_SECRET || "",
   databaseUrl: process.env.DATABASE_URL || "",
   db: {
