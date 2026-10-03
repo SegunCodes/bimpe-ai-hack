@@ -55,11 +55,11 @@ export function CallMe() {
 
   return (
     <section id="call-me" className="scroll-mt-20 px-4 pb-24 sm:px-6">
-      <div className="mx-auto max-w-6xl overflow-hidden rounded-[36px] bg-ink px-6 py-16 text-center text-white sm:px-12 sm:py-20">
-        <h2 className="font-display text-4xl font-bold tracking-[-0.02em] sm:text-6xl">Hear it on your own phone.</h2>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-white/70">Enter a Nigerian number and Tellero will call you in a few seconds. It takes about a minute.</p>
+      <div className="mx-auto max-w-6xl overflow-hidden rounded-[28px] bg-ink px-5 py-12 text-center text-white sm:rounded-[36px] sm:px-12 sm:py-20">
+        <h2 className="font-display text-[2.15rem] font-bold leading-[1.05] tracking-[-0.02em] text-balance sm:text-6xl">Hear it on your own phone.</h2>
+        <p className="mx-auto mt-4 max-w-xl text-base text-white/70 text-pretty sm:text-lg">Enter a Nigerian number and Tellero will call you in a few seconds. It takes about a minute.</p>
 
-        <form onSubmit={submit} className="mx-auto mt-10 flex max-w-xl flex-col gap-3 sm:flex-row">
+        <form onSubmit={submit} className="mx-auto mt-8 flex w-full max-w-xl flex-col gap-3 sm:mt-10 sm:flex-row">
           <label className="sr-only" htmlFor="callme-phone">
             Phone number
           </label>
@@ -71,20 +71,20 @@ export function CallMe() {
             value={phone}
             disabled={state !== 'idle'}
             onChange={(e) => setPhone(e.target.value)}
-            className="h-14 min-w-0 flex-1 rounded-full border-0 bg-white/10 px-6 text-xl font-semibold tracking-wide text-white ring-1 ring-white/20 transition-shadow duration-200 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-danfo disabled:opacity-60"
+            className="h-14 w-full min-w-0 shrink-0 rounded-full sm:w-auto sm:flex-1 border-0 bg-white/10 px-6 text-xl font-semibold tracking-wide text-white ring-1 ring-white/20 transition-shadow duration-200 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-danfo disabled:opacity-60"
             placeholder="+234 803 123 4567"
           />
           <button
             type="submit"
             disabled={state !== 'idle'}
-            className="btn btn-danfo inline-flex h-14 items-center justify-center gap-2.5 rounded-full px-7 text-lg font-bold disabled:cursor-default"
+            className="btn btn-danfo inline-flex h-14 w-full shrink-0 items-center justify-center gap-2.5 rounded-full px-7 text-lg font-bold disabled:cursor-default sm:w-auto"
           >
             <PhoneIcon className={`h-5 w-5 ${state === 'done' ? 'origin-center animate-[ring_0.9s_ease-in-out_infinite]' : ''}`} />
             <RollingLabel state={state} />
           </button>
         </form>
 
-        <div className="mx-auto mt-4 min-h-[1.75rem] max-w-xl" aria-live="polite">
+        <div className="mx-auto mt-3 min-h-[1.5rem] max-w-xl empty:min-h-0 sm:mt-4 sm:min-h-[1.75rem]" aria-live="polite">
           {error && <p className="text-base font-medium text-red-300">{error}</p>}
           {state === 'done' && (
             <p className="text-base text-white/80">
