@@ -1,0 +1,88 @@
+import type React from 'react'
+import type { Call } from '../lib/types'
+import { formatDateTime, formatDuration, humanize, isActiveCall } from '../lib/format'
+import { StatusBadge } from './StatusBadge'
+import { Transcript } from './Transcript'
+
+function parseExtracted(json: string | null): [string, string][] {
+  if (!json) return []
+  try {
+    const data = JSON.parse(json)
+    if (!data || typeof data !== 'object') return []
+    return Object.entries(data)
+      .filter(([, v]) => v !== null && v !== '' && v !== undefined)
+      .map(([k, v]) => [humanize(k), typeof v === 'object' ? JSON.stringify(v) : String(v)])
+  } catch {
+    return []
+  }
+}
+
+export function CallCard({ call, highlight }: { call: Call; highlight?: boolean }) {
+  const extracted = parseExtracted(call.extracted_json)
+  return (
+    <article className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 ${highlight ? 'animate-flash' : ''}`}>
+      <header className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white">
+          {call.call_type === 'onboarding' ? 'Onboarding' : 'Delivery'}
+        </span>
+        <StatusBadge status={call.status} />
+        {call.outcome && <StatusBadge status={call.outcome} />}
+        <span className="ml-auto text-sm text-slate-500">
+          {formatDateTime(call.created_at)} · {formatDuration(call.duration_seconds)}
+        </span>
+      </header>
+
+      {isActiveCall(call.status) && !call.transcript && (
+        <p className="mb-3 text-base font-medium text-blue-700">Call in progress… transcript will appear when it ends.</p>
+      )}
+
+      {call.recording_url && (
+        <audio controls preload="none" src={call.recording_url} className="mb-4 w-full">
+          Your browser can't play this recording.
+        </audio>
+      )}
+
+      <Transcript text={call.transcript} />
+
+      {extracted.length > 0 && (
+        <details className="mt-4 rounded-2xl bg-slate-50 p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-slate-600">What the AI extracted</summary>
+          <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+            {extracted.map(([k, v]) => (
+              <div key={k}>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">{k}</dt>
+                <dd className="break-words text-sm text-slate-800">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </details>
+      )}
+    </article>
+  )
+}
+
+export function CallHistory({ calls }: { calls: Call[] }) {
+  return (
+    <section>
+      <h3 className="mb-3 text-lg font-bold text-slate-800">Call history ({calls.length})</h3>
+      {calls.length === 0 ? (
+        <p className="rounded-3xl bg-white p-6 text-base text-slate-500 ring-1 ring-slate-200">No calls yet.</p>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {calls.map((c) => (
+            <CallCard key={c.id} call={c} />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+export function InfoItem({ label, value, wide }: { label: string; value: React.ReactNode; wide?: boolean }) {
+  return (
+    <div className={wide ? 'sm:col-span-2' : ''}>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</dt>
+      <dd className="mt-1 text-base text-slate-800">{value || <span className="text-slate-400">—</span>}</dd>
+    </div>
+  )
+}
