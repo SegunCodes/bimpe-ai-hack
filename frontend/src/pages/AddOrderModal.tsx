@@ -1,6 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../lib/api'
 import { formatPhone, toE164 } from '../lib/phone'
+import {
+  CALL_PLANS,
+  DEFAULT_PLAN,
+  DELIVERY_SLOTS,
+  computeCallAt,
+  defaultDelivery,
+  deliveryWindowText,
+  friendlyWhen,
+  lagosToDate,
+} from '../lib/schedule'
 import type { Customer } from '../lib/types'
 import { useToast } from '../components/Toast'
 import { Button } from '../components/Button'
@@ -16,7 +26,9 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
   const [item, setItem] = useState('')
   const [seller, setSeller] = useState('')
   const [address, setAddress] = useState('')
-  const [deliveryWindow, setDeliveryWindow] = useState('')
+  const [deliveryDate, setDeliveryDate] = useState(() => defaultDelivery().date)
+  const [slotId, setSlotId] = useState(() => defaultDelivery().slot)
+  const [plan, setPlan] = useState<string>(DEFAULT_PLAN)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -40,10 +52,17 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
     if (c?.address && !address) setAddress(c.address)
   }
 
+  const slot = DELIVERY_SLOTS.find((s) => s.id === slotId) ?? DELIVERY_SLOTS[0]
+  const deliveryAt = lagosToDate(deliveryDate, slot.start)
+  const schedule = deliveryAt ? computeCallAt(deliveryAt, plan) : null
+  const customerName = mode === 'new' ? name.trim() : customers?.find((c) => String(c.id) === customerId)?.name
+
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setFormError(null)
     if (!item.trim() || !seller.trim() || !address.trim()) return setFormError('Item, seller and address are required.')
+    if (!deliveryAt || !schedule) return setFormError('Pick a delivery date.')
+    if (deliveryAt.getTime() < Date.now() - 60 * 60 * 1000) return setFormError('That delivery time is in the past.')
 
     let cid: number
     if (mode === 'existing') {
@@ -53,11 +72,10 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
       if (!name.trim()) return setFormError('Enter the customer name.')
       const e164 = toE164(phone)
       if (!e164) return setFormError('That phone number doesn’t look right. Try 0803 123 4567 or +234 803 123 4567.')
-      cid = -1
       setSaving(true)
       try {
         const existing = customers?.find((c) => toE164(c.phone) === e164)
-        cid = existing ? existing.id : (await api.createCustomer({ name: name.trim(), phone: e164, address: address.trim() || undefined })).id
+        cid = existing ? existing.id : (await api.createCustomer({ name: name.trim(), phone: e164, address: address.trim() })).id
       } catch (err) {
         setSaving(false)
         return setFormError(`Couldn't create the customer: ${errorMessage(err)}`)
@@ -66,14 +84,19 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
 
     setSaving(true)
     try {
+      // Recompute at submit time so "right away" really means now
+      const { callAt } = computeCallAt(deliveryAt, plan)
       await api.createOrder({
         customer_id: cid,
         item: item.trim(),
         seller: seller.trim(),
         address_on_file: address.trim(),
-        delivery_window: deliveryWindow.trim(),
+        delivery_window: deliveryWindowText(deliveryAt, slot.label),
+        delivery_at: deliveryAt.toISOString(),
+        call_at: callAt.toISOString(),
+        call_plan: plan,
       })
-      toast.success('Order added')
+      toast.success(`Order added. The AI will call ${plan === 'now' ? 'right away' : friendlyWhen(callAt)}`)
       onCreated()
       onClose()
     } catch (err) {
@@ -133,9 +156,48 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
         <Field label="Delivery address">
           <textarea className={inputClass} rows={2} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="12 Admiralty Way, Lekki Phase 1" />
         </Field>
-        <Field label="Delivery window" hint="Free text, e.g. “Today 2pm–5pm”">
-          <input className={inputClass} value={deliveryWindow} onChange={(e) => setDeliveryWindow(e.target.value)} placeholder="Today 2pm–5pm" />
-        </Field>
+
+        <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200 sm:p-5">
+          <div className="flex flex-col gap-4">
+            <Field label="Delivery date">
+              <input type="date" className={inputClass} value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
+            </Field>
+            <div>
+              <span className="mb-1.5 block text-sm font-semibold text-slate-700">Delivery time</span>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {DELIVERY_SLOTS.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setSlotId(s.id)}
+                    className={`rounded-xl px-2 py-2.5 text-sm font-semibold ring-1 ring-inset ${
+                      slotId === s.id ? 'bg-accent-600 text-white ring-accent-600' : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-100'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Field label="When should the AI call?">
+              <select className={inputClass} value={plan} onChange={(e) => setPlan(e.target.value)}>
+                {CALL_PLANS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {schedule && (
+              <p className="rounded-2xl bg-accent-50 px-4 py-3 text-base text-accent-700">
+                📞 The AI will call {customerName || 'the customer'}{' '}
+                <span className="font-bold">{plan === 'now' || schedule.late ? 'right away' : friendlyWhen(schedule.callAt)}</span>
+                {schedule.late && plan !== 'now' && <span className="block text-sm">(that time has already passed)</span>}
+                <span className="block text-sm text-accent-700/80">If they don't pick up, it tries again twice, 30 minutes apart.</span>
+              </p>
+            )}
+          </div>
+        </div>
 
         {formError && <p className="rounded-xl bg-red-50 px-4 py-3 text-base font-medium text-red-700">{formError}</p>}
 
@@ -144,7 +206,7 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
             Cancel
           </Button>
           <Button type="submit" loading={saving}>
-            Add order
+            Schedule order
           </Button>
         </div>
       </form>

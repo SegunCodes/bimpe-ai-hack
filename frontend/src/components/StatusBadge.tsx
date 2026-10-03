@@ -1,11 +1,12 @@
 import { humanize } from '../lib/format'
 
-type Tone = 'gray' | 'blue' | 'green' | 'amber' | 'purple' | 'orange' | 'red'
+type Tone = 'gray' | 'indigo' | 'blue' | 'green' | 'amber' | 'purple' | 'orange' | 'red'
 
 // One place for every status color, so badges look the same everywhere.
 const STATUS: Record<string, { tone: Tone; live?: boolean }> = {
   // orders
   pending: { tone: 'gray' },
+  scheduled: { tone: 'indigo' },
   calling: { tone: 'blue', live: true },
   confirmed: { tone: 'green' },
   rescheduled: { tone: 'amber' },
@@ -35,6 +36,7 @@ const STATUS: Record<string, { tone: Tone; live?: boolean }> = {
 
 const TONES: Record<Tone, string> = {
   gray: 'bg-slate-100 text-slate-700 ring-slate-300',
+  indigo: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
   blue: 'bg-blue-100 text-blue-800 ring-blue-300',
   green: 'bg-emerald-100 text-emerald-800 ring-emerald-300',
   amber: 'bg-amber-100 text-amber-900 ring-amber-300',
@@ -45,6 +47,7 @@ const TONES: Record<Tone, string> = {
 
 const DOTS: Record<Tone, string> = {
   gray: 'bg-slate-400',
+  indigo: 'bg-indigo-400',
   blue: 'bg-blue-500',
   green: 'bg-emerald-500',
   amber: 'bg-amber-500',

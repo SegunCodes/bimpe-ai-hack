@@ -1,11 +1,22 @@
 import { useState, type ChangeEvent } from 'react'
 import { api, errorMessage } from '../lib/api'
-import { ORDER_CSV_COLUMNS, SAMPLE_ORDER_CSV, parseCsv } from '../lib/csv'
+import { ORDER_CSV_COLUMNS, ORDER_CSV_OPTIONAL, SAMPLE_ORDER_CSV, parseCsv } from '../lib/csv'
 import { formatPhone, toE164 } from '../lib/phone'
+import {
+  CALL_PLANS,
+  DEFAULT_PLAN,
+  computeCallAt,
+  deliveryWindowText,
+  friendlyWhen,
+  lagosTimeLabel,
+  lagosToDate,
+  parseDeliveryDate,
+  parseTime,
+} from '../lib/schedule'
 import type { NewOrder } from '../lib/types'
 import { useToast } from '../components/Toast'
 import { Button } from '../components/Button'
-import { Modal } from '../components/Overlay'
+import { Modal, inputClass } from '../components/Overlay'
 
 interface Row {
   customer_name: string
@@ -13,23 +24,32 @@ interface Row {
   item: string
   seller: string
   address: string
-  delivery_window: string
+  deliveryAt: Date | null
+  windowLabel: string
   problem?: string
 }
 
-function validate(raw: Record<string, string>): Row {
+const DEFAULT_TIME = '09:00'
+
+function readRow(raw: Record<string, string>): Row {
+  const date = parseDeliveryDate(raw.delivery_date ?? '')
+  const time = raw.delivery_time ? parseTime(raw.delivery_time) : DEFAULT_TIME
+  const deliveryAt = date && time ? lagosToDate(date, time) : null
   const row: Row = {
     customer_name: raw.customer_name ?? '',
     phone: toE164(raw.phone ?? '') ?? raw.phone ?? '',
     item: raw.item ?? '',
     seller: raw.seller ?? '',
     address: raw.address ?? '',
-    delivery_window: raw.delivery_window ?? '',
+    deliveryAt,
+    windowLabel: raw.delivery_window || (deliveryAt ? `from ${lagosTimeLabel(deliveryAt)}` : ''),
   }
   if (!row.customer_name) row.problem = 'Missing customer_name'
   else if (!toE164(raw.phone ?? '')) row.problem = 'Invalid phone'
   else if (!row.item) row.problem = 'Missing item'
   else if (!row.address) row.problem = 'Missing address'
+  else if (!date) row.problem = 'Bad delivery_date (use 2026-10-04 or 04/10/2026)'
+  else if (!time) row.problem = 'Bad delivery_time (use 14:00 or 2pm)'
   return row
 }
 
@@ -37,6 +57,7 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
   const toast = useToast()
   const [fileName, setFileName] = useState('')
   const [rows, setRows] = useState<Row[] | null>(null)
+  const [plan, setPlan] = useState<string>(DEFAULT_PLAN)
   const [parseError, setParseError] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
   const [progress, setProgress] = useState('')
@@ -57,7 +78,7 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
         setRows(null)
         return setParseError(`Missing column${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`)
       }
-      setRows(parsed.map(validate))
+      setRows(parsed.map(readRow))
     } catch {
       setParseError("Couldn't read that file. Make sure it's a .csv.")
     }
@@ -87,16 +108,19 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
         created++
       }
 
-      setProgress('Creating orders…')
+      setProgress('Scheduling orders…')
       const orders: NewOrder[] = valid.map((r) => ({
         customer_id: idByPhone.get(r.phone)!,
         item: r.item,
         seller: r.seller,
         address_on_file: r.address,
-        delivery_window: r.delivery_window,
+        delivery_window: deliveryWindowText(r.deliveryAt!, r.windowLabel),
+        delivery_at: r.deliveryAt!.toISOString(),
+        call_at: computeCallAt(r.deliveryAt!, plan).callAt.toISOString(),
+        call_plan: plan,
       }))
       const result = await api.bulkCreateOrders(orders)
-      toast.success(`Imported ${result?.length ?? orders.length} orders${created ? ` and ${created} new customers` : ''}`)
+      toast.success(`Scheduled ${result?.length ?? orders.length} orders${created ? ` and added ${created} new customers` : ''}`)
       onImported()
       onClose()
     } catch (err) {
@@ -113,7 +137,8 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
     <Modal title="Import orders from CSV" onClose={onClose} wide>
       <div className="flex flex-col gap-5">
         <p className="text-base text-slate-600">
-          Columns needed: <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm">{ORDER_CSV_COLUMNS.join(', ')}</code>.{' '}
+          Columns needed: <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm">{ORDER_CSV_COLUMNS.join(', ')}</code>. Optional:{' '}
+          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm">{ORDER_CSV_OPTIONAL.join(', ')}</code> (time defaults to 9am, Lagos time).{' '}
           <a href={sampleHref} download="sample-orders.csv" className="font-semibold text-accent-600 underline">
             Download a sample
           </a>
@@ -129,6 +154,16 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
 
         {rows && (
           <>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-slate-700">When should the AI call? (applies to every order in this file)</span>
+              <select className={inputClass} value={plan} onChange={(e) => setPlan(e.target.value)}>
+                {CALL_PLANS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className="flex flex-wrap gap-3 text-base">
               <span className="rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-800">{valid.length} ready</span>
               {invalid.length > 0 && <span className="rounded-full bg-red-100 px-3 py-1 font-semibold text-red-800">{invalid.length} will be skipped</span>}
@@ -140,18 +175,24 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
                     <th className="px-3 py-2">Customer</th>
                     <th className="px-3 py-2">Phone</th>
                     <th className="px-3 py-2">Item</th>
-                    <th className="px-3 py-2">Address</th>
-                    <th className="px-3 py-2"></th>
+                    <th className="px-3 py-2">Delivery</th>
+                    <th className="px-3 py-2">AI calls</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((r, i) => (
                     <tr key={i} className={`border-t border-slate-100 ${r.problem ? 'bg-red-50/60' : ''}`}>
                       <td className="px-3 py-2 font-medium">{r.customer_name || '—'}</td>
-                      <td className="px-3 py-2 tabular-nums">{formatPhone(r.phone)}</td>
+                      <td className="whitespace-nowrap px-3 py-2 tabular-nums">{formatPhone(r.phone)}</td>
                       <td className="px-3 py-2">{r.item}</td>
-                      <td className="max-w-[200px] truncate px-3 py-2">{r.address}</td>
-                      <td className="px-3 py-2 font-semibold text-red-700">{r.problem}</td>
+                      <td className="whitespace-nowrap px-3 py-2">{r.deliveryAt ? friendlyWhen(r.deliveryAt) : '—'}</td>
+                      <td className="px-3 py-2">
+                        {r.problem ? (
+                          <span className="font-semibold text-red-700">{r.problem}</span>
+                        ) : (
+                          <span className="whitespace-nowrap">{friendlyWhen(computeCallAt(r.deliveryAt!, plan).callAt)}</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -166,7 +207,7 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
             Cancel
           </Button>
           <Button onClick={doImport} loading={importing} disabled={valid.length === 0}>
-            Import {valid.length > 0 ? `${valid.length} orders` : ''}
+            Schedule {valid.length > 0 ? `${valid.length} orders` : ''}
           </Button>
         </div>
       </div>

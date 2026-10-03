@@ -47,10 +47,11 @@ export function parseCsv(text: string): Record<string, string>[] {
   })
 }
 
-export const ORDER_CSV_COLUMNS = ['customer_name', 'phone', 'item', 'seller', 'address', 'delivery_window'] as const
+export const ORDER_CSV_COLUMNS = ['customer_name', 'phone', 'item', 'seller', 'address', 'delivery_date'] as const
+export const ORDER_CSV_OPTIONAL = ['delivery_time', 'delivery_window'] as const
 
 export const SAMPLE_ORDER_CSV =
-  ORDER_CSV_COLUMNS.join(',') +
+  [...ORDER_CSV_COLUMNS, ...ORDER_CSV_OPTIONAL].join(',') +
   '\n' +
-  'Adaeze Okafor,08031234567,Bluetooth speaker,Jumia,"12 Admiralty Way, Lekki Phase 1",Today 2pm-5pm\n' +
-  'Tunde Bakare,+2348092223344,Ankara fabric (6 yards),Mama Nkechi Fabrics,"Plot 4 Bode Thomas St, Surulere",Tomorrow 10am-1pm\n'
+  'Adaeze Okafor,08031234567,Bluetooth speaker,Jumia,"12 Admiralty Way, Lekki Phase 1",04/10/2026,14:00,2pm - 5pm\n' +
+  'Tunde Bakare,+2348092223344,Ankara fabric (6 yards),Mama Nkechi Fabrics,"Plot 4 Bode Thomas St, Surulere",2026-10-05,10am,\n'

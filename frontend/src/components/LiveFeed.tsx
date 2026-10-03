@@ -82,7 +82,8 @@ export function LiveFeed({ compact, limit }: { compact?: boolean; limit?: number
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
                     <div className="flex flex-wrap justify-end gap-1.5">
-                      <StatusBadge status={call.status} size={compact ? 'sm' : 'lg'} />
+                      {/* Compact view: one badge (the outcome once known) so names have room */}
+                      {(!compact || !call.outcome) && <StatusBadge status={call.status} size={compact ? 'sm' : 'lg'} />}
                       {call.outcome && <StatusBadge status={call.outcome} size={compact ? 'sm' : 'lg'} />}
                     </div>
                     <span className="text-xs text-slate-400">

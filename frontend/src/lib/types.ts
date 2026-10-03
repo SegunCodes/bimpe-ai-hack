@@ -4,6 +4,7 @@ export type CustomerStatus = 'new' | 'called' | 'verified' | 'no_answer'
 
 export type OrderStatus =
   | 'pending'
+  | 'scheduled'
   | 'calling'
   | 'confirmed'
   | 'rescheduled'
@@ -34,6 +35,12 @@ export interface Order {
   cleaned_address: string | null
   landmark: string | null
   delivery_window: string | null
+  /** Start of the delivery slot, ISO 8601 UTC */
+  delivery_at: string | null
+  /** When the AI will (next) call, ISO 8601 UTC. null once no call is planned */
+  call_at: string | null
+  /** Which timing rule the owner picked, e.g. "2h_before" */
+  call_plan: string | null
   status: OrderStatus | string
   reschedule_time: string | null
   outcome_notes: string | null
@@ -81,4 +88,7 @@ export interface NewOrder {
   seller: string
   address_on_file: string
   delivery_window: string
+  delivery_at: string
+  call_at: string
+  call_plan: string
 }
