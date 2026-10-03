@@ -36,7 +36,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
       <p className="text-xl font-semibold text-slate-800">We couldn't load this</p>
       <p className="max-w-md text-base text-slate-500">{message}</p>
       {onRetry && (
-        <button onClick={onRetry} className="mt-4 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-base font-semibold hover:bg-slate-50">
+        <button onClick={onRetry} className="btn btn-secondary mt-4 h-12 rounded-xl bg-white px-5 text-base font-semibold">
           Try again
         </button>
       )}

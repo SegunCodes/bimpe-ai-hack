@@ -66,7 +66,7 @@ export function StatusBadge({ status, size = 'md' }: { status: string | null | u
     lg: 'text-base px-4 py-1.5 gap-2',
   }
   return (
-    <span className={`inline-flex items-center whitespace-nowrap rounded-full font-semibold ring-1 ring-inset ${TONES[tone]} ${sizes[size]}`}>
+    <span className={`badge inline-flex items-center whitespace-nowrap rounded-full font-semibold ring-1 ring-inset ${TONES[tone]} ${sizes[size]}`}>
       <span className="relative flex h-2 w-2">
         {live && <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${DOTS[tone]}`} />}
         <span className={`relative inline-flex h-2 w-2 rounded-full ${DOTS[tone]}`} />

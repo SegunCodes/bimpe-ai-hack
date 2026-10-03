@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../lib/api'
 import { formatPhone, toE164 } from '../lib/phone'
@@ -13,8 +15,9 @@ import {
 } from '../lib/schedule'
 import type { Customer } from '../lib/types'
 import { useToast } from '../components/Toast'
+import { PhoneIcon } from '../components/Icons'
 import { Button } from '../components/Button'
-import { Field, Modal, inputClass } from '../components/Overlay'
+import { Field, Modal, Segmented, inputClass } from '../components/Overlay'
 
 export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const toast = useToast()
@@ -109,19 +112,15 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
   return (
     <Modal title="Add order" onClose={onClose}>
       <form onSubmit={submit} className="flex flex-col gap-5">
-        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1">
-          {(['existing', 'new'] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              disabled={m === 'existing' && customers?.length === 0}
-              className={`rounded-xl py-2.5 text-base font-semibold disabled:text-slate-400 ${mode === m ? 'bg-white shadow-sm' : 'text-slate-600'}`}
-            >
-              {m === 'existing' ? 'Existing customer' : 'New customer'}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          id="customer-mode"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'existing', label: 'Existing customer', disabled: customers?.length === 0 },
+            { value: 'new', label: 'New customer' },
+          ]}
+        />
 
         {mode === 'existing' ? (
           <Field label="Customer">
@@ -170,8 +169,9 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
                     key={s.id}
                     type="button"
                     onClick={() => setSlotId(s.id)}
-                    className={`rounded-xl px-2 py-2.5 text-sm font-semibold ring-1 ring-inset ${
-                      slotId === s.id ? 'bg-accent-600 text-white ring-accent-600' : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-100'
+                    aria-pressed={slotId === s.id}
+                    className={`btn h-11 rounded-xl px-2 text-sm font-semibold ${
+                      slotId === s.id ? 'btn-primary text-white' : 'btn-secondary bg-white text-slate-700'
                     }`}
                   >
                     {s.label}
@@ -205,7 +205,7 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" loading={saving}>
+          <Button type="submit" loading={saving} icon={<PhoneIcon className="h-4 w-4" />}>
             Schedule order
           </Button>
         </div>

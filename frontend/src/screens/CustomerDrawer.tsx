@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { api, errorMessage } from '../lib/api'
 import { formatDateTime, isActiveCall, languageName, newestFirst } from '../lib/format'
@@ -49,8 +51,8 @@ export function CustomerDrawer({ id, onClose, onChanged }: { id: number; onClose
             <p className="mt-1 text-lg tabular-nums text-slate-600">{formatPhone(customer.phone)}</p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <StatusBadge status={onCall ? 'calling' : customer.status} size="lg" />
-              <Button onClick={call} loading={starting} disabled={onCall}>
-                <PhoneIcon /> {onCall ? 'On a call…' : 'Start onboarding call'}
+              <Button onClick={call} loading={starting} disabled={onCall} icon={<PhoneIcon />}>
+                {onCall ? 'On a call…' : 'Start onboarding call'}
               </Button>
             </div>
           </header>

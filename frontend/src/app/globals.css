@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-accent-50: #eef2ff;
+  --color-accent-100: #e0e7ff;
+  --color-accent-400: #818cf8;
+  --color-accent-500: #6366f1;
+  --color-accent-600: #4f46e5;
+  --color-accent-700: #4338ca;
+  --color-accent-800: #3730a3;
+
+  /* Motion tokens: strong curves, never the weak built-ins */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --animate-flash: flash 1.6s ease-out;
+  --animate-row-pulse: row-pulse 1.8s ease-in-out infinite;
+}
+
+/* Row highlight when polling brings new data (system-driven, not user-triggered) */
+@keyframes flash {
+  0% { background-color: #fef08a; }
+  100% { background-color: transparent; }
+}
+/* A row that is on a live call breathes, so the room can see it from the back */
+@keyframes row-pulse {
+  0%, 100% { background-color: rgb(239 246 255 / 0.4); }
+  50% { background-color: rgb(219 234 254 / 0.9); }
+}
+
+html {
+  font-size: 17px;
+}
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+/* ---------- Buttons ---------- */
+/* Press: instant physical feedback. Hover: color only, gated to real pointers. */
+.btn {
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 200ms ease,
+    box-shadow 200ms ease,
+    color 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+.btn-primary {
+  background-image: linear-gradient(to bottom, var(--color-accent-500), var(--color-accent-600));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 1px 2px rgb(30 27 75 / 0.25),
+    0 4px 12px -2px rgb(79 70 229 / 0.35);
+}
+.btn-secondary {
+  box-shadow:
+    inset 0 0 0 1px rgb(203 213 225),
+    0 1px 2px rgb(15 23 42 / 0.06);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:not(:disabled):hover {
+    background-image: linear-gradient(to bottom, var(--color-accent-600), var(--color-accent-700));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      0 1px 2px rgb(30 27 75 / 0.3),
+      0 8px 20px -4px rgb(79 70 229 / 0.45);
+  }
+  .btn-secondary:not(:disabled):hover {
+    background-color: rgb(248 250 252);
+    box-shadow:
+      inset 0 0 0 1px rgb(148 163 184),
+      0 2px 6px rgb(15 23 42 / 0.08);
+  }
+  .btn-ghost:not(:disabled):hover {
+    background-color: rgb(241 245 249);
+  }
+  .card-hover:hover {
+    box-shadow: 0 8px 24px -8px rgb(15 23 42 / 0.15);
+    transform: translateY(-1px);
+  }
+}
+.card-hover {
+  transition:
+    box-shadow 200ms ease,
+    transform 200ms var(--ease-out);
+}
+
+/* Status badges change color smoothly when the AI updates an order */
+.badge {
+  transition:
+    background-color 300ms ease,
+    color 300ms ease,
+    box-shadow 300ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:not(:disabled):active,
+  .card-hover:hover {
+    transform: none;
+  }
+  .animate-row-pulse {
+    animation: none;
+    background-color: rgb(239 246 255 / 0.8);
+  }
+}

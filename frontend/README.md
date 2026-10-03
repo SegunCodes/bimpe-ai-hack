@@ -1,10 +1,10 @@
 # Bimpe admin dashboard (frontend)
 
-React + TypeScript + Vite + Tailwind. It talks to the backend over the REST API and polls every 3 seconds.
+Next.js (App Router) + TypeScript + Tailwind CSS + Motion. It talks to the backend over the REST API and polls every 3 seconds.
 
 ## Run it
 
-You need Node.js 20 or newer (`node -v` to check).
+You need Node.js 20 or newer (`node -v` to check). Run every command **inside the `frontend` folder**.
 
 ```bash
 cd frontend
@@ -13,45 +13,49 @@ cp .env.example .env
 npm run dev
 ```
 
-Open http://localhost:5173. The public signup page is at http://localhost:5173/join.
+Open http://localhost:3000. The public signup page is at http://localhost:3000/join.
 
-If the backend runs somewhere other than `http://localhost:3001/api`, edit `VITE_API_URL` in `.env` and restart `npm run dev`.
+If the backend runs somewhere other than `http://localhost:3001/api`, edit `NEXT_PUBLIC_API_URL` in `.env` and restart `npm run dev`.
 
-Production build: `npm run build` (output goes to `dist/`).
+Production: `npm run build`, then `npm start`.
 
-> The backend must allow CORS from the frontend origin (e.g. `http://localhost:5173`).
+> The backend must allow CORS from the frontend origin: `http://localhost:3000`.
 
 ## Files
 
 ```
 frontend/
-├── .env.example            API URL setting
-├── index.html
-├── vite.config.ts
+├── .env.example              NEXT_PUBLIC_API_URL
+├── next.config.ts
+├── postcss.config.mjs        Tailwind
 └── src/
-    ├── main.tsx            entry point
-    ├── App.tsx             routes: /, /customers, /calls, /join
-    ├── index.css           Tailwind + accent color + animations
-    ├── lib/
-    │   ├── api.ts          every API call (matches the contract)
-    │   ├── types.ts        Customer, Order, Call types
-    │   ├── phone.ts        E.164 conversion + pretty formatting
-    │   ├── format.ts       dates, durations, languages
-    │   ├── schedule.ts     delivery slots, call rules, Lagos time
-    │   ├── csv.ts          CSV parser + sample file
-    │   └── transcript.ts   splits transcripts into agent/customer bubbles
-    ├── hooks/
-    │   ├── usePolling.ts   fetch every 3s, no flicker, keeps last data on error
-    │   ├── useChangedIds.ts  detects new/changed rows for the highlight flash
-    │   └── useHealth.ts    /health check (Demo mode pill, Offline banner)
-    ├── components/         Layout, StatusBadge, Toast, Button, Modal/Drawer,
-    │                       LiveFeed, CallCard, Transcript, States, Icons
-    └── pages/
-        ├── OrdersPage.tsx, OrderDrawer.tsx, AddOrderModal.tsx, ImportCsvModal.tsx
-        ├── CustomersPage.tsx, CustomerDrawer.tsx, AddCustomerModal.tsx
-        ├── LiveCallsPage.tsx
-        └── JoinPage.tsx
+    ├── app/                  Next.js routes
+    │   ├── layout.tsx        fonts, metadata, providers
+    │   ├── providers.tsx     toasts + Motion (respects "reduce motion")
+    │   ├── globals.css       colors, easing tokens, button styles
+    │   ├── (dashboard)/      header + tabs wrap these:
+    │   │   ├── page.tsx      /          Orders
+    │   │   ├── customers/    /customers
+    │   │   └── calls/        /calls     Live calls
+    │   └── join/page.tsx     /join      public signup (no dashboard chrome)
+    ├── screens/              the page contents (Orders, Customers, Live calls, Join, modals, drawers)
+    ├── components/           Layout, Button, Modal/Drawer/Segmented, Toast, LiveFeed, CallCard, StatusBadge…
+    ├── hooks/                usePolling, useChangedIds, useHealth
+    └── lib/                  api, types, phone, schedule (Lagos time), csv, transcript, format
 ```
+
+## Motion
+
+The animations are deliberate and small:
+
+- **Buttons**: they press in slightly (scale 0.97, 160ms). Hover changes color only, and only on devices with a mouse.
+- **Modals** fade and scale in from 96% (250ms). **Drawers** slide in from the right (450ms) and slide back out the same way.
+- **Toasts** rise from the bottom and leave the same way. Click a toast to dismiss it.
+- **Tabs and toggles**: the highlight slides to the selected tab.
+- **Live feed**: a new call slides in at the top and the list glides down to make room.
+- **Orders table**: new rows fade in, changed rows flash yellow, and rows on a live call pulse blue. Rows don't slide around while people read them.
+- **/join**: the content staggers in, and on success the phone icon rings.
+- Everything respects the operating system's "Reduce motion" setting.
 
 ## How it works
 
@@ -59,7 +63,7 @@ The business owner only adds orders (by hand or by CSV). For each order they pic
 
 ## Demo checklist
 
-Start the backend first, then `npm run dev`.
+Start the backend first, then `npm run dev` inside `frontend`.
 
 1. **Header**: the green "Live" pill shows. If the backend has `mockMode: true`, a yellow "Demo mode" pill shows too.
 2. **Backend down**: stop the backend. Within ~10s a red banner appears and the pill turns "Offline". Start it again and the page recovers by itself.

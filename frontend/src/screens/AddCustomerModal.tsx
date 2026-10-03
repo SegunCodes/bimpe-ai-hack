@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../lib/api'
 import { LANGUAGES } from '../lib/format'

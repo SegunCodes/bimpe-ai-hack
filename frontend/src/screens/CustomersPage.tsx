@@ -1,3 +1,6 @@
+'use client'
+
+import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { api, errorMessage } from '../lib/api'
 import { isActiveCall, languageName } from '../lib/format'
@@ -11,6 +14,7 @@ import { PageHeader } from '../components/Layout'
 import { StatusBadge } from '../components/StatusBadge'
 import { EmptyState, ErrorState, LoadingState, Spinner, StaleBanner } from '../components/States'
 import { PhoneIcon, PlusIcon } from '../components/Icons'
+import { EASE_OUT } from '../components/Overlay'
 import { AddCustomerModal } from './AddCustomerModal'
 import { CustomerDrawer } from './CustomerDrawer'
 
@@ -53,8 +57,8 @@ export function CustomersPage() {
         title="Customers"
         subtitle="People the AI onboards: it confirms address, landmark, language and the best time to call."
         actions={
-          <Button variant="secondary" onClick={() => setAdding(true)}>
-            <PlusIcon /> Add customer
+          <Button variant="secondary" onClick={() => setAdding(true)} icon={<PlusIcon />}>
+            Add customer
           </Button>
         }
       />
@@ -70,8 +74,8 @@ export function CustomersPage() {
             title="No customers yet"
             hint="Customers appear here when you add one, import orders, or someone signs up on the public /join page."
             action={
-              <Button onClick={() => setAdding(true)}>
-                <PlusIcon /> Add customer
+              <Button onClick={() => setAdding(true)} icon={<PlusIcon />}>
+                Add customer
               </Button>
             }
           />
@@ -90,12 +94,19 @@ export function CustomersPage() {
                 </tr>
               </thead>
               <tbody>
+                <AnimatePresence initial={false}>
                 {customers.map((c) => {
                   const onCall = data!.onCall.includes(c.id)
                   const isStarting = starting.has(c.id)
-                  const anim = onCall ? 'animate-row-pulse' : added.has(c.id) ? 'animate-slide-in' : changed.has(c.id) ? 'animate-flash' : ''
+                  const anim = onCall ? 'animate-row-pulse' : changed.has(c.id) && !added.has(c.id) ? 'animate-flash' : ''
                   return (
-                    <tr key={c.id} onClick={() => setOpenId(c.id)} className={`cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50 ${anim}`}>
+                    <motion.tr
+                      key={c.id}
+                      initial={{ opacity: 0, transform: 'translateY(-8px)' }}
+                      animate={{ opacity: 1, transform: 'translateY(0px)' }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3, ease: EASE_OUT }}
+                      onClick={() => setOpenId(c.id)} className={`cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50 ${anim}`}>
                       <td className="px-5 py-4 text-base font-semibold">{c.name || 'Unnamed'}</td>
                       <td className="whitespace-nowrap px-4 py-4 text-base tabular-nums text-slate-600">{formatPhone(c.phone)}</td>
                       <td className="px-4 py-4 text-base text-slate-600">{languageName(c.language)}</td>
@@ -114,17 +125,20 @@ export function CustomersPage() {
                           {onCall ? 'On a call' : isStarting ? 'Starting' : 'Start onboarding call'}
                         </Button>
                       </td>
-                    </tr>
+                    </motion.tr>
                   )
                 })}
+                </AnimatePresence>
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {adding && <AddCustomerModal onClose={() => setAdding(false)} onCreated={refresh} />}
-      {openId !== null && <CustomerDrawer id={openId} onClose={() => setOpenId(null)} onChanged={refresh} />}
+      <AnimatePresence>
+        {adding && <AddCustomerModal key="add" onClose={() => setAdding(false)} onCreated={refresh} />}
+        {openId !== null && <CustomerDrawer key={`customer-${openId}`} id={openId} onClose={() => setOpenId(null)} onChanged={refresh} />}
+      </AnimatePresence>
     </>
   )
 }

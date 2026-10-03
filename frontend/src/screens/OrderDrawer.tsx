@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { api, errorMessage } from '../lib/api'
 import { formatDateTime, newestFirst } from '../lib/format'
@@ -125,8 +127,8 @@ function ScheduleCard({
           </p>
         )}
       </div>
-      <Button variant="secondary" size="sm" onClick={onCallNow} loading={starting} disabled={calling}>
-        <PhoneIcon className="h-4 w-4" /> {waiting ? 'Call now instead' : 'Call now'}
+      <Button variant="secondary" size="sm" onClick={onCallNow} loading={starting} disabled={calling} icon={<PhoneIcon className="h-4 w-4" />}>
+        {waiting ? 'Call now instead' : 'Call now'}
       </Button>
     </section>
   )

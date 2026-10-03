@@ -1,3 +1,6 @@
+'use client'
+
+import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { api } from '../lib/api'
 import { parseDate } from '../lib/format'
@@ -12,6 +15,7 @@ import { StatusBadge } from '../components/StatusBadge'
 import { EmptyState, ErrorState, LoadingState, Spinner, StaleBanner } from '../components/States'
 import { PhoneIcon, PlusIcon, UploadIcon } from '../components/Icons'
 import { LiveFeed } from '../components/LiveFeed'
+import { EASE_OUT } from '../components/Overlay'
 import { AddOrderModal } from './AddOrderModal'
 import { ImportCsvModal } from './ImportCsvModal'
 import { OrderDrawer } from './OrderDrawer'
@@ -79,11 +83,11 @@ export function OrdersPage() {
         subtitle="Add an order and pick when the AI should call. Everything after that happens on its own."
         actions={
           <>
-            <Button variant="secondary" onClick={() => setModal('import')}>
-              <UploadIcon /> Import CSV
+            <Button variant="secondary" onClick={() => setModal('import')} icon={<UploadIcon />}>
+              Import CSV
             </Button>
-            <Button onClick={() => setModal('add')}>
-              <PlusIcon /> Add order
+            <Button onClick={() => setModal('add')} icon={<PlusIcon />}>
+              Add order
             </Button>
           </>
         }
@@ -124,11 +128,11 @@ export function OrdersPage() {
                 hint="Add an order, pick the delivery time, and the AI will call the customer at the right moment."
                 action={
                   <div className="flex flex-wrap justify-center gap-2">
-                    <Button onClick={() => setModal('add')}>
-                      <PlusIcon /> Add order
+                    <Button onClick={() => setModal('add')} icon={<PlusIcon />}>
+                      Add order
                     </Button>
-                    <Button variant="secondary" onClick={() => setModal('import')}>
-                      <UploadIcon /> Import CSV
+                    <Button variant="secondary" onClick={() => setModal('import')} icon={<UploadIcon />}>
+                      Import CSV
                     </Button>
                   </div>
                 }
@@ -146,18 +150,17 @@ export function OrdersPage() {
                     </tr>
                   </thead>
                   <tbody>
+                    <AnimatePresence initial={false}>
                     {orders.map((o) => {
-                      const rowAnim =
-                        o.status === 'calling'
-                          ? 'animate-row-pulse'
-                          : added.has(o.id)
-                            ? 'animate-slide-in'
-                            : changed.has(o.id)
-                              ? 'animate-flash'
-                              : ''
+                      const rowAnim = o.status === 'calling' ? 'animate-row-pulse' : changed.has(o.id) && !added.has(o.id) ? 'animate-flash' : ''
                       return (
-                        <tr
+                        <motion.tr
                           key={o.id}
+                          // New rows fade in. Re-sorts snap (no sliding while people read the table); the flash marks changes.
+                          initial={{ opacity: 0, transform: 'translateY(-8px)' }}
+                          animate={{ opacity: 1, transform: 'translateY(0px)' }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.3, ease: EASE_OUT }}
                           onClick={() => setOpenId(o.id)}
                           className={`cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50 ${rowAnim}`}
                         >
@@ -180,9 +183,10 @@ export function OrdersPage() {
                           <td className="px-5 py-4">
                             <NextCallCell order={o} now={now} />
                           </td>
-                        </tr>
+                        </motion.tr>
                       )
                     })}
+                    </AnimatePresence>
                   </tbody>
                 </table>
               </div>
@@ -205,9 +209,11 @@ export function OrdersPage() {
         </aside>
       </div>
 
-      {modal === 'add' && <AddOrderModal onClose={() => setModal(null)} onCreated={refresh} />}
-      {modal === 'import' && <ImportCsvModal onClose={() => setModal(null)} onImported={refresh} />}
-      {openId !== null && <OrderDrawer id={openId} onClose={() => setOpenId(null)} onChanged={refresh} />}
+      <AnimatePresence>
+        {modal === 'add' && <AddOrderModal key="add" onClose={() => setModal(null)} onCreated={refresh} />}
+        {modal === 'import' && <ImportCsvModal key="import" onClose={() => setModal(null)} onImported={refresh} />}
+        {openId !== null && <OrderDrawer key={`order-${openId}`} id={openId} onClose={() => setOpenId(null)} onChanged={refresh} />}
+      </AnimatePresence>
     </>
   )
 }

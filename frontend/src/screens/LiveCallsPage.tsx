@@ -1,3 +1,5 @@
+'use client'
+
 import { isActiveCall } from '../lib/format'
 import { PageHeader, StatCard } from '../components/Layout'
 import { LiveFeed, useFeed } from '../components/LiveFeed'

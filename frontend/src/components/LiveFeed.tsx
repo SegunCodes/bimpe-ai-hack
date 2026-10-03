@@ -1,3 +1,6 @@
+'use client'
+
+import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { api } from '../lib/api'
 import { formatDuration, isActiveCall, newestFirst, timeAgo } from '../lib/format'
@@ -7,7 +10,7 @@ import { usePolling } from '../hooks/usePolling'
 import { useChangedIds } from '../hooks/useChangedIds'
 import { BoxIcon, UserPlusIcon } from './Icons'
 import { CallCard } from './CallCard'
-import { Modal } from './Overlay'
+import { EASE_IN_OUT, EASE_OUT, Modal } from './Overlay'
 import { StatusBadge } from './StatusBadge'
 import { EmptyState, ErrorState, LoadingState, StaleBanner } from './States'
 
@@ -33,7 +36,7 @@ export function useFeed() {
 
 export function LiveFeed({ compact, limit }: { compact?: boolean; limit?: number }) {
   const { data, error, loading, refresh } = useFeed()
-  const { added, changed } = useChangedIds(data?.calls ?? null)
+  const { changed } = useChangedIds(data?.calls ?? null)
   const [openId, setOpenId] = useState<number | null>(null)
 
   if (loading && !data) return <LoadingState label="Loading calls…" />
@@ -46,19 +49,27 @@ export function LiveFeed({ compact, limit }: { compact?: boolean; limit?: number
     <div>
       {error && <StaleBanner message={error} />}
       {calls.length === 0 ? (
-        <EmptyState title="No calls yet" hint="Press “Call” on an order or customer and it will show up here instantly." />
+        <EmptyState title="No calls yet" hint="Calls show up here the moment the AI dials. Scheduled orders call on their own." />
       ) : (
-        <ul className={`flex flex-col ${compact ? 'gap-2' : 'gap-3'}`}>
+        <motion.ul layoutRoot className={`flex flex-col ${compact ? 'gap-2' : 'gap-3'}`}>
+          {/* initial={false}: no entrance on page load, only for calls that arrive while watching */}
+          <AnimatePresence initial={false}>
           {calls.map((call) => {
             const who = call.customer_id ? data.names[call.customer_id] : undefined
             const item = call.order_id ? data.items[call.order_id] : undefined
             const active = isActiveCall(call.status)
-            const anim = added.has(call.id) ? 'animate-slide-in' : changed.has(call.id) ? 'animate-flash' : ''
             return (
-              <li key={call.id} className={anim}>
+              <motion.li
+                key={call.id}
+                layout="position"
+                initial={{ opacity: 0, transform: 'translateY(-16px) scale(0.97)' }}
+                animate={{ opacity: 1, transform: 'translateY(0px) scale(1)' }}
+                exit={{ opacity: 0, transform: 'scale(0.97)' }}
+                transition={{ duration: 0.35, ease: EASE_OUT, layout: { duration: 0.3, ease: EASE_IN_OUT } }}
+              >
                 <button
                   onClick={() => setOpenId(call.id)}
-                  className={`flex w-full items-center gap-4 rounded-3xl bg-white text-left shadow-sm ring-1 transition hover:shadow-md ${
+                  className={`btn card-hover flex w-full items-center gap-4 rounded-3xl bg-white text-left shadow-sm ring-1 ${changed.has(call.id) ? 'animate-flash' : ''} ${
                     active ? 'ring-2 ring-blue-300' : 'ring-slate-200'
                   } ${compact ? 'p-3.5' : 'p-5'}`}
                 >
@@ -92,12 +103,13 @@ export function LiveFeed({ compact, limit }: { compact?: boolean; limit?: number
                     </span>
                   </div>
                 </button>
-              </li>
+              </motion.li>
             )
           })}
-        </ul>
+          </AnimatePresence>
+        </motion.ul>
       )}
-      {openId !== null && <CallModal id={openId} onClose={() => setOpenId(null)} />}
+      <AnimatePresence>{openId !== null && <CallModal key={openId} id={openId} onClose={() => setOpenId(null)} />}</AnimatePresence>
     </div>
   )
 }

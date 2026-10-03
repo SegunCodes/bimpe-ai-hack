@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, type ChangeEvent } from 'react'
 import { api, errorMessage } from '../lib/api'
 import { ORDER_CSV_COLUMNS, ORDER_CSV_OPTIONAL, SAMPLE_ORDER_CSV, parseCsv } from '../lib/csv'
