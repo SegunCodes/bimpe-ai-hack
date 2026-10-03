@@ -1,0 +1,15 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root-local-password
+      MYSQL_DATABASE: bimpe_calls
+      MYSQL_USER: bimpe
+      MYSQL_PASSWORD: bimpe-local-password
+    ports:
+      - "3306:3306"
+    volumes:
+      - bimpe_mysql_data:/var/lib/mysql
+
+volumes:
+  bimpe_mysql_data:
