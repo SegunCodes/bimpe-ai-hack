@@ -51,14 +51,14 @@ export const ordersRepository = {
   findDue: (limit: number) =>
     rows<{ id: number; customer_id: number }>(
       `SELECT id, customer_id FROM orders
-       WHERE status = 'scheduled' AND call_at IS NOT NULL AND call_at <= UTC_TIMESTAMP()
+       WHERE status = 'scheduled' AND call_at IS NOT NULL AND call_at <= now()
        ORDER BY call_at, id LIMIT ${Math.max(1, Math.floor(limit))}`
     ),
 
   /** Atomically takes a due order so it can only ever be dialled once. */
   async claimDue(id: number): Promise<boolean> {
     const result = await run(
-      "UPDATE orders SET call_at = NULL WHERE id = ? AND status = 'scheduled' AND call_at IS NOT NULL AND call_at <= UTC_TIMESTAMP()",
+      "UPDATE orders SET call_at = NULL WHERE id = ? AND status = 'scheduled' AND call_at IS NOT NULL AND call_at <= now()",
       [id]
     );
     return result.affectedRows === 1;

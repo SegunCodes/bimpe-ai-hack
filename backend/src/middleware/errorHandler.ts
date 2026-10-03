@@ -17,7 +17,7 @@ export function errorHandler(error: unknown, req: Request, res: Response, _next:
     res.status(error.status).json({ error: error.message });
     return;
   }
-  if (error && typeof error === "object" && "code" in error && error.code === "ER_DUP_ENTRY") {
+  if (error && typeof error === "object" && "code" in error && error.code === "23505") {
     res.status(409).json({ error: "A customer with this phone number already exists" });
     return;
   }

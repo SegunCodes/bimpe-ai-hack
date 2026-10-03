@@ -4,10 +4,11 @@ import { formatDateTime, formatDuration, humanize, isActiveCall } from '../lib/f
 import { StatusBadge } from './StatusBadge'
 import { Transcript } from './Transcript'
 
-function parseExtracted(json: string | null): [string, string][] {
+/** extracted_json may arrive as JSON text (per the contract) or as an already-parsed object. */
+function parseExtracted(json: unknown): [string, string][] {
   if (!json) return []
   try {
-    const data = JSON.parse(json)
+    const data = typeof json === 'string' ? JSON.parse(json) : json
     if (!data || typeof data !== 'object') return []
     return Object.entries(data)
       .filter(([, v]) => v !== null && v !== '' && v !== undefined)

@@ -1,92 +1,102 @@
-import { pool, rows } from "./pool";
+import { PoolClient } from "pg";
+import { one, run, transaction } from "./pool";
 import { seedDemoData } from "./seed";
 
-// delivery_at / call_at are stored as UTC wall-clock DATETIMEs (see utils/dbTime.ts).
 const ORDER_STATUSES = "'pending','scheduled','calling','confirmed','rescheduled','address_updated','no_answer','failed'";
 
-export async function initializeDatabase(): Promise<void> {
-  await pool.execute(`CREATE TABLE IF NOT EXISTS customers (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+/** Keeps updated_at current on every UPDATE (Postgres has no ON UPDATE CURRENT_TIMESTAMP). */
+const TOUCH_FUNCTION = `CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql`;
+
+async function createTables(db: PoolClient): Promise<void> {
+  await db.query(TOUCH_FUNCTION);
+
+  await db.query(`CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL PRIMARY KEY,
     name VARCHAR(160) NOT NULL,
     phone VARCHAR(20) NOT NULL UNIQUE,
-    language ENUM('en','pcm','yo','ha','ig') NOT NULL DEFAULT 'en',
+    language VARCHAR(10) NOT NULL DEFAULT 'en' CHECK (language IN ('en','pcm','yo','ha','ig')),
     best_time_to_call VARCHAR(120) NULL,
     address TEXT NULL,
     landmark VARCHAR(255) NULL,
-    consent_to_calls TINYINT(1) NOT NULL DEFAULT 0,
-    status ENUM('new','called','verified','no_answer') NOT NULL DEFAULT 'new',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-  ) ENGINE=InnoDB`);
+    consent_to_calls SMALLINT NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'new' CHECK (status IN ('new','called','verified','no_answer')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`);
 
-  await pool.execute(`CREATE TABLE IF NOT EXISTS orders (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    customer_id INT NOT NULL,
+  await db.query(`CREATE TABLE IF NOT EXISTS orders (
+    id SERIAL PRIMARY KEY,
+    customer_id INT NOT NULL REFERENCES customers(id),
     item VARCHAR(255) NOT NULL,
     seller VARCHAR(160) NOT NULL,
     address_on_file TEXT NOT NULL,
     cleaned_address TEXT NULL,
     landmark VARCHAR(255) NULL,
     delivery_window VARCHAR(160) NOT NULL,
-    delivery_at DATETIME NULL,
-    call_at DATETIME NULL,
+    delivery_at TIMESTAMPTZ NULL,
+    call_at TIMESTAMPTZ NULL,
     call_plan VARCHAR(40) NULL,
-    status ENUM(${ORDER_STATUSES}) NOT NULL DEFAULT 'pending',
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN (${ORDER_STATUSES})),
     reschedule_time VARCHAR(160) NULL,
     outcome_notes TEXT NULL,
     attempts INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES customers(id),
-    INDEX idx_orders_due (status, call_at)
-  ) ENGINE=InnoDB`);
-  await migrateOrderScheduling();
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`);
+  await db.query("CREATE INDEX IF NOT EXISTS idx_orders_due ON orders (status, call_at)");
 
-  await pool.execute(`CREATE TABLE IF NOT EXISTS calls (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    call_type ENUM('delivery','onboarding') NOT NULL,
-    customer_id INT NOT NULL,
-    order_id INT NULL,
+  // extracted_json is stored as JSON text, which is what the API contract returns.
+  await db.query(`CREATE TABLE IF NOT EXISTS calls (
+    id SERIAL PRIMARY KEY,
+    call_type VARCHAR(20) NOT NULL CHECK (call_type IN ('delivery','onboarding')),
+    customer_id INT NOT NULL REFERENCES customers(id),
+    order_id INT NULL REFERENCES orders(id),
     provider_call_id VARCHAR(160) NULL UNIQUE,
-    status ENUM('queued','in_progress','completed','failed') NOT NULL DEFAULT 'queued',
+    status VARCHAR(20) NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','in_progress','completed','failed')),
     outcome VARCHAR(40) NULL,
-    extracted_json JSON NULL,
-    transcript MEDIUMTEXT NULL,
+    extracted_json TEXT NULL,
+    transcript TEXT NULL,
     recording_url TEXT NULL,
     duration_seconds INT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_calls_customer FOREIGN KEY (customer_id) REFERENCES customers(id),
-    CONSTRAINT fk_calls_order FOREIGN KEY (order_id) REFERENCES orders(id),
-    INDEX idx_calls_customer_created (customer_id, created_at),
-    INDEX idx_calls_status (status)
-  ) ENGINE=InnoDB`);
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`);
+  await db.query("CREATE INDEX IF NOT EXISTS idx_calls_customer_created ON calls (customer_id, created_at)");
+  await db.query("CREATE INDEX IF NOT EXISTS idx_calls_status ON calls (status)");
 
-  const [{ total }] = await rows<{ total: number }>("SELECT COUNT(*) AS total FROM customers");
-  if (Number(total) === 0) await seedDemoData();
-}
-
-
-/**
- * Brings an orders table created before scheduling existed up to date.
- * CREATE TABLE IF NOT EXISTS never alters an existing table, so each change is checked and applied once.
- */
-async function migrateOrderScheduling(): Promise<void> {
-  const columns = await rows<{ name: string; type: string }>(
-    "SELECT COLUMN_NAME AS name, COLUMN_TYPE AS type FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders'"
-  );
-  const has = (name: string) => columns.some((c) => c.name === name);
-  if (!has("delivery_at")) await pool.execute("ALTER TABLE orders ADD COLUMN delivery_at DATETIME NULL AFTER delivery_window");
-  if (!has("call_at")) await pool.execute("ALTER TABLE orders ADD COLUMN call_at DATETIME NULL AFTER delivery_at");
-  if (!has("call_plan")) await pool.execute("ALTER TABLE orders ADD COLUMN call_plan VARCHAR(40) NULL AFTER call_at");
-
-  const status = columns.find((c) => c.name === "status");
-  if (status && !status.type.includes("'scheduled'")) {
-    await pool.execute(`ALTER TABLE orders MODIFY status ENUM(${ORDER_STATUSES}) NOT NULL DEFAULT 'pending'`);
+  for (const table of ["customers", "orders", "calls"]) {
+    await db.query(`CREATE OR REPLACE TRIGGER ${table}_updated_at BEFORE UPDATE ON ${table}
+      FOR EACH ROW EXECUTE FUNCTION set_updated_at()`);
   }
-
-  const [{ total }] = await rows<{ total: number }>(
-    "SELECT COUNT(*) AS total FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND INDEX_NAME = 'idx_orders_due'"
-  );
-  if (Number(total) === 0) await pool.execute("CREATE INDEX idx_orders_due ON orders (status, call_at)");
 }
+
+export async function initializeDatabase(): Promise<void> {
+  // An advisory lock makes concurrent cold starts wait instead of racing each other.
+  await transaction(async (db) => {
+    await db.query("SELECT pg_advisory_xact_lock(727374)");
+    await createTables(db);
+  });
+  const counted = await one<{ total: string }>("SELECT COUNT(*) AS total FROM customers");
+  if (Number(counted?.total ?? 0) === 0 && process.env.SEED_DEMO_DATA !== "false") await seedDemoData();
+}
+
+let ready: Promise<void> | null = null;
+
+/** Creates tables once per server instance; every request awaits the same promise. */
+export function ensureDatabase(): Promise<void> {
+  if (!ready) {
+    ready = initializeDatabase().catch((error: unknown) => {
+      ready = null; // let the next request try again
+      throw error;
+    });
+  }
+  return ready;
+}
+
+// Kept for scripts that want to know a query works before serving.
+export const pingDatabase = () => run("SELECT 1");

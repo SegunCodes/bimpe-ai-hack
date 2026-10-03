@@ -47,7 +47,12 @@ export async function startCall(input: StartCallInput): Promise<{ providerCallId
 
   const response = await fetch(`https://api.bimpe.ai/api/v1/console/agents/${encodeURIComponent(agentIdFor(input.callType))}/calls`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${env.bimpe.apiKey}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${env.bimpe.apiKey}`,
+      "Content-Type": "application/json",
+      // Same key for the same call record: a retried request can never ring the customer twice.
+      "Idempotency-Key": `tellero-call-${String(input.metadata.callId ?? randomUUID())}`
+    },
     body: JSON.stringify({ destination: input.phone, is_test_call: env.bimpe.isTestCall })
   });
 

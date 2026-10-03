@@ -1,18 +1,19 @@
-import { appEvents } from "../../events/appEvents";
 import { env } from "../../config/env";
 import { callsRepository } from "./calls.repository";
 import { applyCallResult } from "./callResults.service";
 
 const RANDOM_OUTCOMES = ["confirmed", "rescheduled", "address_updated", "no_answer"];
 
-/** Call once at startup. In mock mode, every started call gets a fake result after 6 seconds. */
-export function registerMockCalls(): void {
-  appEvents.on("call.started", (callId: number) => {
-    if (!env.mockCalls) return;
-    setTimeout(() => {
-      simulateMockResult(callId).catch((error: unknown) => console.error("Mock result failed:", error));
-    }, 6000).unref();
-  });
+export const MOCK_RESULT_AFTER_SECONDS = 6;
+
+/** Demo mode: every call that has been "ringing" for 6 seconds gets a fake result. Run by the tick. */
+export async function settleMockCalls(limit = 20): Promise<number> {
+  if (!env.mockCalls) return 0;
+  const due = await callsRepository.findMockDue(MOCK_RESULT_AFTER_SECONDS, limit);
+  for (const call of due) {
+    await simulateMockResult(call.id).catch((error: unknown) => console.error("Mock result failed:", error));
+  }
+  return due.length;
 }
 
 export async function simulateMockResult(callId: number, requestedOutcome?: string): Promise<void> {

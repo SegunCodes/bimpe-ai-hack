@@ -5,19 +5,19 @@ export const env = {
   port: Number(process.env.PORT || 3001),
   mockCalls: process.env.MOCK_CALLS === "true",
   scheduler: {
-    intervalMs: Number(process.env.SCHEDULER_INTERVAL_MS || 15_000),
     retryDelayMinutes: Number(process.env.RETRY_DELAY_MINUTES || 30),
     maxAttempts: Number(process.env.MAX_CALL_ATTEMPTS || 3)
   },
+  tick: {
+    /** Protects /api/cron/tick. Required in production. */
+    cronSecret: process.env.CRON_SECRET || "",
+    /** Local / always-on hosts: how often the background tick runs. */
+    intervalMs: Number(process.env.TICK_INTERVAL_MS || 5_000),
+    /** Minimum gap between ticks triggered by dashboard requests. */
+    minGapMs: Number(process.env.TICK_MIN_GAP_MS || 5_000)
+  },
   webhookSecret: process.env.WEBHOOK_SECRET || "",
   databaseUrl: process.env.DATABASE_URL || "",
-  db: {
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT),
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-  },
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY,
     model: process.env.ANTHROPIC_MODEL
@@ -27,6 +27,7 @@ export const env = {
     agentId: process.env.BIMPE_AGENT_ID,
     deliveryAgentId: process.env.BIMPE_DELIVERY_AGENT_ID,
     onboardingAgentId: process.env.BIMPE_ONBOARDING_AGENT_ID,
-    isTestCall: process.env.BIMPE_IS_TEST_CALL
+    // Test calls unless explicitly turned off. BimpeAI needs a real boolean, not the text "true".
+    isTestCall: process.env.BIMPE_IS_TEST_CALL !== "false"
   }
 };

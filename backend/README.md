@@ -1,10 +1,20 @@
-# BimpeAI Lagos Call Platform
+# Tellero call API
 
-A TypeScript/Express backend for delivery and onboarding calls. It stores customers, orders, and calls in MySQL. Set `MOCK_CALLS=true` to demo without contacting a phone.
+A TypeScript/Express backend for delivery and onboarding calls, placed through BimpeAI. It stores customers, orders, and calls in **Postgres (Neon)** and is built to run on **Vercel**. Set `MOCK_CALLS=true` to demo without contacting a phone.
+
+## How it runs
+
+- `src/app.ts` is the Express app. Vercel deploys its default export as one serverless function.
+- Serverless functions only run during a request, so all background work (starting scheduled calls, dialling queued calls, checking BimpeAI for finished calls, demo results) happens in one **tick**:
+  - `GET /api/cron/tick` (secret required) runs it. A free external cron calls it every minute.
+  - While the dashboard is open, its normal requests also start a tick at most every `TICK_MIN_GAP_MS`, so demos stay snappy.
+  - Every step claims rows atomically, so overlapping ticks never double-dial or double-record.
+- `src/local.ts` is for local development: a normal server plus a tick every `TICK_INTERVAL_MS`.
+- Tables are created automatically on the first request (and demo data is seeded into an empty database; set `SEED_DEMO_DATA=false` to skip).
 
 ## Run locally
 
-Prerequisites: Node.js 20+ and Docker Desktop.
+Prerequisites: Node.js 20+, and either Docker Desktop or a free Neon database.
 
 1. In this folder, create your local environment file:
 
@@ -12,22 +22,47 @@ Prerequisites: Node.js 20+ and Docker Desktop.
    cp .env.example .env
    ```
 
-2. Start MySQL (leave this terminal running):
+2. Database, pick one:
+   - Docker: `docker compose up -d postgres` (matches the default `DATABASE_URL`), or
+   - Neon: create a free project at neon.tech and paste its connection string into `DATABASE_URL`.
 
-   ```sh
-   docker compose up -d mysql
-   ```
-
-3. Install dependencies and run the app:
+3. Install and run:
 
    ```sh
    npm install
    npm run dev
    ```
 
-The API listens on `http://localhost:3001`. Tables and demo data are created on first boot. Seed data contains three customers and five orders.
+The API listens on `http://localhost:3001`.
 
-For live BimpeAI calls, set `MOCK_CALLS=false`, `BIMPE_API_KEY`, and either both playbook agent IDs or `BIMPE_AGENT_ID`. Keep `BIMPE_IS_TEST_CALL=true` until test telephony is verified. Restart the app after editing `.env`.
+## Deploy: Neon + Vercel + a free cron
+
+**1. Neon (database)**
+1. Create a project at [neon.tech](https://neon.tech) (region: pick the one closest to your Vercel region, e.g. Europe Frankfurt for Lagos traffic).
+2. Click **Connect**, choose the **pooled** connection, and copy the connection string (it starts with `postgresql://` and its host contains `-pooler`).
+
+**2. Vercel (API)**
+1. New Project → import the GitHub repo → **Root Directory: `backend`**. Framework preset: Express (detected automatically).
+2. Environment Variables:
+   - `DATABASE_URL` = the Neon pooled connection string
+   - `CRON_SECRET` = a long random value (e.g. from `openssl rand -hex 24`)
+   - `MOCK_CALLS` = `true` for demos (`false` with the BimpeAI settings below for real calls)
+   - BimpeAI: `BIMPE_API_KEY`, `BIMPE_DELIVERY_AGENT_ID`, `BIMPE_ONBOARDING_AGENT_ID`, `BIMPE_IS_TEST_CALL`, `WEBHOOK_SECRET`
+3. Deploy, then open `https://<your-api>.vercel.app/health`. You should see `{"ok":true,...}`.
+4. Set `PUBLIC_BASE_URL` to that address and redeploy.
+
+**3. Cron (every minute, free)**
+
+Vercel's free plan only allows cron jobs once a day, so use a free external scheduler such as [cron-job.org](https://cron-job.org):
+- URL: `https://<your-api>.vercel.app/api/cron/tick`
+- Schedule: every minute
+- Header: `Authorization: Bearer <your CRON_SECRET>` (or append `?key=<your CRON_SECRET>` to the URL if the service can't send headers)
+
+On Vercel Pro you can use Vercel Cron instead: add `"crons": [{ "path": "/api/cron/tick", "schedule": "* * * * *" }]` to a `vercel.json` in this folder; Vercel sends the `CRON_SECRET` header automatically.
+
+**4. Frontend**
+
+In the frontend's Vercel project set `NEXT_PUBLIC_API_URL` = `https://<your-api>.vercel.app/api` and redeploy it.
 
 ## Scheduled calls
 
@@ -39,15 +74,13 @@ Orders can carry a call time. The dashboard sends these extra fields on `POST /a
 | `call_at` | `2026-10-04T06:00:00.000Z` | when the AI should call |
 | `call_plan` | `2h_before` | the rule the owner picked (display only) |
 
-An order created with `call_at` gets status `scheduled`. Every `SCHEDULER_INTERVAL_MS` (default 15s) the scheduler finds scheduled orders whose `call_at` has passed, claims each one atomically (so nobody is called twice), and starts the call through the normal one-at-a-time queue. `call_at` in the past means "call on the next tick".
+An order created with `call_at` gets status `scheduled`. Each tick finds scheduled orders whose `call_at` has passed, claims each one atomically (so nobody is called twice), and dials it. `call_at` in the past means "call on the next tick" (within about a minute in production, or a few seconds while the dashboard is open).
 
 No answer: the order goes back to `scheduled` with `call_at` = now + `RETRY_DELAY_MINUTES` (default 30), until `MAX_CALL_ATTEMPTS` (default 3) calls have been made; after that it stays `no_answer`. Retries are stored in the database, so they survive a restart. A manual `POST /api/orders/:id/call` clears any pending scheduled time.
 
 For a quick demo of retries, set `RETRY_DELAY_MINUTES=1` in `.env`.
 
-Existing databases are upgraded automatically on start (the three columns, the `scheduled` status and an index are added if missing).
-
-Quick test (calls about 15 seconds later in mock mode):
+Quick test (calls on the next tick in mock mode):
 
 ```sh
 curl -X POST http://localhost:3001/api/orders -H 'Content-Type: application/json' -d "{\"customer_id\":1,\"item\":\"Phone case\",\"seller\":\"Lagos Gadgets\",\"address_on_file\":\"10 Admiralty Way, Lekki\",\"delivery_window\":\"Today 2pm-5pm\",\"call_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"call_plan\":\"now\"}"
@@ -98,5 +131,5 @@ Call IDs in `/api/dev/simulate-call-result` are the local integer `calls.id` val
 
 - The documented BimpeAI start-call endpoint has no per-call context fields. The agent must call `/api/agent-context?phone=...` (or use `call_id`) at call start. Agent tool availability and prompt updates are not documented; prompt update and transcript extraction remain stubs.
 - The webhook parser accepts common call ID/status/transcript fields defensively, but the actual event schema and signature mechanism must be verified. Unexpected payloads are logged and acknowledged with HTTP 200.
-- Finished-call fetch/polling is a TODO until BimpeAI provides its endpoint and response docs. Until then, live calls require webhooks for completion.
-- Delivery no-answer outcomes are retried by the scheduler (see below). The global queue starts one call at a time with a five-second minimum gap.
+- Live calls are checked against BimpeAI's get-call endpoint on every tick until they end (15-minute limit).
+- Delivery no-answer outcomes are retried by the scheduler (see above). Each call request to BimpeAI carries an `Idempotency-Key`, so a retried request can never ring a customer twice.

@@ -1,15 +1,15 @@
+# Optional local database (Postgres, same engine as Neon). Start with: docker compose up -d postgres
 services:
-  mysql:
-    image: mysql:8.4
+  postgres:
+    image: postgres:17
     environment:
-      MYSQL_ROOT_PASSWORD: root-local-password
-      MYSQL_DATABASE: bimpe_calls
-      MYSQL_USER: bimpe
-      MYSQL_PASSWORD: bimpe-local-password
+      POSTGRES_DB: tellero
+      POSTGRES_USER: tellero
+      POSTGRES_PASSWORD: tellero-local-password
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - bimpe_mysql_data:/var/lib/mysql
+      - tellero_pg_data:/var/lib/postgresql/data
 
 volumes:
-  bimpe_mysql_data:
+  tellero_pg_data:

@@ -1,4 +1,3 @@
-import { env } from "../../config/env";
 import { createCall } from "../calls/calls.service";
 import { ordersRepository } from "./orders.repository";
 
@@ -8,8 +7,7 @@ let running = false;
 /**
  * Every few seconds, start the delivery call for each order whose call_at has passed.
  * Each order is claimed atomically first, so overlapping ticks or a second server
- * instance can never call the same customer twice. Calls still go through the normal
- * one-at-a-time dial queue (createCall → calls.queue).
+ * instance can never call the same customer twice. createCall dials each one straight away.
  */
 export async function runSchedulerTick(): Promise<number> {
   if (running) return 0;
@@ -32,15 +30,4 @@ export async function runSchedulerTick(): Promise<number> {
     running = false;
   }
   return started;
-}
-
-/** Call once at startup. Runs immediately, then every SCHEDULER_INTERVAL_MS. */
-export function registerOrderScheduler(): void {
-  const tick = () => runSchedulerTick().catch((error: unknown) => console.error("Scheduler tick failed:", error));
-  void tick();
-  setInterval(tick, env.scheduler.intervalMs).unref();
-  console.log(
-    `Order scheduler on: checks every ${Math.round(env.scheduler.intervalMs / 1000)}s, ` +
-      `retries no-answers after ${env.scheduler.retryDelayMinutes} min, up to ${env.scheduler.maxAttempts} attempts.`
-  );
 }

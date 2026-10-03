@@ -2,16 +2,16 @@ import { Call, CallType } from "../../types/models";
 import { notFound } from "../../utils/errors";
 import { ordersRepository } from "../orders/orders.repository";
 import { callsRepository } from "./calls.repository";
-import { enqueueCall } from "./calls.queue";
+import { dispatchCall } from "./calls.dispatch";
 
-/** Creates a call record, marks the order as calling (delivery), and puts it in the dial queue. */
+/** Creates a call record, marks the order as calling (delivery), and dials it straight away. */
 export async function createCall(callType: CallType, customerId: number, orderId: number | null): Promise<Call> {
   const id = await callsRepository.insert(callType, customerId, orderId);
   const call = await callsRepository.findById(id);
   if (!call) throw new Error("Could not create call record");
   if (orderId !== null) await ordersRepository.markCalling(orderId);
-  enqueueCall(call.id);
-  return call;
+  await dispatchCall(call.id);
+  return (await callsRepository.findById(id)) ?? call;
 }
 
 export async function getCall(id: number): Promise<Call> {

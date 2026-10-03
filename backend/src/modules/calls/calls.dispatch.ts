@@ -1,29 +1,17 @@
 import { startCall } from "../../integrations/bimpeClient";
-import { appEvents } from "../../events/appEvents";
 import { normalizePhone } from "../../utils/phone";
 import { ordersRepository } from "../orders/orders.repository";
 import { callsRepository } from "./calls.repository";
 
-const GAP_MS = 5000;
-let queue: Promise<void> = Promise.resolve();
-let lastStartedAt = 0;
-
-const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
-
-/** Calls are dialled strictly one at a time, 5 seconds apart, so agent context never mixes. */
-export function enqueueCall(callId: number): void {
-  queue = queue.then(() => processCall(callId)).catch((error: unknown) => {
-    console.error("Call queue error:", error);
-  });
-}
-
-async function processCall(callId: number): Promise<void> {
-  const call = await callsRepository.findQueuedForDispatch(callId);
-  if (!call) return;
-
-  const delay = Math.max(0, GAP_MS - (Date.now() - lastStartedAt));
-  if (lastStartedAt > 0 && delay > 0) await wait(delay);
-  lastStartedAt = Date.now();
+/**
+ * Dials one queued call. Safe to call from anywhere, any number of times:
+ * the call is claimed atomically first, so only one request ever dials it.
+ * Replaces the old in-memory queue, which cannot survive on serverless hosting.
+ */
+export async function dispatchCall(callId: number): Promise<boolean> {
+  if (!(await callsRepository.claimQueued(callId))) return false;
+  const call = await callsRepository.findDispatchInfo(callId);
+  if (!call) return false;
 
   try {
     const { providerCallId } = await startCall({
@@ -40,11 +28,20 @@ async function processCall(callId: number): Promise<void> {
       metadata: { callId: call.id, customerId: call.customer_id, orderId: call.order_id }
     });
     await callsRepository.markInProgress(call.id, providerCallId);
-    // Mock mode fakes a result; real mode polls BimpeAI (see calls.poller.ts).
-    appEvents.emit("call.started", call.id);
+    return true;
   } catch (error) {
     console.error(`Could not start call ${call.id}:`, error);
     await callsRepository.markFailed(call.id);
     if (call.order_id !== null) await ordersRepository.markFailed(call.order_id, String(error));
+    return false;
   }
+}
+
+/** Dials up to `limit` waiting calls, oldest first, one after another. */
+export async function dispatchQueued(limit: number): Promise<number> {
+  let dialled = 0;
+  for (const id of await callsRepository.findQueuedIds(limit)) {
+    if (await dispatchCall(id)) dialled++;
+  }
+  return dialled;
 }

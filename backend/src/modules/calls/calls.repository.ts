@@ -18,8 +18,6 @@ export interface DispatchInfo {
 export const callsRepository = {
   findAll: () => rows<Call>("SELECT * FROM calls ORDER BY created_at DESC, id DESC"),
 
-  findInProgressWithProviderId: () => rows<Call>("SELECT * FROM calls WHERE status = 'in_progress' AND provider_call_id IS NOT NULL AND provider_call_id NOT LIKE 'mock-%'"),
-
   findById: (id: number) => one<Call>("SELECT * FROM calls WHERE id = ?", [id]),
 
   findByProviderId: (providerCallId: string) => one<Call>("SELECT * FROM calls WHERE provider_call_id = ?", [providerCallId]),
@@ -33,12 +31,50 @@ export const callsRepository = {
     return result.insertId;
   },
 
-  findQueuedForDispatch: (callId: number) => one<DispatchInfo>(`SELECT c.id, c.call_type, c.customer_id, c.order_id,
+  findDispatchInfo: (callId: number) => one<DispatchInfo>(`SELECT c.id, c.call_type, c.customer_id, c.order_id,
       cu.phone, cu.language, cu.name AS customer_name, o.item, o.seller,
       o.address_on_file, o.delivery_window
     FROM calls c JOIN customers cu ON cu.id = c.customer_id
     LEFT JOIN orders o ON o.id = c.order_id
-    WHERE c.id = ? AND c.status = 'queued'`, [callId]),
+    WHERE c.id = ?`, [callId]),
+
+  /** Oldest calls still waiting to be dialled. */
+  findQueuedIds: async (limit: number): Promise<number[]> =>
+    (await rows<{ id: number }>(`SELECT id FROM calls WHERE status = 'queued' ORDER BY created_at, id LIMIT ${Math.max(1, Math.floor(limit))}`)).map((r) => r.id),
+
+  /** Atomically takes a queued call so only one request ever dials it. */
+  async claimQueued(id: number): Promise<boolean> {
+    const result = await run("UPDATE calls SET status = 'in_progress' WHERE id = ? AND status = 'queued'", [id]);
+    return result.affectedRows === 1;
+  },
+
+  /** Demo mode: calls that have been "ringing" long enough to get a fake result. */
+  findMockDue: (olderThanSeconds: number, limit: number) =>
+    rows<{ id: number }>(
+      `SELECT id FROM calls WHERE status = 'in_progress' AND provider_call_id LIKE 'mock-%'
+       AND updated_at <= now() - make_interval(secs => ?) ORDER BY id LIMIT ${Math.max(1, Math.floor(limit))}`,
+      [olderThanSeconds]
+    ),
+
+  /** Live calls to ask BimpeAI about, least recently checked first. */
+  findLiveInProgress: (limit: number) =>
+    rows<Call>(
+      `SELECT * FROM calls WHERE status = 'in_progress' AND provider_call_id IS NOT NULL
+       AND provider_call_id NOT LIKE 'mock-%' ORDER BY updated_at LIMIT ${Math.max(1, Math.floor(limit))}`
+    ),
+
+  /** Calls claimed but never handed a provider id (the request died mid-dial). */
+  findStuckWithoutProvider: (olderThanSeconds: number) =>
+    rows<{ id: number; order_id: number | null }>(
+      `SELECT id, order_id FROM calls WHERE status = 'in_progress' AND provider_call_id IS NULL
+       AND updated_at <= now() - make_interval(secs => ?)`,
+      [olderThanSeconds]
+    ),
+
+  /** Marks that we just checked this call, so other calls get their turn next tick. */
+  touch: async (id: number): Promise<void> => {
+    await run("UPDATE calls SET updated_at = now() WHERE id = ?", [id]);
+  },
 
   markInProgress: async (id: number, providerCallId: string): Promise<void> => {
     await run("UPDATE calls SET provider_call_id = ?, status = 'in_progress' WHERE id = ?", [providerCallId, id]);
