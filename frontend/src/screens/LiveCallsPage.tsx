@@ -23,7 +23,7 @@ function FeedStats() {
 export function LiveCallsPage() {
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader title="Live calls" subtitle="Every call the AI makes, newest first. Updates every 3 seconds. Tap a call to read the transcript." />
+      <PageHeader title="Live calls" subtitle="Every call Tellero makes, newest first. Updates every 3 seconds. Tap a call to read the transcript." />
       <FeedStats />
       <LiveFeed />
     </div>

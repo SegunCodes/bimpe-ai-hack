@@ -141,7 +141,7 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
         <p className="text-base text-slate-600">
           Columns needed: <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm">{ORDER_CSV_COLUMNS.join(', ')}</code>. Optional:{' '}
           <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm">{ORDER_CSV_OPTIONAL.join(', ')}</code> (time defaults to 9am, Lagos time).{' '}
-          <a href={sampleHref} download="sample-orders.csv" className="font-semibold text-accent-600 underline">
+          <a href={sampleHref} download="sample-orders.csv" className="font-semibold text-ink underline decoration-danfo decoration-2 underline-offset-4">
             Download a sample
           </a>
         </p>
@@ -157,7 +157,7 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
         {rows && (
           <>
             <label className="block">
-              <span className="mb-1.5 block text-sm font-semibold text-slate-700">When should the AI call? (applies to every order in this file)</span>
+              <span className="mb-1.5 block text-sm font-semibold text-slate-700">When should Tellero call? (applies to every order in this file)</span>
               <select className={inputClass} value={plan} onChange={(e) => setPlan(e.target.value)}>
                 {CALL_PLANS.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -170,7 +170,7 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
               <span className="rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-800">{valid.length} ready</span>
               {invalid.length > 0 && <span className="rounded-full bg-red-100 px-3 py-1 font-semibold text-red-800">{invalid.length} will be skipped</span>}
             </div>
-            <div className="max-h-72 overflow-auto rounded-2xl ring-1 ring-slate-200">
+            <div className="max-h-72 overflow-auto rounded-2xl ring-1 ring-ink/10">
               <table className="w-full text-left text-sm">
                 <thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
@@ -178,7 +178,7 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
                     <th className="px-3 py-2">Phone</th>
                     <th className="px-3 py-2">Item</th>
                     <th className="px-3 py-2">Delivery</th>
-                    <th className="px-3 py-2">AI calls</th>
+                    <th className="px-3 py-2">Tellero calls</th>
                   </tr>
                 </thead>
                 <tbody>

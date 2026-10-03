@@ -10,9 +10,9 @@ import { PhoneIcon } from './Icons'
 import { EASE_IN_OUT } from './Overlay'
 
 const tabs = [
-  { href: '/', label: 'Orders' },
-  { href: '/customers', label: 'Customers' },
-  { href: '/calls', label: 'Live Calls' },
+  { href: '/dashboard', label: 'Orders' },
+  { href: '/dashboard/customers', label: 'Customers' },
+  { href: '/dashboard/calls', label: 'Live Calls' },
 ]
 
 export function DashboardShell({ children }: { children: ReactNode }) {
@@ -21,34 +21,34 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur-md">
+      <header className="sticky top-0 z-30 bg-ink text-white shadow-[0_8px_24px_-12px_rgb(11_18_32/0.6)]">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-b from-accent-500 to-accent-700 text-white shadow-md shadow-accent-600/30">
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-danfo text-ink">
               <PhoneIcon className="h-5 w-5" />
             </div>
             <div className="leading-tight">
-              <div className="text-xl font-extrabold tracking-tight">Bimpe</div>
-              <div className="text-xs font-medium text-slate-500">AI delivery calls · Lagos</div>
+              <div className="font-display text-xl font-bold tracking-tight text-white">Tellero</div>
+              <div className="text-xs font-medium text-white/55">AI delivery calls · Lagos</div>
             </div>
           </Link>
 
           <nav className="order-last flex w-full gap-1 overflow-x-auto sm:order-none sm:w-auto">
             {tabs.map((t) => {
-              const active = t.href === '/' ? pathname === '/' : pathname.startsWith(t.href)
+              const active = t.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(t.href)
               return (
                 <Link
                   key={t.href}
                   href={t.href}
                   className={`btn relative whitespace-nowrap rounded-xl px-4 py-2 text-base font-semibold ${
-                    active ? 'text-accent-700' : 'text-slate-600 hover:text-slate-900'
+                    active ? 'text-ink' : 'text-white/70 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   {/* The highlight slides from the old tab to the new one */}
                   {active && (
                     <motion.span
                       layoutId="nav-pill"
-                      className="absolute inset-0 rounded-xl bg-accent-50 ring-1 ring-accent-100"
+                      className="absolute inset-0 rounded-xl bg-danfo"
                       transition={{ duration: 0.25, ease: EASE_IN_OUT }}
                     />
                   )}
@@ -60,12 +60,12 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
           <div className="ml-auto flex items-center gap-2">
             {mockMode && (
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-900 ring-1 ring-amber-300">Demo mode</span>
+              <span className="rounded-full bg-danfo/15 px-3 py-1 text-sm font-bold text-danfo ring-1 ring-danfo/40">Demo mode</span>
             )}
             {checked && (
               <span
                 className={`badge inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ring-1 ${
-                  online ? 'bg-emerald-50 text-emerald-800 ring-emerald-200' : 'bg-red-50 text-red-800 ring-red-200'
+                  online ? 'bg-emerald-400/15 text-emerald-300 ring-emerald-400/30' : 'bg-red-500/20 text-red-200 ring-red-400/40'
                 }`}
               >
                 <span className="relative flex h-2 w-2">
@@ -75,7 +75,10 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                 {online ? 'Live' : 'Offline'}
               </span>
             )}
-            <a href="/join" target="_blank" rel="noreferrer" className="btn btn-ghost hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-500 md:inline">
+            <Link href="/" className="btn hidden rounded-xl px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white md:inline">
+              Website
+            </Link>
+            <a href="/join" target="_blank" rel="noreferrer" className="btn hidden rounded-xl px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white md:inline">
               Signup page ↗
             </a>
           </div>
@@ -97,8 +100,8 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-1 text-base text-slate-500">{subtitle}</p>}
+        <h1 className="font-display text-4xl font-bold tracking-[-0.02em] text-ink">{title}</h1>
+        {subtitle && <p className="mt-1.5 text-base text-ink-soft">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
@@ -107,9 +110,9 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 
 export function StatCard({ label, value, tone = 'text-slate-900' }: { label: string; value: number | string; tone?: string }) {
   return (
-    <div className="rounded-3xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
-      <div className="text-sm font-semibold text-slate-500">{label}</div>
-      <div className={`mt-1 text-3xl font-extrabold tabular-nums ${tone}`}>{value}</div>
+    <div className="rounded-[28px] bg-white px-5 py-4 shadow-sm ring-1 ring-ink/10">
+      <div className="text-sm font-semibold text-ink-soft">{label}</div>
+      <div className={`mt-1 font-display text-4xl font-bold tabular-nums ${tone}`}>{value}</div>
     </div>
   )
 }

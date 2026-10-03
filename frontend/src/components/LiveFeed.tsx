@@ -49,7 +49,7 @@ export function LiveFeed({ compact, limit }: { compact?: boolean; limit?: number
     <div>
       {error && <StaleBanner message={error} />}
       {calls.length === 0 ? (
-        <EmptyState title="No calls yet" hint="Calls show up here the moment the AI dials. Scheduled orders call on their own." />
+        <EmptyState title="No calls yet" hint="Calls show up here the moment Tellero dials. Scheduled orders call on their own." />
       ) : (
         <motion.ul layoutRoot className={`flex flex-col ${compact ? 'gap-2' : 'gap-3'}`}>
           {/* initial={false}: no entrance on page load, only for calls that arrive while watching */}
@@ -70,7 +70,7 @@ export function LiveFeed({ compact, limit }: { compact?: boolean; limit?: number
                 <button
                   onClick={() => setOpenId(call.id)}
                   className={`btn card-hover flex w-full items-center gap-4 rounded-3xl bg-white text-left shadow-sm ring-1 ${changed.has(call.id) ? 'animate-flash' : ''} ${
-                    active ? 'ring-2 ring-blue-300' : 'ring-slate-200'
+                    active ? 'ring-2 ring-blue-300' : 'ring-ink/10'
                   } ${compact ? 'p-3.5' : 'p-5'}`}
                 >
                   <div

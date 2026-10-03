@@ -66,7 +66,7 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
         className={`relative max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl sm:p-8 ${wide ? 'sm:max-w-3xl' : 'sm:max-w-lg'}`}
       >
         <div className="mb-6 flex items-start justify-between gap-4">
-          <h2 className="text-2xl font-bold">{title}</h2>
+          <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-ink">{title}</h2>
           <CloseButton onClose={onClose} />
         </div>
         {children}
@@ -87,7 +87,7 @@ export function Drawer({ onClose, children }: { onClose: () => void; children: R
         initial={{ transform: 'translateX(100%)' }}
         animate={{ transform: 'translateX(0%)', transition: { duration: 0.45, ease: EASE_DRAWER } }}
         exit={{ transform: 'translateX(100%)', transition: { duration: 0.3, ease: EASE_DRAWER } }}
-        className="relative h-full w-full max-w-3xl overflow-y-auto bg-slate-50 shadow-2xl"
+        className="relative h-full w-full max-w-3xl overflow-y-auto bg-paper shadow-2xl"
       >
         <div className="absolute right-4 top-4 z-10">
           <CloseButton onClose={onClose} />
@@ -138,7 +138,7 @@ export function Segmented<T extends string>({
           {value === o.value && (
             <motion.span
               layoutId={`seg-${id}`}
-              className="absolute inset-0 rounded-xl bg-white shadow-sm ring-1 ring-slate-200"
+              className="absolute inset-0 rounded-xl bg-white shadow-sm ring-1 ring-ink/10"
               transition={{ duration: 0.25, ease: EASE_IN_OUT }}
             />
           )}

@@ -99,7 +99,7 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
         call_at: callAt.toISOString(),
         call_plan: plan,
       })
-      toast.success(`Order added. The AI will call ${plan === 'now' ? 'right away' : friendlyWhen(callAt)}`)
+      toast.success(`Order added. Tellero will call ${plan === 'now' ? 'right away' : friendlyWhen(callAt)}`)
       onCreated()
       onClose()
     } catch (err) {
@@ -156,7 +156,7 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
           <textarea className={inputClass} rows={2} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="12 Admiralty Way, Lekki Phase 1" />
         </Field>
 
-        <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200 sm:p-5">
+        <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-ink/10 sm:p-5">
           <div className="flex flex-col gap-4">
             <Field label="Delivery date">
               <input type="date" className={inputClass} value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
@@ -179,7 +179,7 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
                 ))}
               </div>
             </div>
-            <Field label="When should the AI call?">
+            <Field label="When should Tellero call?">
               <select className={inputClass} value={plan} onChange={(e) => setPlan(e.target.value)}>
                 {CALL_PLANS.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -189,11 +189,11 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
               </select>
             </Field>
             {schedule && (
-              <p className="rounded-2xl bg-accent-50 px-4 py-3 text-base text-accent-700">
-                📞 The AI will call {customerName || 'the customer'}{' '}
+              <p className="rounded-2xl bg-danfo-soft px-4 py-3 text-base text-ink ring-1 ring-danfo/50">
+                📞 Tellero will call {customerName || 'the customer'}{' '}
                 <span className="font-bold">{plan === 'now' || schedule.late ? 'right away' : friendlyWhen(schedule.callAt)}</span>
                 {schedule.late && plan !== 'now' && <span className="block text-sm">(that time has already passed)</span>}
-                <span className="block text-sm text-accent-700/80">If they don't pick up, it tries again twice, 30 minutes apart.</span>
+                <span className="block text-sm text-ink-soft">If they don't pick up, it tries again twice, 30 minutes apart.</span>
               </p>
             )}
           </div>

@@ -55,7 +55,7 @@ export function CustomersPage() {
     <>
       <PageHeader
         title="Customers"
-        subtitle="People the AI onboards: it confirms address, landmark, language and the best time to call."
+        subtitle="People Tellero onboards: it confirms address, landmark, language and the best time to call."
         actions={
           <Button variant="secondary" onClick={() => setAdding(true)} icon={<PlusIcon />}>
             Add customer
@@ -64,7 +64,7 @@ export function CustomersPage() {
       />
 
       {error && customers && <StaleBanner message={error} />}
-      <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-ink/10">
         {loading && !customers ? (
           <LoadingState label="Loading customers…" />
         ) : error && !customers ? (

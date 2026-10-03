@@ -1,0 +1,1175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Tellero · hero film</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* Brand display face, embedded locally (OFL). Same subsets the marketing site ships. */
+      @font-face {
+        font-family: "Bricolage Grotesque";
+        font-weight: 200 800;
+        font-style: normal;
+        src: url("assets/fonts/bricolage-latin.woff2") format("woff2");
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: "Bricolage Grotesque";
+        font-weight: 200 800;
+        font-style: normal;
+        src: url("assets/fonts/bricolage-latin-ext.woff2") format("woff2");
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+      @font-face {
+        font-family: "Bricolage Grotesque";
+        font-weight: 200 800;
+        font-style: normal;
+        src: url("assets/fonts/bricolage-vietnamese.woff2") format("woff2");
+        unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+      }
+
+      :root {
+        --ink: #0b1220;
+        --raised: #151e30;
+        --raised-2: #1f2a40;
+        --paper: #f4f5f8;
+        --muted: #9aa3b5;
+        --danfo: #ffc20e;
+        --indigo: #6366f1;
+        --green: #16a34a;
+        --red: #ef4444;
+        --purple: #a855f7;
+        --blue: #3b82f6;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--ink);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: Inter, sans-serif;
+        color: var(--paper);
+      }
+      .display {
+        font-family: "Bricolage Grotesque", Inter, sans-serif;
+        letter-spacing: -0.035em;
+      }
+      .mono {
+        font-family: "JetBrains Mono", monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 24px;
+        color: var(--muted);
+      }
+      .scene {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--ink);
+      }
+      #s1 { z-index: 1; }
+      #s2 { z-index: 2; opacity: 0; }
+      #s3 { z-index: 3; opacity: 0; }
+      #s4 { z-index: 4; opacity: 0; }
+      #s5 { z-index: 5; opacity: 0; }
+
+      .glow {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+      .grain {
+        position: absolute;
+        inset: -40px;
+        opacity: 0.14;
+        mix-blend-mode: overlay;
+        pointer-events: none;
+      }
+      .caret {
+        display: inline-block;
+        width: 6px;
+        height: 0.95em;
+        margin-left: 6px;
+        vertical-align: -0.1em;
+        background: var(--danfo);
+        border-radius: 2px;
+      }
+
+      /* ---------- Scene 1: the vague address ---------- */
+      #s1-map {
+        position: absolute;
+        inset: 0;
+      }
+      #s1-ghost {
+        position: absolute;
+        right: 70px;
+        top: 40px;
+        font-size: 980px;
+        line-height: 1;
+        font-weight: 800;
+        color: rgba(255, 194, 14, 0.1);
+      }
+      #s1-card {
+        position: absolute;
+        left: 140px;
+        top: 300px;
+        width: 1180px;
+      }
+      #s1-label {
+        color: var(--danfo);
+        margin-bottom: 26px;
+      }
+      #s1-address {
+        font-size: 92px;
+        line-height: 1.08;
+        font-weight: 700;
+        color: var(--paper);
+        min-height: 300px;
+      }
+      #s1-a,
+      #s1-c {
+        display: block;
+      }
+      #s1-vague {
+        position: relative;
+        display: inline-block;
+      }
+      #s1-circle {
+        position: absolute;
+        overflow: visible;
+        pointer-events: none;
+      }
+      #s1-stamp {
+        position: absolute;
+        width: 112px;
+        height: 112px;
+        border-radius: 50%;
+        background: var(--red);
+        color: var(--paper);
+        font-size: 76px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 16px 40px rgba(239, 68, 68, 0.45);
+      }
+      #s1-meta-top {
+        position: absolute;
+        left: 140px;
+        top: 120px;
+        display: flex;
+        gap: 36px;
+      }
+      #s1-meta-bottom {
+        position: absolute;
+        left: 140px;
+        bottom: 110px;
+        display: flex;
+        gap: 36px;
+      }
+      .live-dot {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--danfo);
+        margin-right: 12px;
+        vertical-align: 0;
+      }
+
+      /* ---------- Scene 2: kinetic beats ---------- */
+      .beat {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      .beat-line {
+        font-size: 132px;
+        font-weight: 800;
+        line-height: 1.02;
+        max-width: 1640px;
+      }
+      .beat-line .w {
+        display: inline-block;
+        margin-right: 0.22em;
+      }
+      #s2-b2 .beat-line {
+        position: relative;
+      }
+      #s2-strike {
+        position: absolute;
+        left: 0;
+        top: 54%;
+        height: 14px;
+        width: 100%;
+        background: var(--red);
+        border-radius: 8px;
+        transform-origin: 0 50%;
+      }
+      #s2-strike-wrap {
+        position: relative;
+        display: inline-block;
+      }
+      #s2-bimpe {
+        position: relative;
+        isolation: isolate;
+        display: inline-block;
+        color: var(--ink);
+        padding: 0 0.12em;
+        margin-right: 0.22em;
+      }
+      #s2-bimpe-box {
+        position: absolute;
+        inset: 0.06em -0.02em 0.02em -0.02em;
+        background: var(--danfo);
+        border-radius: 18px;
+        transform-origin: 0 50%;
+      }
+      #s2-bimpe-text {
+        position: relative;
+      }
+      #s2-tile {
+        width: 168px;
+        height: 168px;
+        border-radius: 48px;
+        background: var(--danfo);
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 64px;
+        box-shadow: 0 30px 70px rgba(255, 194, 14, 0.35);
+      }
+      .rule {
+        position: absolute;
+        left: 140px;
+        right: 140px;
+        height: 3px;
+        background: rgba(244, 245, 248, 0.16);
+        transform-origin: 0 50%;
+      }
+      #s2-meta-l,
+      #s2-meta-r {
+        position: absolute;
+        top: 80px;
+      }
+      #s2-meta-l { left: 140px; }
+      #s2-meta-r { right: 140px; }
+
+      /* ---------- Scene 3: the call ---------- */
+      #s3-stage {
+        position: absolute;
+        inset: 0;
+        transform-origin: 74% 52%;
+      }
+      #s3-top {
+        position: absolute;
+        left: 120px;
+        top: 70px;
+        color: var(--danfo);
+      }
+      #s3-call {
+        position: absolute;
+        left: 120px;
+        top: 140px;
+        width: 960px;
+        height: 830px;
+        border-radius: 40px;
+        background: var(--raised);
+        border: 3px solid rgba(244, 245, 248, 0.08);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      #s3-thread-clip {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+      #s3-call-head {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        padding: 34px 40px;
+        border-bottom: 3px solid rgba(244, 245, 248, 0.08);
+      }
+      .mark {
+        flex: none;
+        width: 84px;
+        height: 84px;
+        border-radius: 26px;
+        background: var(--danfo);
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        font-weight: 800;
+      }
+      #s3-who {
+        flex: 1;
+      }
+      #s3-who-name {
+        font-size: 40px;
+        font-weight: 700;
+      }
+      #s3-who-sub {
+        margin-top: 6px;
+        white-space: nowrap;
+        font-size: 20px;
+      }
+      #s3-wave {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        height: 70px;
+      }
+      #s3-wave span {
+        display: block;
+        width: 8px;
+        height: 70px;
+        border-radius: 6px;
+        background: var(--danfo);
+      }
+      #s3-thread {
+        padding: 34px 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .bubble {
+        max-width: 78%;
+        padding: 20px 28px;
+        border-radius: 30px;
+        font-size: 34px;
+        line-height: 1.32;
+      }
+      .bubble.agent {
+        align-self: flex-start;
+        background: var(--raised-2);
+        border-top-left-radius: 10px;
+        color: var(--paper);
+      }
+      .bubble.cust {
+        align-self: flex-end;
+        background: var(--danfo);
+        color: var(--ink);
+        border-top-right-radius: 10px;
+        font-weight: 700;
+      }
+      .who-tag {
+        display: block;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 18px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        opacity: 0.6;
+        margin-bottom: 6px;
+        font-weight: 400;
+      }
+      #s3-card {
+        position: absolute;
+        left: 1130px;
+        top: 140px;
+        width: 680px;
+        height: 830px;
+        border-radius: 40px;
+        background: var(--paper);
+        color: var(--ink);
+        padding: 44px 48px;
+        box-shadow: 0 40px 90px rgba(0, 0, 0, 0.45);
+      }
+      #s3-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+      }
+      #s3-card .k {
+        font-size: 24px;
+        font-weight: 700;
+        color: #5b6577;
+      }
+      #s3-item {
+        font-size: 50px;
+        font-weight: 800;
+        line-height: 1.05;
+        margin-top: 6px;
+      }
+      #s3-for {
+        font-size: 26px;
+        color: #5b6577;
+        margin-top: 10px;
+      }
+      #s3-badges {
+        position: relative;
+        width: 270px;
+        height: 60px;
+        flex: none;
+      }
+      .badge {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 60px;
+        padding: 0 24px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 26px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .badge i {
+        display: block;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+      }
+      #b-sched { background: #e0e7ff; color: #3730a3; }
+      #b-sched i { background: var(--indigo); }
+      #b-call { background: #dbeafe; color: #1e40af; }
+      #b-call i { background: var(--blue); }
+      #b-upd { background: #f3e8ff; color: #6b21a8; }
+      #b-upd i { background: var(--purple); }
+      #s3-dash {
+        border-top: 3px dashed rgba(11, 18, 32, 0.15);
+        margin: 34px 0 26px;
+      }
+      .field {
+        margin-bottom: 30px;
+      }
+      .field .v {
+        font-size: 32px;
+        margin-top: 6px;
+        line-height: 1.25;
+      }
+      #s3-old {
+        position: relative;
+        display: inline-block;
+        color: var(--ink);
+      }
+      #s3-old-strike {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 52%;
+        height: 5px;
+        background: var(--red);
+        border-radius: 4px;
+        transform-origin: 0 50%;
+      }
+      #s3-new {
+        font-weight: 800;
+        min-height: 40px;
+      }
+      #s3-landmark {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      #s3-pin {
+        flex: none;
+      }
+      #s3-ready {
+        position: absolute;
+        left: 48px;
+        right: 48px;
+        bottom: 44px;
+        height: 96px;
+        border-radius: 28px;
+        background: var(--green);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        font-size: 38px;
+        font-weight: 800;
+        box-shadow: 0 20px 50px rgba(22, 163, 74, 0.4);
+      }
+
+      /* ---------- Scene 4: every order, every language ---------- */
+      #s4-head {
+        position: absolute;
+        left: 140px;
+        top: 180px;
+        width: 840px;
+      }
+      #s4-head .l {
+        font-size: 100px;
+        white-space: nowrap;
+        font-weight: 800;
+        line-height: 1.02;
+        display: block;
+      }
+      #s4-head .l2 {
+        color: var(--danfo);
+      }
+      #s4-chips {
+        position: absolute;
+        left: 140px;
+        top: 460px;
+        width: 780px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+      }
+      .chip {
+        position: relative;
+        height: 84px;
+        padding: 0 34px;
+        border-radius: 999px;
+        background: var(--raised);
+        border: 3px solid rgba(244, 245, 248, 0.1);
+        display: flex;
+        align-items: center;
+        font-size: 36px;
+        font-weight: 700;
+      }
+      #s4-hello {
+        position: absolute;
+        left: 140px;
+        top: 720px;
+        width: 780px;
+        height: 150px;
+      }
+      .hello {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 760px;
+        font-size: 44px;
+        line-height: 1.25;
+        font-weight: 700;
+        color: var(--paper);
+      }
+      #s4-board {
+        position: absolute;
+        left: 1000px;
+        top: 150px;
+        width: 800px;
+        height: 790px;
+        border-radius: 40px;
+        background: var(--paper);
+        color: var(--ink);
+        padding: 40px 44px;
+        box-shadow: 0 40px 90px rgba(0, 0, 0, 0.45);
+      }
+      #s4-board-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 18px;
+      }
+      #s4-board-title {
+        font-size: 40px;
+        font-weight: 800;
+      }
+      #s4-count {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--green);
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        height: 104px;
+        border-top: 3px solid rgba(11, 18, 32, 0.07);
+      }
+      .row .who {
+        flex: 1;
+        min-width: 0;
+      }
+      .row .n {
+        font-size: 32px;
+        font-weight: 700;
+      }
+      .row .it {
+        font-size: 24px;
+        color: #5b6577;
+        margin-top: 2px;
+      }
+      .pill {
+        position: relative;
+        width: 280px;
+        height: 56px;
+        flex: none;
+      }
+      .pill > span {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 56px;
+        padding: 0 22px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 24px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .pill i {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: block;
+      }
+      .p-sched { background: #e0e7ff; color: #3730a3; }
+      .p-sched i { background: var(--indigo); }
+      .p-call { background: #dbeafe; color: #1e40af; }
+      .p-call i { background: var(--blue); }
+      .p-conf { background: #dcfce7; color: #166534; }
+      .p-conf i { background: var(--green); }
+      .p-resc { background: #fef3c7; color: #92400e; }
+      .p-resc i { background: #f59e0b; }
+      .p-upd { background: #f3e8ff; color: #6b21a8; }
+      .p-upd i { background: var(--purple); }
+
+      /* ---------- Scene 5: lockup ---------- */
+      #s5-lock {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      #s5-row {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 48px;
+        height: 240px;
+      }
+      #s5-mark-wrap {
+        position: relative;
+        width: 220px;
+        height: 220px;
+        flex: none;
+      }
+      .ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 64px;
+        border: 5px solid var(--danfo);
+      }
+      #s5-mark {
+        position: absolute;
+        inset: 0;
+        border-radius: 64px;
+        background: var(--danfo);
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 40px 100px rgba(255, 194, 14, 0.35);
+      }
+      #s5-word-clip {
+        overflow: hidden;
+        height: 240px;
+        display: flex;
+        align-items: center;
+      }
+      #s5-word {
+        font-size: 230px;
+        font-weight: 800;
+        line-height: 1;
+        color: var(--paper);
+      }
+      #s5-tag {
+        margin-top: 70px;
+        font-size: 64px;
+        font-weight: 700;
+        min-height: 80px;
+        color: var(--paper);
+      }
+      #s5-sub {
+        margin-top: 26px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="30" data-width="1920" data-height="1080">
+      <!-- Shared grain texture (static SVG noise, deterministic) -->
+      <svg width="0" height="0" style="position: absolute">
+        <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" /><feColorMatrix type="saturate" values="0" /></filter>
+      </svg>
+
+      <!-- ================= SCENE 1 ================= -->
+      <div id="s1" class="scene">
+        <div class="glow" id="s1-glow" data-layout-allow-overflow style="left: 1100px; top: 260px; width: 1100px; height: 1100px; background: radial-gradient(circle, rgba(255, 194, 14, 0.18), rgba(255, 194, 14, 0) 65%)"></div>
+        <div id="s1-ghost" class="display" aria-hidden="true" data-layout-ignore>?</div>
+        <svg id="s1-map" viewBox="0 0 1920 1080" width="1920" height="1080">
+          <g id="s1-streets" data-layout-allow-overflow stroke="rgba(244,245,248,0.12)" stroke-width="4" fill="none" stroke-linecap="round">
+            <path d="M1180 -20 L1300 1100" />
+            <path d="M1460 -20 L1520 1100" />
+            <path d="M1720 -20 L1640 1100" />
+            <path d="M1000 260 C1300 300 1600 220 1960 260" />
+            <path d="M1000 560 C1350 600 1600 520 1960 580" />
+            <path d="M1000 860 C1300 820 1650 900 1960 840" />
+            <path d="M1300 420 L1500 700" stroke-width="3" />
+            <path d="M1560 120 L1760 420" stroke-width="3" />
+          </g>
+          <path id="s1-route" d="M1240 980 C1260 820 1320 720 1420 700 C1560 672 1600 560 1520 500 C1430 432 1350 520 1420 590 C1500 670 1700 640 1700 520 C1700 400 1560 360 1480 300 C1420 254 1470 180 1560 200" fill="none" stroke="#ffc20e" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 16" opacity="0.85" />
+          <circle id="s1-rider-halo" cx="1240" cy="980" r="34" fill="rgba(255,194,14,0.25)" />
+          <circle id="s1-rider" cx="1240" cy="980" r="16" fill="#ffc20e" />
+        </svg>
+
+        <div id="s1-meta-top" class="mono"><span><span class="live-dot"></span>Order #4471 · out for delivery</span></div>
+
+        <div id="s1-card">
+          <div id="s1-label" class="mono">Deliver to</div>
+          <div id="s1-address" class="display"><span id="s1-a"></span><span id="s1-vague"></span><span id="s1-c-wrap" style="display:block"><span id="s1-c2"></span><span class="caret" id="s1-caret"></span></span></div>
+          <svg id="s1-circle"><ellipse id="s1-ellipse" fill="none" stroke="#ef4444" stroke-width="7" stroke-linecap="round" /></svg>
+          <div id="s1-stamp" class="display">?</div>
+        </div>
+
+        <div id="s1-meta-bottom" class="mono"><span>Rider 07</span><span>Lekki Phase 1</span><span>Stop 3 of 9</span></div>
+        <div class="grain" style="filter: url(#noise)"></div>
+      </div>
+
+      <!-- ================= SCENE 2 ================= -->
+      <div id="s2" class="scene">
+        <div class="glow" id="s2-glow" data-layout-allow-overflow style="left: 410px; top: -260px; width: 1100px; height: 1100px; background: radial-gradient(circle, rgba(255, 194, 14, 0.14), rgba(255, 194, 14, 0) 62%)"></div>
+        <div class="rule" id="s2-rule-t" style="top: 150px"></div>
+        <div class="rule" id="s2-rule-b" style="bottom: 150px"></div>
+        <div id="s2-meta-l" class="mono">14:52 · rider en route</div>
+        <div id="s2-meta-r" class="mono">ETA 10 min</div>
+
+        <div class="beat" id="s2-b1">
+          <div class="beat-line display"><span class="w">The</span><span class="w">rider</span><span class="w">is</span><span class="w">10</span><span class="w">minutes</span><span class="w">away.</span></div>
+        </div>
+        <div class="beat" id="s2-b2">
+          <div class="beat-line display"><span class="w">Nobody</span><span id="s2-strike-wrap" class="w">called first.<span id="s2-strike"></span></span></div>
+        </div>
+        <div class="beat" id="s2-b3">
+          <div id="s2-tile">
+            <svg width="84" height="84" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" /></svg>
+          </div>
+          <div class="beat-line display"><span id="s2-bimpe"><span id="s2-bimpe-box"></span><span id="s2-bimpe-text">Tellero</span></span><span class="w" id="s2-cf1">calls</span><span class="w" id="s2-cf2">first.</span></div>
+        </div>
+        <div class="grain" style="filter: url(#noise)"></div>
+      </div>
+
+      <!-- ================= SCENE 3 ================= -->
+      <div id="s3" class="scene">
+        <div class="glow" id="s3-glow" data-layout-allow-overflow style="left: 1000px; top: 120px; width: 1100px; height: 1100px; background: radial-gradient(circle, rgba(255, 194, 14, 0.14), rgba(255, 194, 14, 0) 62%)"></div>
+        <div id="s3-stage">
+          <div id="s3-top" class="mono">Called automatically · 2 hours before delivery</div>
+          <div id="s3-call">
+            <div id="s3-call-head">
+              <div class="mark display">T</div>
+              <div id="s3-who">
+                <div id="s3-who-name">Tellero → Tunde B.</div>
+                <div id="s3-who-sub" class="mono"><span id="s3-state">Ringing…</span> · Pidgin · <span id="s3-timer">0:00</span></div>
+              </div>
+              <div id="s3-wave"></div>
+            </div>
+            <div id="s3-thread-clip"><div id="s3-thread">
+              <div class="bubble agent" id="m1"><span class="who-tag">Tellero</span>Good afternoon sir, na Tellero dey call from Mama Nkechi Fabrics.</div>
+              <div class="bubble cust" id="m2"><span class="who-tag">Tunde</span>Ah, my Ankara don reach?</div>
+              <div class="bubble agent" id="m3"><span class="who-tag">Tellero</span>Abeg, which number be the house?</div>
+              <div class="bubble cust" id="m4"><span class="who-tag">Tunde</span>Plot 4, Bode Thomas Street.</div>
+              <div class="bubble agent" id="m5"><span class="who-tag">Tellero</span>Any landmark the rider fit see?</div>
+              <div class="bubble cust" id="m6"><span class="who-tag">Tunde</span>Opposite Mobil filling station.</div>
+            </div></div>
+          </div>
+
+          <div id="s3-card">
+            <div id="s3-card-top">
+              <div>
+                <div class="k">Order #4471</div>
+                <div id="s3-item" class="display">Ankara fabric</div>
+                <div id="s3-for">6 yards · for Tunde B.</div>
+              </div>
+              <div id="s3-badges">
+                <div class="badge" id="b-sched"><i></i>Scheduled</div>
+                <div class="badge" id="b-call"><i id="b-call-dot"></i>Calling</div>
+                <div class="badge" id="b-upd"><i></i>Address updated</div>
+              </div>
+            </div>
+            <div id="s3-dash"></div>
+            <div class="field">
+              <div class="k">Delivery</div>
+              <div class="v">Today, 12pm – 3pm</div>
+            </div>
+            <div class="field">
+              <div class="k">Address</div>
+              <div class="v"><span id="s3-old">Bode Thomas, by the yellow gate<span id="s3-old-strike"></span></span></div>
+              <div class="v" id="s3-new"><span id="s3-new-text"></span><span class="caret" id="s3-caret" style="background: #0b1220"></span></div>
+            </div>
+            <div class="field">
+              <div class="k">Landmark</div>
+              <div class="v" id="s3-landmark">
+                <svg id="s3-pin" width="34" height="44" viewBox="0 0 24 32"><path d="M12 0C5.4 0 0 5.3 0 11.9 0 20.8 12 32 12 32s12-11.2 12-20.1C24 5.3 18.6 0 12 0z" fill="#ef4444" /><circle cx="12" cy="12" r="4.5" fill="#fff" /></svg>
+                <span id="s3-lm-text">Opposite Mobil filling station</span>
+              </div>
+            </div>
+            <div id="s3-ready">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path id="s3-tick" d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+              Ready for dispatch
+            </div>
+          </div>
+        </div>
+        <div class="grain" style="filter: url(#noise)"></div>
+      </div>
+
+      <!-- ================= SCENE 4 ================= -->
+      <div id="s4" class="scene">
+        <div class="glow" id="s4-glow" data-layout-allow-overflow style="left: -260px; top: 80px; width: 1200px; height: 1200px; background: radial-gradient(circle, rgba(255, 194, 14, 0.13), rgba(255, 194, 14, 0) 62%)"></div>
+        <div id="s4-head" class="display"><span class="l" id="s4-l1">Every order.</span><span class="l l2" id="s4-l2">Every language.</span></div>
+        <div id="s4-chips">
+          <div class="chip" id="c0">English</div>
+          <div class="chip" id="c1">Pidgin</div>
+          <div class="chip" id="c2">Yorùbá</div>
+          <div class="chip" id="c3">Hausa</div>
+          <div class="chip" id="c4">Igbo</div>
+        </div>
+        <div id="s4-hello">
+          <div class="hello" id="h0">“Good afternoon! This is Tellero.”</div>
+          <div class="hello" id="h1">“Good afternoon o! Na Tellero dey call.”</div>
+          <div class="hello" id="h2">“Ẹ káàsán o! Tellero ló ń pè yín.”</div>
+          <div class="hello" id="h3">“Barka da rana! Tellero ce.”</div>
+          <div class="hello" id="h4">“Ehihie ọma! Ọ bụ Tellero.”</div>
+        </div>
+
+        <div id="s4-board">
+          <div id="s4-board-head">
+            <div id="s4-board-title" class="display">Today’s deliveries</div>
+            <div id="s4-count">Confirmed <span id="s4-n">0</span>/6</div>
+          </div>
+          <div class="row" id="r0"><div class="who"><div class="n">Adaeze O.</div><div class="it">Bluetooth speaker</div></div><div class="pill"><span class="p-sched"><i></i>Scheduled</span><span class="p-call"><i></i>Calling</span><span class="p-conf"><i></i>Confirmed</span></div></div>
+          <div class="row" id="r1"><div class="who"><div class="n">Tunde B.</div><div class="it">Ankara fabric</div></div><div class="pill"><span class="p-sched"><i></i>Scheduled</span><span class="p-call"><i></i>Calling</span><span class="p-upd"><i></i>Address updated</span></div></div>
+          <div class="row" id="r2"><div class="who"><div class="n">Chiamaka E.</div><div class="it">Rice cooker</div></div><div class="pill"><span class="p-sched"><i></i>Scheduled</span><span class="p-call"><i></i>Calling</span><span class="p-resc"><i></i>Rescheduled</span></div></div>
+          <div class="row" id="r3"><div class="who"><div class="n">Ibrahim M.</div><div class="it">Phone case</div></div><div class="pill"><span class="p-sched"><i></i>Scheduled</span><span class="p-call"><i></i>Calling</span><span class="p-conf"><i></i>Confirmed</span></div></div>
+          <div class="row" id="r4"><div class="who"><div class="n">Ngozi A.</div><div class="it">Hair dryer</div></div><div class="pill"><span class="p-sched"><i></i>Scheduled</span><span class="p-call"><i></i>Calling</span><span class="p-conf"><i></i>Confirmed</span></div></div>
+          <div class="row" id="r5"><div class="who"><div class="n">Femi K.</div><div class="it">Running shoes</div></div><div class="pill"><span class="p-sched"><i></i>Scheduled</span><span class="p-call"><i></i>Calling</span><span class="p-conf"><i></i>Confirmed</span></div></div>
+        </div>
+        <div class="grain" style="filter: url(#noise)"></div>
+      </div>
+
+      <!-- ================= SCENE 5 ================= -->
+      <div id="s5" class="scene">
+        <div class="glow" id="s5-glow" data-layout-allow-overflow style="left: 360px; top: -100px; width: 1200px; height: 1200px; background: radial-gradient(circle, rgba(255, 194, 14, 0.16), rgba(255, 194, 14, 0) 60%)"></div>
+        <div id="s5-lock">
+          <div id="s5-row">
+            <div id="s5-mark-wrap">
+              <div class="ring" id="s5-ring1"></div>
+              <div class="ring" id="s5-ring2"></div>
+              <div id="s5-mark">
+                <svg width="110" height="110" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" /></svg>
+              </div>
+            </div>
+            <div id="s5-word-clip" data-layout-allow-overflow><div id="s5-word" class="display">Tellero</div></div>
+          </div>
+          <div id="s5-tag" class="display"><span id="s5-tag-text"></span><span class="caret" id="s5-caret" style="opacity: 0"></span></div>
+          <div id="s5-sub" class="mono">AI delivery calls · Lagos</div>
+        </div>
+        <div class="grain" style="filter: url(#noise)"></div>
+      </div>
+    </div>
+
+    <script>
+      // Build after fonts load (measurements depend on them); register only when complete.
+      document.fonts.ready.then(function () {
+        var tl = gsap.timeline({ paused: true });
+        var EO = "power3.out";
+        var EIO = "power3.inOut";
+        var $ = function (s) { return document.querySelector(s); };
+
+        // Seek-safe typewriter: text is a pure function of the tween's progress.
+        function typeOn(parts, start, dur) {
+          var full = parts.map(function (p) { return p.text; }).join("");
+          var proxy = { n: 0 };
+          function render() {
+            var n = Math.round(proxy.n);
+            var used = 0;
+            parts.forEach(function (p) {
+              var take = Math.max(0, Math.min(p.text.length, n - used));
+              p.el.textContent = p.text.slice(0, take);
+              used += p.text.length;
+            });
+          }
+          render();
+          tl.fromTo(proxy, { n: 0 }, { n: full.length, duration: dur, ease: "none", onUpdate: render, immediateRender: false }, start);
+        }
+        // Deterministic caret blink: a finite repeat, never infinite.
+        function blink(el, start, end) {
+          var cycles = Math.max(0, Math.floor((end - start) / 0.5) - 1);
+          tl.fromTo(el, { opacity: 1 }, { opacity: 0, duration: 0.25, ease: "steps(1)", repeat: cycles, yoyo: true, immediateRender: false }, start);
+        }
+
+        /* ===================== SCENE 1 (0–5s) typewriter-reveal ===================== */
+        var A = "No 12,";
+        var V = "by the yellow gate";
+        var C = "opp. the mosque, Lekki";
+        // Measure the vague phrase at its final layout, then clear it for typing.
+        $("#s1-a").textContent = A;
+        $("#s1-vague").textContent = V;
+        $("#s1-c2").textContent = C;
+        var card = $("#s1-card").getBoundingClientRect();
+        var vr = $("#s1-vague").getClientRects();
+        var vb = vr[vr.length - 1];
+        var vf = vr[0];
+        var left = Math.min(vf.left, vb.left) - card.left - 30;
+        var right = Math.max(vf.right, vb.right) - card.left + 30;
+        var top = vf.top - card.top - 18;
+        var bottom = vb.bottom - card.top + 14;
+        var circ = $("#s1-circle");
+        circ.setAttribute("width", right - left + 40);
+        circ.setAttribute("height", bottom - top + 40);
+        circ.style.left = left - 20 + "px";
+        circ.style.top = top - 20 + "px";
+        var ell = $("#s1-ellipse");
+        var rx = (right - left) / 2;
+        var ry = (bottom - top) / 2;
+        ell.setAttribute("cx", rx + 20);
+        ell.setAttribute("cy", ry + 20);
+        ell.setAttribute("rx", rx);
+        ell.setAttribute("ry", ry);
+        var ellLen = 2 * Math.PI * Math.sqrt((rx * rx + ry * ry) / 2);
+        var stamp = $("#s1-stamp");
+        stamp.style.left = right - 20 + "px";
+        stamp.style.top = top - 70 + "px";
+
+        typeOn([{ el: $("#s1-a"), text: A }, { el: $("#s1-vague"), text: V }, { el: $("#s1-c2"), text: C }], 0.35, 2.1);
+        blink($("#s1-caret"), 2.5, 4.6);
+        tl.fromTo("#s1-label", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: EO }, 0.1);
+        tl.fromTo("#s1-meta-top", { opacity: 0, y: -16 }, { opacity: 1, y: 0, duration: 0.5, ease: EO }, 0.2);
+        tl.fromTo("#s1-meta-bottom", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 0.45);
+        tl.fromTo("#s1-streets path", { opacity: 0 }, { opacity: 1, duration: 0.8, stagger: 0.05, ease: "sine.out" }, 0);
+        tl.fromTo("#s1-ghost", { opacity: 0, y: 40 }, { opacity: 1, y: -30, duration: 4.6, ease: "sine.inOut" }, 0);
+        tl.fromTo("#s1-glow", { scale: 0.9 }, { scale: 1.08, duration: 4.6, ease: "sine.inOut" }, 0);
+        // The vague phrase gets circled, then stamped with a question
+        tl.fromTo(ell, { attr: { "stroke-dasharray": ellLen, "stroke-dashoffset": ellLen } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.55, ease: "power2.inOut" }, 2.7);
+        tl.fromTo(stamp, { scale: 0, rotation: -25, opacity: 0 }, { scale: 1, rotation: 8, opacity: 1, duration: 0.45, ease: "back.out(2.2)" }, 3.15);
+        tl.fromTo("#s1-vague", { color: "#f4f5f8" }, { color: "#ef4444", duration: 0.3, ease: "power1.out" }, 2.75);
+        // The rider pin wanders a looping route: lost.
+        var route = $("#s1-route");
+        var rlen = route.getTotalLength();
+        var rider = $("#s1-rider");
+        var halo = $("#s1-rider-halo");
+        var rp = { p: 0 };
+        function moveRider() {
+          var pt = route.getPointAtLength(rp.p * rlen);
+          rider.setAttribute("cx", pt.x);
+          rider.setAttribute("cy", pt.y);
+          halo.setAttribute("cx", pt.x);
+          halo.setAttribute("cy", pt.y);
+        }
+        moveRider();
+        tl.fromTo(rp, { p: 0 }, { p: 1, duration: 4.4, ease: "sine.inOut", onUpdate: moveRider, immediateRender: false }, 0.2);
+        tl.fromTo(route, { opacity: 0 }, { opacity: 0.85, duration: 0.6 }, 0.1);
+        tl.fromTo(halo, { attr: { r: 20 } }, { attr: { r: 44 }, duration: 0.55, ease: "sine.inOut", repeat: 7, yoyo: true }, 0.2);
+
+        /* ---- T1 4.6s: vertical push s1 → s2 ---- */
+        tl.to("#s1", { y: -1080, duration: 0.5, ease: EIO }, 4.6);
+        tl.fromTo("#s2", { y: 1080, opacity: 1 }, { y: 0, opacity: 1, duration: 0.5, ease: EIO }, 4.6);
+
+        /* ===================== SCENE 2 (5–9s) kinetic-type-beats ===================== */
+        tl.fromTo(["#s2-rule-t", "#s2-rule-b"], { scaleX: 0 }, { scaleX: 1, duration: 0.8, ease: EIO, stagger: 0.1 }, 4.9);
+        tl.fromTo(["#s2-meta-l", "#s2-meta-r"], { opacity: 0 }, { opacity: 1, duration: 0.4 }, 5.1);
+        tl.fromTo("#s2-glow", { scale: 0.85, opacity: 0.6 }, { scale: 1.1, opacity: 1, duration: 4, ease: "sine.inOut" }, 5);
+        // Beat 1: words blur in, staggered
+        tl.fromTo("#s2-b1 .w", { opacity: 0, y: 40, filter: "blur(14px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: EO, stagger: 0.07 }, 4.95);
+        tl.set("#s2-b1", { opacity: 0 }, 6.25);
+        // Beat 2: hard cut, then the red strike draws through "called first"
+        tl.fromTo("#s2-b2", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 6.25);
+        tl.fromTo("#s2-b2 .beat-line", { scale: 1.12 }, { scale: 1, duration: 0.45, ease: "expo.out" }, 6.25);
+        tl.fromTo("#s2-strike", { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power2.inOut" }, 6.75);
+        tl.set("#s2-b2", { opacity: 0 }, 7.4);
+        // Beat 3: payoff — tile springs, Tellero gets its yellow box
+        tl.fromTo("#s2-b3", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 7.4);
+        tl.fromTo("#s2-tile", { scale: 0, rotation: -12 }, { scale: 1, rotation: 0, duration: 0.55, ease: EO }, 7.4);
+        tl.fromTo("#s2-bimpe-box", { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power3.inOut" }, 7.5);
+        tl.fromTo("#s2-bimpe-text", { color: "#f4f5f8" }, { color: "#0b1220", duration: 0.2 }, 7.65);
+        tl.fromTo(["#s2-cf1", "#s2-cf2"], { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: EO, stagger: 0.08 }, 7.7);
+        tl.fromTo("#s2-tile", { rotation: 0 }, { rotation: 10, duration: 0.09, ease: "sine.inOut", repeat: 5, yoyo: true, immediateRender: false }, 8.1);
+
+        /* ---- T2 8.6s: circle iris out of the phone tile into the call ---- */
+        var tile = $("#s2-tile").getBoundingClientRect();
+        var cx = ((tile.left + tile.width / 2) / 1920) * 100;
+        var cy = ((tile.top + tile.height / 2) / 1080) * 100;
+        tl.set("#s3", { opacity: 1 }, 8.6);
+        tl.fromTo("#s3", { clipPath: "circle(0% at " + cx + "% " + cy + "%)" }, { clipPath: "circle(130% at " + cx + "% " + cy + "%)", duration: 0.65, ease: "power2.out" }, 8.6);
+        tl.set("#s2", { opacity: 0 }, 9.3);
+
+        /* ===================== SCENE 3 (9–19s) agent-progress-theater ===================== */
+        tl.fromTo("#s3-call", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.6, ease: EO }, 8.75);
+        tl.fromTo("#s3-card", { opacity: 0, x: 60, rotation: 2 }, { opacity: 1, x: 0, rotation: 0, duration: 0.7, ease: "expo.out" }, 8.9);
+        tl.fromTo("#s3-top", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 9.1);
+        // Badges: Scheduled → Calling (9.5) → Address updated (16.2)
+        tl.set("#b-call", { opacity: 0 }, 0);
+        tl.set("#b-upd", { opacity: 0 }, 0);
+        tl.to("#b-sched", { opacity: 0, y: -14, duration: 0.25 }, 9.5);
+        tl.fromTo("#b-call", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: EO }, 9.55);
+        tl.fromTo("#b-call-dot", { scale: 1 }, { scale: 1.6, duration: 0.4, ease: "sine.inOut", repeat: 15, yoyo: true }, 9.6);
+        tl.to("#b-call", { opacity: 0, y: -14, duration: 0.25 }, 16.2);
+        tl.fromTo("#b-upd", { opacity: 0, y: 14, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: EO }, 16.25);
+        // Call state + timer (pure function of time)
+        var timerProxy = { s: 0 };
+        function renderTimer() {
+          $("#s3-timer").textContent = "0:" + String(Math.floor(timerProxy.s)).padStart(2, "0");
+        }
+        renderTimer();
+        tl.fromTo(timerProxy, { s: 0 }, { s: 47, duration: 9.4, ease: "none", onUpdate: renderTimer, immediateRender: false }, 9.6);
+        var st = $("#s3-state");
+        var stProxy = { v: 0 };
+        function renderState() { st.textContent = stProxy.v < 0.5 ? "Ringing…" : "On the call"; }
+        renderState();
+        tl.fromTo(stProxy, { v: 0 }, { v: 1, duration: 0.01, onUpdate: renderState, immediateRender: false }, 9.55);
+        // Waveform: 22 bars, deterministic sine-driven heights
+        var wave = $("#s3-wave");
+        for (var i = 0; i < 16; i++) {
+          var b = document.createElement("span");
+          wave.appendChild(b);
+        }
+        var bars = wave.querySelectorAll("span");
+        var wv = { t: 0 };
+        function renderWave() {
+          bars.forEach(function (bar, k) {
+            var amp = 0.25 + 0.75 * Math.abs(Math.sin(wv.t * 7.3 + k * 0.62) * Math.sin(wv.t * 2.1 + k * 0.31));
+            bar.style.transform = "scaleY(" + amp.toFixed(3) + ")";
+          });
+        }
+        bars.forEach(function (bar) { bar.style.transform = "scaleY(0.25)"; });
+        tl.fromTo(wv, { t: 0 }, { t: 9.2, duration: 9.2, ease: "none", onUpdate: renderWave, immediateRender: false }, 9.6);
+        // Thread builds message by message
+        var msgs = [
+          ["#m1", 9.75],
+          ["#m2", 10.95],
+          ["#m3", 11.95],
+          ["#m4", 12.95],
+          ["#m5", 14.05],
+          ["#m6", 15.1],
+        ];
+        var thread = $("#s3-thread");
+        var limit = $("#s3-thread-clip").clientHeight - 34;
+        var scrolled = 0;
+        msgs.forEach(function (m) {
+          var el = document.querySelector(m[0]);
+          var over = el.offsetTop + el.offsetHeight - limit;
+          if (over > scrolled) {
+            tl.to(thread, { y: -over, duration: 0.4, ease: "power2.inOut" }, m[1] - 0.05);
+            scrolled = over;
+          }
+        });
+        msgs.forEach(function (m) {
+          var isCust = document.querySelector(m[0]).classList.contains("cust");
+          tl.fromTo(m[0], { opacity: 0, y: 26, scale: 0.94, transformOrigin: isCust ? "100% 0%" : "0% 0%" }, { opacity: 1, y: 0, scale: 1, duration: 0.42, ease: EO }, m[1]);
+        });
+        // Address rewrites itself: strike → clean line types in
+        tl.fromTo("#s3-old-strike", { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power2.inOut" }, 13.35);
+        tl.fromTo("#s3-old", { opacity: 1 }, { opacity: 0.45, duration: 0.3 }, 13.65);
+        typeOn([{ el: $("#s3-new-text"), text: "Plot 4, Bode Thomas Street, Surulere" }], 13.75, 1.15);
+        tl.fromTo("#s3-caret", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 13.7);
+        tl.to("#s3-caret", { opacity: 0, duration: 0.01 }, 15.0);
+        tl.fromTo("#s3-new", { backgroundColor: "rgba(255,194,14,0)" }, { backgroundColor: "rgba(255,194,14,0.35)", duration: 0.25, yoyo: true, repeat: 1 }, 14.95);
+        // Landmark pin drops, label slides in
+        tl.set("#s3-lm-text", { opacity: 0 }, 0);
+        tl.set("#s3-pin", { opacity: 0 }, 0);
+        tl.fromTo("#s3-pin", { opacity: 0, y: -80 }, { opacity: 1, y: 0, duration: 0.5, ease: "bounce.out" }, 15.5);
+        tl.fromTo("#s3-lm-text", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: EO }, 15.7);
+        // Payoff: green "ready" bar springs up with a drawn tick, under a slow push-in
+        tl.fromTo("#s3-ready", { opacity: 0, y: 40, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: EO }, 16.6);
+        tl.fromTo("#s3-tick", { attr: { "stroke-dasharray": 24, "stroke-dashoffset": 24 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.35, ease: "power2.out" }, 16.9);
+        tl.fromTo("#s3-stage", { scale: 1 }, { scale: 1.07, duration: 2.6, ease: "sine.inOut" }, 16.4);
+        tl.fromTo("#s3-glow", { scale: 0.9 }, { scale: 1.15, duration: 10, ease: "sine.inOut" }, 9);
+
+        /* ---- T3 18.6s: vertical push s3 → s4 ---- */
+        tl.to("#s3", { y: -1080, duration: 0.5, ease: EIO }, 18.6);
+        tl.fromTo("#s4", { y: 1080, opacity: 1 }, { y: 0, opacity: 1, duration: 0.5, ease: EIO }, 18.6);
+
+        /* ===================== SCENE 4 (19–25s) grid-card-assemble (live populate) ===================== */
+        tl.fromTo("#s4-l1", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.55, ease: EO }, 18.95);
+        tl.fromTo("#s4-l2", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.55, ease: EO }, 19.15);
+        tl.fromTo(".chip", { opacity: 0, y: 30, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: EO, stagger: 0.07 }, 19.5);
+        tl.fromTo("#s4-board", { opacity: 0, x: 80 }, { opacity: 1, x: 0, duration: 0.6, ease: "expo.out" }, 19.1);
+        tl.fromTo(".row", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: EO, stagger: 0.08 }, 19.45);
+        tl.fromTo("#s4-glow", { scale: 0.9 }, { scale: 1.12, duration: 6, ease: "sine.inOut" }, 19);
+        // Language chips light up in turn, greeting swaps beneath (blur crossfade)
+        var hellos = document.querySelectorAll(".hello");
+        hellos.forEach(function (h) { tl.set(h, { opacity: 0 }, 0); });
+        for (var c = 0; c < 5; c++) {
+          var t0 = 20.1 + c * 0.82;
+          tl.to("#c" + c, { backgroundColor: "#ffc20e", color: "#0b1220", borderColor: "#ffc20e", duration: 0.2 }, t0);
+          if (c < 4) tl.to("#c" + c, { backgroundColor: "#151e30", color: "#f4f5f8", borderColor: "rgba(244,245,248,0.1)", duration: 0.2 }, t0 + 0.8);
+          tl.fromTo("#h" + c, { opacity: 0, y: 14, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.3, ease: EO }, t0);
+          if (c < 4) tl.to("#h" + c, { opacity: 0, y: -10, filter: "blur(4px)", duration: 0.18 }, t0 + 0.72);
+        }
+        // Board populates live: each pill steps Scheduled → Calling → outcome
+        var rows = document.querySelectorAll(".row");
+        var confirmedAt = [];
+        rows.forEach(function (row, r) {
+          var spans = row.querySelectorAll(".pill > span");
+          tl.set(spans[1], { opacity: 0 }, 0);
+          tl.set(spans[2], { opacity: 0 }, 0);
+          var tCall = 20.0 + r * 0.42;
+          var tDone = tCall + 1.05;
+          tl.to(spans[0], { opacity: 0, y: -10, duration: 0.2 }, tCall);
+          tl.fromTo(spans[1], { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.22, ease: EO }, tCall + 0.03);
+          tl.to(spans[1], { opacity: 0, y: -10, duration: 0.2 }, tDone);
+          tl.fromTo(spans[2], { opacity: 0, y: 10, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.28, ease: EO }, tDone + 0.03);
+          if (spans[2].classList.contains("p-conf")) confirmedAt.push(tDone + 0.05);
+        });
+        var cnt = { v: 0 };
+        function renderCount() {
+          var now = tl.time();
+          var n = confirmedAt.filter(function (t) { return now >= t; }).length;
+          $("#s4-n").textContent = n;
+        }
+        renderCount();
+        tl.fromTo(cnt, { v: 0 }, { v: 1, duration: 5.6, ease: "none", onUpdate: renderCount, immediateRender: false }, 19.2);
+
+        /* ---- T4 24.5s: blur crossfade s4 → s5 (wind-down) ---- */
+        tl.to("#s4", { opacity: 0, filter: "blur(18px)", duration: 0.7, ease: "sine.inOut" }, 24.5);
+        tl.fromTo("#s5", { opacity: 0, filter: "blur(18px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.7, ease: "sine.inOut" }, 24.5);
+
+        /* ===================== SCENE 5 (25–30s) logo-assemble-lockup ===================== */
+        var wordW = $("#s5-word").getBoundingClientRect().width;
+        var shift = (wordW + 48) / 2;
+        // Mark blooms at dead center, then slides left as the wordmark unmasks
+        tl.fromTo("#s5-mark", { scale: 0, rotation: -14 }, { scale: 1, rotation: 0, duration: 0.6, ease: EO }, 24.85);
+        tl.fromTo("#s5-row", { x: shift }, { x: 0, duration: 0.7, ease: EIO }, 25.6);
+        tl.fromTo("#s5-word", { xPercent: -105 }, { xPercent: 0, duration: 0.7, ease: EIO }, 25.6);
+        tl.fromTo("#s5-ring1", { scale: 1, opacity: 0.8 }, { scale: 1.7, opacity: 0, duration: 1.1, ease: "power2.out" }, 25.2);
+        tl.fromTo("#s5-ring2", { scale: 1, opacity: 0.6 }, { scale: 2.1, opacity: 0, duration: 1.4, ease: "power2.out" }, 25.45);
+        typeOn([{ el: $("#s5-tag-text"), text: "Confirmed before the rider leaves." }], 26.4, 1.25);
+        tl.fromTo("#s5-caret", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 26.35);
+        blink($("#s5-caret"), 27.7, 29.3);
+        tl.fromTo("#s5-sub", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: EO }, 27.6);
+        tl.fromTo("#s5-glow", { scale: 0.85 }, { scale: 1.1, duration: 5, ease: "sine.inOut" }, 25);
+        // Final scene may exit: fade to ink so the loop restarts on scene 1's field
+        tl.to("#s5-lock", { opacity: 0, duration: 0.55, ease: "sine.inOut" }, 29.4);
+
+        window.__timelines["main"] = tl;
+        if (window.__hfForceTimelineRebind) window.__hfForceTimelineRebind();
+      });
+    </script>
+  </body>
+</html>

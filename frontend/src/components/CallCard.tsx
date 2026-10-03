@@ -20,7 +20,7 @@ function parseExtracted(json: string | null): [string, string][] {
 export function CallCard({ call, highlight }: { call: Call; highlight?: boolean }) {
   const extracted = parseExtracted(call.extracted_json)
   return (
-    <article className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 ${highlight ? 'animate-flash' : ''}`}>
+    <article className={`rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink/10 sm:p-6 ${highlight ? 'animate-flash' : ''}`}>
       <header className="mb-4 flex flex-wrap items-center gap-2">
         <span className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white">
           {call.call_type === 'onboarding' ? 'Onboarding' : 'Delivery'}
@@ -46,7 +46,7 @@ export function CallCard({ call, highlight }: { call: Call; highlight?: boolean 
 
       {extracted.length > 0 && (
         <details className="mt-4 rounded-2xl bg-slate-50 p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-slate-600">What the AI extracted</summary>
+          <summary className="cursor-pointer text-sm font-semibold text-slate-600">What Tellero noted</summary>
           <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
             {extracted.map(([k, v]) => (
               <div key={k}>
@@ -66,7 +66,7 @@ export function CallHistory({ calls }: { calls: Call[] }) {
     <section>
       <h3 className="mb-3 text-lg font-bold text-slate-800">Call history ({calls.length})</h3>
       {calls.length === 0 ? (
-        <p className="rounded-3xl bg-white p-6 text-base text-slate-500 ring-1 ring-slate-200">No calls yet.</p>
+        <p className="rounded-3xl bg-white p-6 text-base text-slate-500 ring-1 ring-ink/10">No calls yet.</p>
       ) : (
         <div className="flex flex-col gap-4">
           {calls.map((c) => (

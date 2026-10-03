@@ -13,11 +13,11 @@ export function Transcript({ text }: { text: string | null }) {
       {turns.map((t, i) => (
         <div key={i} className={`flex flex-col ${t.speaker === 'agent' ? 'items-start' : 'items-end'}`}>
           <span className="mb-0.5 px-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            {t.speaker === 'agent' ? 'AI agent' : 'Customer'}
+            {t.speaker === 'agent' ? 'Tellero' : 'Customer'}
           </span>
           <div
             className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-base leading-relaxed ${
-              t.speaker === 'agent' ? 'rounded-tl-md bg-slate-100 text-slate-800' : 'rounded-tr-md bg-accent-600 text-white'
+              t.speaker === 'agent' ? 'rounded-tl-md bg-slate-100 text-slate-800' : 'rounded-tr-md bg-danfo font-medium text-ink'
             }`}
           >
             {t.text}

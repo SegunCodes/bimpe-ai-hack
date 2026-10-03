@@ -45,7 +45,7 @@ export function OrderDrawer({ id, onClose, onChanged }: { id: number; onClose: (
           {error && <StaleBanner message={error} />}
           <header className="pr-12">
             <p className="text-sm font-semibold text-slate-500">Order #{order.id}</p>
-            <h2 className="mt-1 text-3xl font-extrabold tracking-tight">{order.item}</h2>
+            <h2 className="mt-1 font-display text-4xl font-bold tracking-[-0.02em] text-ink">{order.item}</h2>
             <p className="mt-1 text-lg text-slate-600">
               for <span className="font-semibold text-slate-900">{order.customer_name}</span> · {formatPhone(order.customer_phone)}
             </p>
@@ -57,12 +57,12 @@ export function OrderDrawer({ id, onClose, onChanged }: { id: number; onClose: (
           <ScheduleCard order={order} now={now} onCallNow={call} starting={starting} />
 
           <section className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
+            <div className="rounded-3xl bg-white p-5 ring-1 ring-ink/10">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Address on file</h3>
               <p className="mt-2 text-lg text-slate-700">{order.address_on_file || '—'}</p>
             </div>
-            <div className="rounded-3xl bg-accent-50 p-5 ring-1 ring-accent-100">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-accent-700">Cleaned by AI</h3>
+            <div className="rounded-[28px] bg-danfo-soft p-5 ring-1 ring-danfo/50">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink">Cleaned by Tellero</h3>
               <p className="mt-2 text-lg font-semibold text-slate-900">
                 {order.cleaned_address || <span className="font-normal text-slate-400">Not confirmed yet</span>}
               </p>
@@ -70,7 +70,7 @@ export function OrderDrawer({ id, onClose, onChanged }: { id: number; onClose: (
             </div>
           </section>
 
-          <section className="rounded-3xl bg-white p-5 ring-1 ring-slate-200 sm:p-6">
+          <section className="rounded-3xl bg-white p-5 ring-1 ring-ink/10 sm:p-6">
             <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <InfoItem label="Seller" value={order.seller} />
               <InfoItem label="Delivery" value={order.delivery_window || (order.delivery_at ? friendlyWhen(order.delivery_at, now) : null)} />
@@ -103,22 +103,22 @@ function ScheduleCard({
   const calling = order.status === 'calling'
   const waiting = ['scheduled', 'pending'].includes(order.status) && !!order.call_at
   return (
-    <section className="flex flex-wrap items-center gap-4 rounded-3xl bg-indigo-50 p-5 ring-1 ring-indigo-100">
+    <section className="flex flex-wrap items-center gap-4 rounded-[28px] bg-ink p-5 text-white">
       <div className="min-w-0 flex-1">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-indigo-700">AI call</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-danfo">Tellero call</h3>
         {calling ? (
-          <p className="mt-1 text-xl font-bold text-blue-700">On the phone right now…</p>
+          <p className="mt-1 text-xl font-bold text-white">On the phone right now…</p>
         ) : waiting ? (
           <>
-            <p className="mt-1 text-xl font-bold text-slate-900">
-              {friendlyWhen(order.call_at, now)} <span className="text-base font-medium text-slate-500">({countdown(order.call_at, now)})</span>
+            <p className="mt-1 text-xl font-bold text-white">
+              {friendlyWhen(order.call_at, now)} <span className="text-base font-medium text-white/60">({countdown(order.call_at, now)})</span>
             </p>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-white/70">
               {order.attempts > 0 ? `Retry ${order.attempts + 1} of ${MAX_ATTEMPTS} after no answer` : `Rule: ${planLabel(order.call_plan)}`}
             </p>
           </>
         ) : (
-          <p className="mt-1 text-base text-slate-700">
+          <p className="mt-1 text-base text-white/80">
             {['no_answer', 'failed'].includes(order.status)
               ? `The AI tried ${order.attempts} time${order.attempts === 1 ? '' : 's'} and couldn't reach the customer.`
               : order.call_plan

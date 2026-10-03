@@ -80,13 +80,13 @@ export function OrdersPage() {
     <>
       <PageHeader
         title="Orders"
-        subtitle="Add an order and pick when the AI should call. Everything after that happens on its own."
+        subtitle="Add an order and pick when Tellero should call. Everything after that happens on its own."
         actions={
           <>
             <Button variant="secondary" onClick={() => setModal('import')} icon={<UploadIcon />}>
               Import CSV
             </Button>
-            <Button onClick={() => setModal('add')} icon={<PlusIcon />}>
+            <Button variant="brand" onClick={() => setModal('add')} icon={<PlusIcon />}>
               Add order
             </Button>
           </>
@@ -103,10 +103,12 @@ export function OrdersPage() {
             <StatCard label="Need your attention" value={count('no_answer', 'failed')} tone="text-red-600" />
           </div>
           {next && (
-            <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-3xl bg-indigo-50 px-5 py-4 text-base text-indigo-900 ring-1 ring-indigo-100">
-              <PhoneIcon className="h-5 w-5 shrink-0" />
+            <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[28px] bg-ink px-5 py-4 text-base text-white">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-danfo text-ink">
+                <PhoneIcon className="h-4 w-4" />
+              </span>
               <span>
-                Next AI call: <span className="font-bold">{next.customer_name}</span> about {next.item},{' '}
+                Next Tellero call: <span className="font-bold">{next.customer_name}</span> about {next.item},{' '}
                 <span className="font-bold">{friendlyWhen(next.call_at, now)}</span> ({countdown(next.call_at, now)})
               </span>
             </div>
@@ -117,7 +119,7 @@ export function OrdersPage() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <section className="min-w-0">
           {error && orders && <StaleBanner message={error} />}
-          <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+          <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-ink/10">
             {loading && !orders ? (
               <LoadingState label="Loading orders…" />
             ) : error && !orders ? (
@@ -125,7 +127,7 @@ export function OrdersPage() {
             ) : !orders || orders.length === 0 ? (
               <EmptyState
                 title="No orders yet"
-                hint="Add an order, pick the delivery time, and the AI will call the customer at the right moment."
+                hint="Add an order, pick the delivery time, and Tellero will call the customer at the right moment."
                 action={
                   <div className="flex flex-wrap justify-center gap-2">
                     <Button onClick={() => setModal('add')} icon={<PlusIcon />}>
@@ -146,7 +148,7 @@ export function OrdersPage() {
                       <th className="px-4 py-4">Order</th>
                       <th className="px-4 py-4">Delivery</th>
                       <th className="px-4 py-4">Status</th>
-                      <th className="px-5 py-4">AI call</th>
+                      <th className="px-5 py-4">Tellero call</th>
                     </tr>
                   </thead>
                   <tbody>
