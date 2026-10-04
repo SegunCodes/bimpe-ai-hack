@@ -9,6 +9,7 @@ import { devRoutes } from "./modules/dev/dev.routes";
 import { runTick, tickIsDue } from "./modules/tick/tick.service";
 import { tickRoutes } from "./modules/tick/tick.routes";
 import { webhooksRoutes } from "./modules/webhooks/webhooks.routes";
+import { agentSetupStatus } from "./modules/bimpeSetup/bimpeSetup.auto";
 import { apiRoutes } from "./routes";
 
 export function createApp(): express.Express {
@@ -49,7 +50,8 @@ export function createApp(): express.Express {
       databaseSettingsFound: databaseSettingNames(),
       mockMode: env.mockCalls,
       cronSecretSet: Boolean(env.tick.cronSecret),
-      bimpeKeySet: Boolean(env.bimpe.apiKey)
+      bimpeKeySet: Boolean(env.bimpe.apiKey),
+      agentScript: database === "ok" ? await agentSetupStatus().catch(() => ({ status: "unknown" })) : { status: "waiting for the database" }
     });
   });
 

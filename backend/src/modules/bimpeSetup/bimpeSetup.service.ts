@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { env } from "../../config/env";
 import { AGENT_PROFILE, TELLERO_SYSTEM_PROMPT, TOOL_NAMES } from "./agentPrompt";
 
@@ -23,8 +24,48 @@ async function bimpe<T>(method: string, path: string, body?: unknown): Promise<T
   return payload.data as T;
 }
 
+const CONTEXT_TOOL = {
+  name: TOOL_NAMES.context,
+  description: "Call this first on every call. Returns the call_id, call type, customer name, preferred language and, for deliveries, the item, seller, address on file and delivery window.",
+  http_method: "GET",
+  url_template: "/context?phone={{phone}}",
+  url_params: [{ name: "phone", type: "string", description: "The number you are calling, E.164 format e.g. +2348031234567. Leave empty if unknown.", required: false }],
+  timeout: 10_000
+};
+
+const RESULT_TOOL = {
+  name: TOOL_NAMES.result,
+  description: "Call this once before ending the call to record what the customer said.",
+  http_method: "POST",
+  url_template: "/result",
+  body_params: [
+    { name: "call_id", type: "integer", description: "call_id from Get call context", required: false },
+    { name: "outcome", type: "string", description: "confirmed, address_updated, rescheduled, failed (delivery) or verified (onboarding)", required: true },
+    { name: "cleaned_address", type: "string", description: "Full street address with house number and area", required: false },
+    { name: "landmark", type: "string", description: "A landmark a rider can see", required: false },
+    { name: "reschedule_time", type: "string", description: "New delivery day and time if rescheduled", required: false },
+    { name: "notes", type: "string", description: "One short sentence about the call", required: false },
+    { name: "language", type: "string", description: "Onboarding: English, Pidgin, Yoruba, Hausa or Igbo", required: false },
+    { name: "best_time_to_call", type: "string", description: "Onboarding: best time to call before deliveries", required: false },
+    { name: "consent_to_calls", type: "boolean", description: "Onboarding: agrees to delivery calls", required: false }
+  ],
+  timeout: 10_000
+};
+
+/**
+ * A fingerprint of everything setup sends to BimpeAI. When it changes (new script, new tools,
+ * new agent, new address or secret) the backend knows BimpeAI needs updating.
+ * The tool token is hashed in, never stored.
+ */
+export function setupFingerprint(publicBaseUrl: string): string {
+  return createHash("sha256")
+    .update(JSON.stringify([TELLERO_SYSTEM_PROMPT, AGENT_PROFILE, CONTEXT_TOOL, RESULT_TOOL, INTEGRATION_NAME, publicBaseUrl, agentIds(), env.agentTools.secret]))
+    .digest("hex")
+    .slice(0, 16);
+}
+
 /** The agent IDs configured for this deployment (delivery, onboarding, shared fallback), deduplicated. */
-function agentIds(): string[] {
+export function agentIds(): string[] {
   return [...new Set([env.bimpe.deliveryAgentId, env.bimpe.onboardingAgentId, env.bimpe.agentId].filter((id): id is string => Boolean(id && id.trim())).map((id) => id.trim()))];
 }
 
@@ -90,32 +131,8 @@ export async function runBimpeSetup(publicBaseUrl: string): Promise<{ ok: boolea
         auth_config: { token: env.agentTools.secret }
       });
       const i = `${a}/integrations/custom_api/${encodeURIComponent(integration.id)}/tools`;
-      await bimpe("POST", i, {
-        name: TOOL_NAMES.context,
-        description: "Call this first on every call. Returns the call_id, call type, customer name, preferred language and, for deliveries, the item, seller, address on file and delivery window.",
-        http_method: "GET",
-        url_template: "/context?phone={{phone}}",
-        url_params: [{ name: "phone", type: "string", description: "The number you are calling, E.164 format e.g. +2348031234567. Leave empty if unknown.", required: false }],
-        timeout: 10_000
-      });
-      await bimpe("POST", i, {
-        name: TOOL_NAMES.result,
-        description: "Call this once before ending the call to record what the customer said.",
-        http_method: "POST",
-        url_template: "/result",
-        body_params: [
-          { name: "call_id", type: "integer", description: "call_id from Get call context", required: false },
-          { name: "outcome", type: "string", description: "confirmed, address_updated, rescheduled, failed (delivery) or verified (onboarding)", required: true },
-          { name: "cleaned_address", type: "string", description: "Full street address with house number and area", required: false },
-          { name: "landmark", type: "string", description: "A landmark a rider can see", required: false },
-          { name: "reschedule_time", type: "string", description: "New delivery day and time if rescheduled", required: false },
-          { name: "notes", type: "string", description: "One short sentence about the call", required: false },
-          { name: "language", type: "string", description: "Onboarding: English, Pidgin, Yoruba, Hausa or Igbo", required: false },
-          { name: "best_time_to_call", type: "string", description: "Onboarding: best time to call before deliveries", required: false },
-          { name: "consent_to_calls", type: "boolean", description: "Onboarding: agrees to delivery calls", required: false }
-        ],
-        timeout: 10_000
-      });
+      await bimpe("POST", i, CONTEXT_TOOL);
+      await bimpe("POST", i, RESULT_TOOL);
       record(`connected ${publicBaseUrl}/api/agent-tools with tools "${TOOL_NAMES.context}" and "${TOOL_NAMES.result}"`, true);
     } catch (error) {
       record("stopped", false, (error as Error).message);

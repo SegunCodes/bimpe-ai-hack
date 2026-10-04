@@ -69,6 +69,13 @@ async function createTables(db: PoolClient): Promise<void> {
   await db.query("CREATE INDEX IF NOT EXISTS idx_calls_customer_created ON calls (customer_id, created_at)");
   await db.query("CREATE INDEX IF NOT EXISTS idx_calls_status ON calls (status)");
 
+  // Small key/value store for background state (e.g. which call script BimpeAI already has).
+  await db.query(`CREATE TABLE IF NOT EXISTS app_settings (
+    key VARCHAR(60) PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`);
+
   for (const table of ["customers", "orders", "calls"]) {
     await db.query(`CREATE OR REPLACE TRIGGER ${table}_updated_at BEFORE UPDATE ON ${table}
       FOR EACH ROW EXECUTE FUNCTION set_updated_at()`);

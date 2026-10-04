@@ -2,7 +2,8 @@ import { Request, Router } from "express";
 import { env } from "../../config/env";
 import { forbidden } from "../../utils/errors";
 import { asyncHandler } from "../../utils/http";
-import { runBimpeSetup } from "./bimpeSetup.service";
+import { runBimpeSetup, setupFingerprint } from "./bimpeSetup.service";
+import { recordSetup, toolsBaseUrl } from "./bimpeSetup.auto";
 
 /** Same secret as the cron tick: "Authorization: Bearer <CRON_SECRET>" or ?key=<CRON_SECRET>. */
 function authorised(req: Request): boolean {
@@ -18,9 +19,11 @@ export const bimpeSetupRoutes = Router();
  */
 bimpeSetupRoutes.all("/bimpe-setup", asyncHandler(async (req, res) => {
   if (!authorised(req)) throw forbidden("Missing or wrong CRON_SECRET");
-  const base = env.publicBaseUrl || `https://${req.headers["x-forwarded-host"] || req.headers.host}`;
+  const base = toolsBaseUrl() || `https://${req.headers["x-forwarded-host"] || req.headers.host}`;
   try {
-    res.json(await runBimpeSetup(base));
+    const report = await runBimpeSetup(base);
+    await recordSetup(setupFingerprint(base), report.ok, report).catch(() => undefined);
+    res.json(report);
   } catch (error) {
     res.status(400).json({ ok: false, error: (error as Error).message });
   }

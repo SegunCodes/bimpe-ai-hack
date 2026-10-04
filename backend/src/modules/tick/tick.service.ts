@@ -4,6 +4,7 @@ import { settleMockCalls } from "../calls/calls.mock";
 import { checkLiveCalls } from "../calls/calls.poller";
 import { repairUndeterminedCalls } from "../calls/callResults.service";
 import { runSchedulerTick } from "../orders/orders.scheduler";
+import { syncAgentIfChanged } from "../bimpeSetup/bimpeSetup.auto";
 
 export interface TickSummary {
   scheduled: number;
@@ -11,6 +12,7 @@ export interface TickSummary {
   mockSettled: number;
   liveFinished: number;
   repaired: number;
+  agentScript: string;
   ms: number;
 }
 
@@ -24,6 +26,7 @@ let lastStartedAt = 0;
  *   2. dial any calls still waiting in the queue
  *   3. demo mode: give finished fake calls their result; live mode: ask BimpeAI about live calls
  *   4. re-read a few calls whose result could not be worked out earlier
+ *   5. send the call script and tools to BimpeAI if they changed since the last deploy
  */
 export function runTick(): Promise<TickSummary> {
   if (running) return running;
@@ -35,7 +38,12 @@ export function runTick(): Promise<TickSummary> {
     const mockSettled = await settleMockCalls();
     const liveFinished = await checkLiveCalls();
     const repaired = await repairUndeterminedCalls();
-    return { scheduled, dialled, mockSettled, liveFinished, repaired, ms: Date.now() - started };
+    // Last, and never allowed to break the tick: keep BimpeAI's script in step with this code.
+    const agentScript = await syncAgentIfChanged().catch((error: unknown) => {
+      console.error("Agent script sync failed:", error);
+      return "failed";
+    });
+    return { scheduled, dialled, mockSettled, liveFinished, repaired, agentScript, ms: Date.now() - started };
   })().finally(() => {
     running = null;
   });
