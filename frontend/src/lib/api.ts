@@ -14,7 +14,12 @@ import type {
 } from './types'
 import { clearToken, getToken, type SessionKind } from './session'
 
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/+$/, '')
+/** The live backend. Used by production builds when NEXT_PUBLIC_API_URL wasn't set for that build. */
+const PRODUCTION_API = 'https://tellero-ai-2q8u.vercel.app/api'
+
+export const API_URL = (
+  process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? PRODUCTION_API : 'http://localhost:3001/api')
+).replace(/\/+$/, '')
 
 /** Admin routes use the owner's session; everything else uses the business's. */
 const sessionFor = (path: string): SessionKind => (path.startsWith('/admin') ? 'admin' : 'business')
