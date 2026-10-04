@@ -73,9 +73,9 @@ export function AddCustomerModal({ onClose, onCreated }: { onClose: () => void; 
           <input className={inputClass} value={landmark} onChange={(e) => setLandmark(e.target.value)} placeholder="Opposite the Mobil filling station" />
         </Field>
 
-        {formError && <p className="rounded-xl bg-red-50 px-4 py-3 text-base font-medium text-red-700">{formError}</p>}
+        {formError && <p className="rounded-xl bg-bad-soft px-4 py-3 text-base font-medium text-bad">{formError}</p>}
 
-        <div className="flex justify-end gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>

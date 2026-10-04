@@ -156,13 +156,13 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
           <textarea className={inputClass} rows={2} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="12 Admiralty Way, Lekki Phase 1" />
         </Field>
 
-        <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-ink/10 sm:p-5">
+        <div className="rounded-3xl bg-paper p-4 ring-1 ring-ink/10 sm:p-5">
           <div className="flex flex-col gap-4">
             <Field label="Delivery date">
               <input type="date" className={inputClass} value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
             </Field>
             <div>
-              <span className="mb-1.5 block text-sm font-semibold text-slate-700">Delivery time</span>
+              <span className="mb-1.5 block text-sm font-semibold text-ink-soft">Delivery time</span>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {DELIVERY_SLOTS.map((s) => (
                   <button
@@ -171,7 +171,7 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
                     onClick={() => setSlotId(s.id)}
                     aria-pressed={slotId === s.id}
                     className={`btn h-11 rounded-xl px-2 text-sm font-semibold ${
-                      slotId === s.id ? 'btn-primary text-white' : 'btn-secondary bg-white text-slate-700'
+                      slotId === s.id ? 'btn-primary text-white' : 'btn-secondary bg-white text-ink-soft'
                     }`}
                   >
                     {s.label}
@@ -199,9 +199,9 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
           </div>
         </div>
 
-        {formError && <p className="rounded-xl bg-red-50 px-4 py-3 text-base font-medium text-red-700">{formError}</p>}
+        {formError && <p className="rounded-xl bg-bad-soft px-4 py-3 text-base font-medium text-bad">{formError}</p>}
 
-        <div className="flex justify-end gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>

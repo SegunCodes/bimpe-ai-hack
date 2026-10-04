@@ -11,11 +11,11 @@ function FeedStats() {
   if (!data || data.calls.length === 0) return null
   const calls = data.calls
   return (
-    <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-      <StatCard label="On a call right now" value={calls.filter((c) => isActiveCall(c.status)).length} tone="text-blue-600" />
+    <div className="mb-6 grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-4">
+      <StatCard label="On a call right now" value={calls.filter((c) => isActiveCall(c.status)).length} marker="live" />
       <StatCard label="Total calls" value={calls.length} />
       <StatCard label="Deliveries" value={calls.filter((c) => c.call_type === 'delivery').length} />
-      <StatCard label="Successful outcomes" value={calls.filter((c) => c.outcome && GOOD_OUTCOMES.includes(c.outcome)).length} tone="text-emerald-600" />
+      <StatCard label="Successful outcomes" value={calls.filter((c) => c.outcome && GOOD_OUTCOMES.includes(c.outcome)).length} />
     </div>
   )
 }

@@ -10,6 +10,16 @@
   --color-paper: #f4f5f8;
   --color-danfo: #ffc20e;
   --color-danfo-soft: #fff3c4;
+  /* Dashboard neutrals: every grey is a tint of ink, so nothing drifts toward blue-grey */
+  --color-ink-muted: #5d6678;
+  --color-ink-faint: #8b93a1;
+  --color-mist: #eceef3;
+  --color-line: #e3e6ec;
+  /* The only two non-brand hues: done (green) and needs you (red) */
+  --color-good: #12784a;
+  --color-good-soft: #e2f3e9;
+  --color-bad: #c43a26;
+  --color-bad-soft: #fdeae6;
   /* Brand accent. Tints are danfo yellow; solids are ink (yellow never carries text on light) */
   --color-accent-50: #fff8db;
   --color-accent-100: #ffefb0;
@@ -30,13 +40,13 @@
 
 /* Row highlight when polling brings new data (system-driven, not user-triggered) */
 @keyframes flash {
-  0% { background-color: #fef08a; }
+  0% { background-color: #fff3c4; }
   100% { background-color: transparent; }
 }
 /* A row that is on a live call breathes, so the room can see it from the back */
 @keyframes row-pulse {
-  0%, 100% { background-color: rgb(239 246 255 / 0.4); }
-  50% { background-color: rgb(219 234 254 / 0.9); }
+  0%, 100% { background-color: rgb(255 243 196 / 0.35); }
+  50% { background-color: rgb(255 243 196 / 0.95); }
 }
 
 html {
@@ -71,8 +81,8 @@ button:not(:disabled) {
 }
 .btn-secondary {
   box-shadow:
-    inset 0 0 0 1px rgb(203 213 225),
-    0 1px 2px rgb(15 23 42 / 0.06);
+    inset 0 0 0 1px rgb(11 18 32 / 0.16),
+    0 1px 2px rgb(11 18 32 / 0.06);
 }
 @media (hover: hover) and (pointer: fine) {
   .btn-primary:not(:disabled):hover {
@@ -83,16 +93,16 @@ button:not(:disabled) {
       0 10px 22px -8px rgb(11 18 32 / 0.55);
   }
   .btn-secondary:not(:disabled):hover {
-    background-color: rgb(248 250 252);
+    background-color: #f4f5f8;
     box-shadow:
-      inset 0 0 0 1px rgb(148 163 184),
-      0 2px 6px rgb(15 23 42 / 0.08);
+      inset 0 0 0 1px rgb(11 18 32 / 0.32),
+      0 2px 6px rgb(11 18 32 / 0.08);
   }
   .btn-ghost:not(:disabled):hover {
-    background-color: rgb(241 245 249);
+    background-color: #eceef3;
   }
   .card-hover:hover {
-    box-shadow: 0 8px 24px -8px rgb(15 23 42 / 0.15);
+    box-shadow: 0 8px 24px -8px rgb(11 18 32 / 0.15);
     transform: translateY(-1px);
   }
 }
@@ -117,7 +127,7 @@ button:not(:disabled) {
   }
   .animate-row-pulse {
     animation: none;
-    background-color: rgb(239 246 255 / 0.8);
+    background-color: rgb(255 243 196 / 0.7);
   }
 }
 

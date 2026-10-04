@@ -41,13 +41,13 @@ export function OrderDrawer({ id, onClose, onChanged }: { id: number; onClose: (
       {loading && !order && <LoadingState label="Loading order…" />}
       {error && !order && <ErrorState message={error} onRetry={refresh} />}
       {order && (
-        <div className="flex flex-col gap-6 p-5 sm:p-8">
+        <div className="flex flex-col gap-5 p-4 pt-5 sm:gap-6 sm:p-8">
           {error && <StaleBanner message={error} />}
           <header className="pr-12">
-            <p className="text-sm font-semibold text-slate-500">Order #{order.id}</p>
-            <h2 className="mt-1 font-display text-4xl font-bold tracking-[-0.02em] text-ink">{order.item}</h2>
-            <p className="mt-1 text-lg text-slate-600">
-              for <span className="font-semibold text-slate-900">{order.customer_name}</span> · {formatPhone(order.customer_phone)}
+            <p className="text-sm font-semibold text-ink-muted">Order #{order.id}</p>
+            <h2 className="mt-1 font-display text-3xl font-bold sm:text-4xl tracking-[-0.02em] text-ink">{order.item}</h2>
+            <p className="mt-1 text-base sm:text-lg text-ink-soft">
+              for <span className="font-semibold text-ink">{order.customer_name}</span> · {formatPhone(order.customer_phone)}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <StatusBadge status={order.status} size="lg" />
@@ -57,20 +57,20 @@ export function OrderDrawer({ id, onClose, onChanged }: { id: number; onClose: (
           <ScheduleCard order={order} now={now} onCallNow={call} starting={starting} />
 
           <section className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-3xl bg-white p-5 ring-1 ring-ink/10">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Address on file</h3>
-              <p className="mt-2 text-lg text-slate-700">{order.address_on_file || '—'}</p>
+            <div className="rounded-3xl bg-white p-4 ring-1 ring-ink/10 sm:p-5">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Address on file</h3>
+              <p className="mt-2 text-base text-ink-soft sm:text-lg">{order.address_on_file || '—'}</p>
             </div>
-            <div className="rounded-[28px] bg-danfo-soft p-5 ring-1 ring-danfo/50">
+            <div className="rounded-3xl bg-danfo-soft p-4 ring-1 ring-danfo/50 sm:rounded-[28px] sm:p-5">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-ink">Cleaned by Tellero</h3>
-              <p className="mt-2 text-lg font-semibold text-slate-900">
-                {order.cleaned_address || <span className="font-normal text-slate-400">Not confirmed yet</span>}
+              <p className="mt-2 text-base font-semibold text-ink sm:text-lg">
+                {order.cleaned_address || <span className="font-normal text-ink-faint">Not confirmed yet</span>}
               </p>
-              {order.landmark && <p className="mt-2 text-base text-slate-600">📍 Landmark: {order.landmark}</p>}
+              {order.landmark && <p className="mt-2 text-base text-ink-soft">📍 Landmark: {order.landmark}</p>}
             </div>
           </section>
 
-          <section className="rounded-3xl bg-white p-5 ring-1 ring-ink/10 sm:p-6">
+          <section className="rounded-3xl bg-white p-4 ring-1 ring-ink/10 sm:p-6">
             <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <InfoItem label="Seller" value={order.seller} />
               <InfoItem label="Delivery" value={order.delivery_window || (order.delivery_at ? friendlyWhen(order.delivery_at, now) : null)} />
@@ -103,7 +103,7 @@ function ScheduleCard({
   const calling = order.status === 'calling'
   const waiting = ['scheduled', 'pending'].includes(order.status) && !!order.call_at
   return (
-    <section className="flex flex-wrap items-center gap-4 rounded-[28px] bg-ink p-5 text-white">
+    <section className="flex flex-col gap-4 rounded-3xl bg-ink p-5 text-white sm:flex-row sm:items-center sm:rounded-[28px]">
       <div className="min-w-0 flex-1">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-danfo">Tellero call</h3>
         {calling ? (
@@ -127,7 +127,7 @@ function ScheduleCard({
           </p>
         )}
       </div>
-      <Button variant="secondary" size="sm" onClick={onCallNow} loading={starting} disabled={calling} icon={<PhoneIcon className="h-4 w-4" />}>
+      <Button variant="secondary" size="sm" className="w-full sm:w-auto" onClick={onCallNow} loading={starting} disabled={calling} icon={<PhoneIcon className="h-4 w-4" />}>
         {waiting ? 'Call now instead' : 'Call now'}
       </Button>
     </section>

@@ -138,26 +138,26 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
   return (
     <Modal title="Import orders from CSV" onClose={onClose} wide>
       <div className="flex flex-col gap-5">
-        <p className="text-base text-slate-600">
-          Columns needed: <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm">{ORDER_CSV_COLUMNS.join(', ')}</code>. Optional:{' '}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm">{ORDER_CSV_OPTIONAL.join(', ')}</code> (time defaults to 9am, Lagos time).{' '}
+        <p className="text-base text-ink-soft">
+          Columns needed: <code className="rounded bg-mist px-1.5 py-0.5 text-sm">{ORDER_CSV_COLUMNS.join(', ')}</code>. Optional:{' '}
+          <code className="rounded bg-mist px-1.5 py-0.5 text-sm">{ORDER_CSV_OPTIONAL.join(', ')}</code> (time defaults to 9am, Lagos time).{' '}
           <a href={sampleHref} download="sample-orders.csv" className="font-semibold text-ink underline decoration-danfo decoration-2 underline-offset-4">
             Download a sample
           </a>
         </p>
 
-        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center hover:border-accent-500 hover:bg-accent-50">
+        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-ink/15 bg-paper px-6 py-10 text-center hover:border-ink/40 hover:bg-accent-50">
           <span className="text-lg font-semibold">{fileName || 'Choose a CSV file'}</span>
-          <span className="text-sm text-slate-500">Click to browse</span>
+          <span className="text-sm text-ink-muted">Click to browse</span>
           <input type="file" accept=".csv,text/csv" className="sr-only" onChange={onFile} />
         </label>
 
-        {parseError && <p className="rounded-xl bg-red-50 px-4 py-3 text-base font-medium text-red-700">{parseError}</p>}
+        {parseError && <p className="rounded-xl bg-bad-soft px-4 py-3 text-base font-medium text-bad">{parseError}</p>}
 
         {rows && (
           <>
             <label className="block">
-              <span className="mb-1.5 block text-sm font-semibold text-slate-700">When should Tellero call? (applies to every order in this file)</span>
+              <span className="mb-1.5 block text-sm font-semibold text-ink-soft">When should Tellero call? (applies to every order in this file)</span>
               <select className={inputClass} value={plan} onChange={(e) => setPlan(e.target.value)}>
                 {CALL_PLANS.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -167,12 +167,12 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
               </select>
             </label>
             <div className="flex flex-wrap gap-3 text-base">
-              <span className="rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-800">{valid.length} ready</span>
-              {invalid.length > 0 && <span className="rounded-full bg-red-100 px-3 py-1 font-semibold text-red-800">{invalid.length} will be skipped</span>}
+              <span className="rounded-full bg-good-soft px-3 py-1 font-semibold text-good">{valid.length} ready</span>
+              {invalid.length > 0 && <span className="rounded-full bg-bad-soft px-3 py-1 font-semibold text-bad">{invalid.length} will be skipped</span>}
             </div>
             <div className="max-h-72 overflow-auto rounded-2xl ring-1 ring-ink/10">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <thead className="sticky top-0 bg-paper text-xs uppercase tracking-wide text-ink-muted">
                   <tr>
                     <th className="px-3 py-2">Customer</th>
                     <th className="px-3 py-2">Phone</th>
@@ -183,14 +183,14 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
                 </thead>
                 <tbody>
                   {rows.map((r, i) => (
-                    <tr key={i} className={`border-t border-slate-100 ${r.problem ? 'bg-red-50/60' : ''}`}>
+                    <tr key={i} className={`border-t border-line ${r.problem ? 'bg-bad-soft/60' : ''}`}>
                       <td className="px-3 py-2 font-medium">{r.customer_name || '—'}</td>
                       <td className="whitespace-nowrap px-3 py-2 tabular-nums">{formatPhone(r.phone)}</td>
                       <td className="px-3 py-2">{r.item}</td>
                       <td className="whitespace-nowrap px-3 py-2">{r.deliveryAt ? friendlyWhen(r.deliveryAt) : '—'}</td>
                       <td className="px-3 py-2">
                         {r.problem ? (
-                          <span className="font-semibold text-red-700">{r.problem}</span>
+                          <span className="font-semibold text-bad">{r.problem}</span>
                         ) : (
                           <span className="whitespace-nowrap">{friendlyWhen(computeCallAt(r.deliveryAt!, plan).callAt)}</span>
                         )}
@@ -203,8 +203,8 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
           </>
         )}
 
-        <div className="flex items-center justify-end gap-3">
-          {progress && <span className="mr-auto text-sm text-slate-500">{progress}</span>}
+        <div className="flex flex-wrap items-center justify-end gap-3 [&>button]:flex-1 sm:[&>button]:flex-none">
+          {progress && <span className="mr-auto text-sm text-ink-muted">{progress}</span>}
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>

@@ -40,7 +40,7 @@ function sortOrders(orders: OrderRow[]): OrderRow[] {
 function NextCallCell({ order, now }: { order: OrderRow; now: Date }) {
   if (order.status === 'calling') {
     return (
-      <span className="inline-flex items-center gap-2 whitespace-nowrap text-base font-semibold text-blue-700">
+      <span className="inline-flex items-center gap-2 whitespace-nowrap text-base font-semibold text-ink">
         <Spinner className="h-4 w-4" /> On the phone now
       </span>
     )
@@ -49,19 +49,19 @@ function NextCallCell({ order, now }: { order: OrderRow; now: Date }) {
     const retry = (order.attempts ?? 0) > 0
     return (
       <div>
-        <div className="whitespace-nowrap text-base font-semibold text-slate-900">{friendlyWhen(order.call_at, now)}</div>
-        <div className="text-sm text-slate-500">{countdown(order.call_at, now)}</div>
-        {retry && <div className="text-sm font-semibold text-orange-600">No answer, retry {order.attempts + 1} of {MAX_ATTEMPTS}</div>}
+        <div className="whitespace-nowrap text-base font-semibold text-ink">{friendlyWhen(order.call_at, now)}</div>
+        <div className="text-sm text-ink-muted">{countdown(order.call_at, now)}</div>
+        {retry && <div className="text-sm font-semibold text-ink-soft">No answer · retry {order.attempts + 1} of {MAX_ATTEMPTS}</div>}
       </div>
     )
   }
   if (['no_answer', 'failed'].includes(order.status)) {
-    return <span className="text-sm font-semibold text-red-600">Needs you: no more retries</span>
+    return <span className="text-sm font-semibold text-bad">Needs you: no more retries</span>
   }
   if (WAITING.includes(order.status)) {
-    return <span className="text-sm text-slate-400">Not scheduled</span>
+    return <span className="text-sm text-ink-faint">Not scheduled</span>
   }
-  return <span className="text-sm font-semibold text-emerald-700">✓ Done</span>
+  return <span className="text-sm font-semibold text-good">✓ Done</span>
 }
 
 export function OrdersPage() {
@@ -95,19 +95,19 @@ export function OrdersPage() {
 
       {orders && orders.length > 0 && (
         <>
-          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <StatCard label="Calls scheduled" value={upcoming.length} tone="text-indigo-600" />
-            <StatCard label="On the phone now" value={count('calling')} tone="text-blue-600" />
-            <StatCard label="Confirmed" value={count('confirmed')} tone="text-emerald-600" />
-            <StatCard label="Rescheduled / new address" value={count('rescheduled', 'address_updated')} tone="text-amber-600" />
-            <StatCard label="Need your attention" value={count('no_answer', 'failed')} tone="text-red-600" />
+          <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
+            <StatCard label="Calls scheduled" value={upcoming.length} />
+            <StatCard label="On the phone now" value={count('calling')} marker="live" />
+            <StatCard label="Confirmed" value={count('confirmed')} />
+            <StatCard label="New time / address" value={count('rescheduled', 'address_updated')} />
+            <StatCard label="Need your attention" value={count('no_answer', 'failed')} marker="attention" className="col-span-2 sm:col-span-1" />
           </div>
           {next && (
-            <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[28px] bg-ink px-5 py-4 text-base text-white">
+            <div className="mb-6 flex items-start gap-3 rounded-3xl bg-ink px-4 py-3.5 text-[15px] text-white sm:items-center sm:rounded-[28px] sm:px-5 sm:py-4 sm:text-base">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-danfo text-ink">
                 <PhoneIcon className="h-4 w-4" />
               </span>
-              <span>
+              <span className="min-w-0">
                 Next Tellero call: <span className="font-bold">{next.customer_name}</span> about {next.item},{' '}
                 <span className="font-bold">{friendlyWhen(next.call_at, now)}</span> ({countdown(next.call_at, now)})
               </span>
@@ -140,15 +140,47 @@ export function OrdersPage() {
                 }
               />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[820px] text-left">
+              <>
+              {/* Phones: one card per order, same information as the table row */}
+              <ul className="divide-y divide-line lg:hidden">
+                {orders.map((o) => (
+                  <li key={o.id} className={o.status === 'calling' ? 'animate-row-pulse' : changed.has(o.id) && !added.has(o.id) ? 'animate-flash' : ''}>
+                    <button onClick={() => setOpenId(o.id)} className="flex w-full flex-col gap-2.5 px-4 py-4 text-left active:bg-paper">
+                      <div className="flex w-full items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-base font-semibold text-ink">{o.customer_name}</div>
+                          <div className="text-sm tabular-nums text-ink-muted">{formatPhone(o.customer_phone)}</div>
+                        </div>
+                        <StatusBadge status={o.status} size="sm" />
+                      </div>
+                      <div className="min-w-0 text-[15px] text-ink">
+                        {o.item}
+                        <span className="block truncate text-sm text-ink-muted">
+                          {o.seller} · {o.cleaned_address || o.address_on_file || 'no address'}
+                        </span>
+                      </div>
+                      <div className="flex w-full flex-wrap items-end justify-between gap-x-4 gap-y-1 rounded-2xl bg-paper px-3 py-2.5">
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Delivery</div>
+                          <div className="text-sm text-ink-soft">{o.delivery_window || (o.delivery_at ? friendlyWhen(o.delivery_at, now) : '—')}</div>
+                        </div>
+                        <div className="text-right [&_*]:text-sm">
+                          <NextCallCell order={o} now={now} />
+                        </div>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto lg:block">
+                <table className="w-full min-w-[760px] text-left">
                   <thead>
-                    <tr className="border-b border-slate-200 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                      <th className="px-5 py-4">Customer</th>
-                      <th className="px-4 py-4">Order</th>
-                      <th className="px-4 py-4">Delivery</th>
-                      <th className="px-4 py-4">Status</th>
-                      <th className="px-5 py-4">Tellero call</th>
+                    <tr className="border-b border-ink/15 text-sm font-semibold uppercase tracking-wide text-ink-muted">
+                      <th className="px-4 py-4">Customer</th>
+                      <th className="px-3 py-4">Order</th>
+                      <th className="px-3 py-4">Delivery</th>
+                      <th className="px-3 py-4">Status</th>
+                      <th className="px-4 py-4">Tellero call</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -164,25 +196,25 @@ export function OrdersPage() {
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.3, ease: EASE_OUT }}
                           onClick={() => setOpenId(o.id)}
-                          className={`cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50 ${rowAnim}`}
+                          className={`cursor-pointer border-b border-line last:border-0 hover:bg-paper ${rowAnim}`}
                         >
-                          <td className="px-5 py-4">
+                          <td className="px-4 py-4">
                             <div className="text-base font-semibold">{o.customer_name}</div>
-                            <div className="whitespace-nowrap text-sm tabular-nums text-slate-500">{formatPhone(o.customer_phone)}</div>
+                            <div className="whitespace-nowrap text-sm tabular-nums text-ink-muted">{formatPhone(o.customer_phone)}</div>
                           </td>
-                          <td className="max-w-[240px] px-4 py-4">
+                          <td className="max-w-[220px] px-3 py-4">
                             <div className="text-base">{o.item}</div>
-                            <div className="truncate text-sm text-slate-500" title={o.cleaned_address || o.address_on_file || ''}>
+                            <div className="truncate text-sm text-ink-muted" title={o.cleaned_address || o.address_on_file || ''}>
                               {o.seller} · {o.cleaned_address || o.address_on_file || 'no address'}
                             </div>
                           </td>
-                          <td className="px-4 py-4">
-                            <div className="whitespace-nowrap text-base text-slate-700">{o.delivery_window || (o.delivery_at ? friendlyWhen(o.delivery_at, now) : '—')}</div>
+                          <td className="px-3 py-4">
+                            <div className="min-w-[110px] text-base text-ink-soft">{o.delivery_window || (o.delivery_at ? friendlyWhen(o.delivery_at, now) : '—')}</div>
                           </td>
-                          <td className="px-4 py-4">
+                          <td className="px-3 py-4">
                             <StatusBadge status={o.status} />
                           </td>
-                          <td className="px-5 py-4">
+                          <td className="px-4 py-4">
                             <NextCallCell order={o} now={now} />
                           </td>
                         </motion.tr>
@@ -192,18 +224,19 @@ export function OrdersPage() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
           {orders && orders.length > 0 && (
-            <p className="mt-3 text-sm text-slate-500">Click any order to see the call transcript, or to call the customer right now.</p>
+            <p className="mt-3 text-sm text-ink-muted">Tap any order to see the call transcript, or to call the customer right now.</p>
           )}
         </section>
 
         <aside className="hidden xl:block">
           <h2 className="mb-3 flex items-center gap-2 text-lg font-bold">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-danfo" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-ink" />
             </span>
             Live calls
           </h2>

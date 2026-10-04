@@ -21,9 +21,9 @@ const ToastContext = createContext<ToastApi | null>(null)
 let nextId = 1
 
 const STYLES: Record<ToastKind, { bg: string; icon: string }> = {
-  success: { bg: 'bg-emerald-600', icon: '✓' },
-  error: { bg: 'bg-red-600', icon: '!' },
-  info: { bg: 'bg-slate-800', icon: 'i' },
+  success: { bg: 'bg-ink', icon: '✓' },
+  error: { bg: 'bg-bad', icon: '!' },
+  info: { bg: 'bg-ink', icon: 'i' },
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {

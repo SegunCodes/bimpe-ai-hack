@@ -80,10 +80,41 @@ export function CustomersPage() {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left">
+          <>
+          {/* Phones: one card per customer with a full-width call button */}
+          <ul className="divide-y divide-line md:hidden">
+            {customers.map((c) => {
+              const onCall = data!.onCall.includes(c.id)
+              const isStarting = starting.has(c.id)
+              return (
+                <li key={c.id} className={`px-4 py-4 ${onCall ? 'animate-row-pulse' : changed.has(c.id) && !added.has(c.id) ? 'animate-flash' : ''}`}>
+                  <button onClick={() => setOpenId(c.id)} className="flex w-full items-start justify-between gap-3 text-left">
+                    <div className="min-w-0">
+                      <div className="truncate text-base font-semibold text-ink">{c.name || 'Unnamed'}</div>
+                      <div className="text-sm tabular-nums text-ink-muted">
+                        {formatPhone(c.phone)} · {languageName(c.language)}
+                      </div>
+                    </div>
+                    {onCall ? <StatusBadge status="calling" size="sm" /> : <StatusBadge status={c.status} size="sm" />}
+                  </button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={onCall || isStarting}
+                    onClick={() => startOnboarding(c)}
+                    className="mt-3 w-full"
+                  >
+                    {onCall || isStarting ? <Spinner className="h-4 w-4" /> : <PhoneIcon className="h-4 w-4" />}
+                    {onCall ? 'On a call' : isStarting ? 'Starting' : 'Start onboarding call'}
+                  </Button>
+                </li>
+              )
+            })}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[700px] text-left">
               <thead>
-                <tr className="border-b border-slate-200 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-ink/15 text-sm font-semibold uppercase tracking-wide text-ink-muted">
                   <th className="px-5 py-4">Name</th>
                   <th className="px-4 py-4">Phone</th>
                   <th className="px-4 py-4">Language</th>
@@ -106,10 +137,10 @@ export function CustomersPage() {
                       animate={{ opacity: 1, transform: 'translateY(0px)' }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.3, ease: EASE_OUT }}
-                      onClick={() => setOpenId(c.id)} className={`cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50 ${anim}`}>
+                      onClick={() => setOpenId(c.id)} className={`cursor-pointer border-b border-line last:border-0 hover:bg-paper ${anim}`}>
                       <td className="px-5 py-4 text-base font-semibold">{c.name || 'Unnamed'}</td>
-                      <td className="whitespace-nowrap px-4 py-4 text-base tabular-nums text-slate-600">{formatPhone(c.phone)}</td>
-                      <td className="px-4 py-4 text-base text-slate-600">{languageName(c.language)}</td>
+                      <td className="whitespace-nowrap px-4 py-4 text-base tabular-nums text-ink-soft">{formatPhone(c.phone)}</td>
+                      <td className="px-4 py-4 text-base text-ink-soft">{languageName(c.language)}</td>
                       <td className="px-4 py-4">{onCall ? <StatusBadge status="calling" /> : <StatusBadge status={c.status} />}</td>
                       <td className="px-5 py-4 text-right">
                         <Button
@@ -132,6 +163,7 @@ export function CustomersPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

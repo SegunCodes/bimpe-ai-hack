@@ -8,9 +8,9 @@ type Variant = 'primary' | 'brand' | 'secondary' | 'ghost' | 'danger'
 const VARIANTS: Record<Variant, string> = {
   primary: 'btn-primary text-white disabled:opacity-50 disabled:shadow-none',
   brand: 'btn-danfo disabled:opacity-50 disabled:shadow-none',
-  secondary: 'btn-secondary bg-white text-slate-800 disabled:text-slate-400',
-  ghost: 'btn-ghost text-slate-600 disabled:text-slate-300',
-  danger: 'bg-red-600 text-white shadow-sm disabled:opacity-50',
+  secondary: 'btn-secondary bg-white text-ink disabled:text-ink-faint',
+  ghost: 'btn-ghost text-ink-soft disabled:text-ink-faint',
+  danger: 'bg-bad text-white shadow-sm disabled:opacity-50',
 }
 
 const SIZES = {

@@ -43,12 +43,12 @@ export function CustomerDrawer({ id, onClose, onChanged }: { id: number; onClose
       {loading && !customer && <LoadingState label="Loading customer…" />}
       {error && !customer && <ErrorState message={error} onRetry={refresh} />}
       {customer && (
-        <div className="flex flex-col gap-6 p-5 sm:p-8">
+        <div className="flex flex-col gap-5 p-4 pt-5 sm:gap-6 sm:p-8">
           {error && <StaleBanner message={error} />}
           <header className="pr-12">
-            <p className="text-sm font-semibold text-slate-500">Customer #{customer.id}</p>
-            <h2 className="mt-1 font-display text-4xl font-bold tracking-[-0.02em] text-ink">{customer.name || 'Unnamed'}</h2>
-            <p className="mt-1 text-lg tabular-nums text-slate-600">{formatPhone(customer.phone)}</p>
+            <p className="text-sm font-semibold text-ink-muted">Customer #{customer.id}</p>
+            <h2 className="mt-1 font-display text-3xl font-bold sm:text-4xl tracking-[-0.02em] text-ink">{customer.name || 'Unnamed'}</h2>
+            <p className="mt-1 text-base sm:text-lg tabular-nums text-ink-soft">{formatPhone(customer.phone)}</p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <StatusBadge status={onCall ? 'calling' : customer.status} size="lg" />
               <Button onClick={call} loading={starting} disabled={onCall} icon={<PhoneIcon />}>
@@ -57,8 +57,8 @@ export function CustomerDrawer({ id, onClose, onChanged }: { id: number; onClose
             </div>
           </header>
 
-          <section className="rounded-3xl bg-white p-5 ring-1 ring-ink/10 sm:p-6">
-            <h3 className="mb-4 text-lg font-bold text-slate-800">Profile collected by Tellero</h3>
+          <section className="rounded-3xl bg-white p-4 ring-1 ring-ink/10 sm:p-6">
+            <h3 className="mb-4 text-lg font-bold text-ink">Profile collected by Tellero</h3>
             <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <InfoItem label="Address" value={customer.address} wide />
               <InfoItem label="Landmark" value={customer.landmark} />

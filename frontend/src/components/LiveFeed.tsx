@@ -69,35 +69,39 @@ export function LiveFeed({ compact, limit }: { compact?: boolean; limit?: number
               >
                 <button
                   onClick={() => setOpenId(call.id)}
-                  className={`btn card-hover flex w-full items-center gap-4 rounded-3xl bg-white text-left shadow-sm ring-1 ${changed.has(call.id) ? 'animate-flash' : ''} ${
-                    active ? 'ring-2 ring-blue-300' : 'ring-ink/10'
-                  } ${compact ? 'p-3.5' : 'p-5'}`}
+                  className={`btn card-hover flex w-full items-center gap-3 rounded-3xl bg-white text-left shadow-sm ring-1 ${changed.has(call.id) ? 'animate-flash' : ''} ${
+                    active ? 'ring-2 ring-danfo' : 'ring-ink/10'
+                  } ${compact ? 'p-3.5' : 'p-3.5 sm:gap-4 sm:p-5'}`}
                 >
                   <div
                     className={`flex shrink-0 items-center justify-center rounded-2xl ${
-                      call.call_type === 'onboarding' ? 'bg-purple-100 text-purple-700' : 'bg-accent-100 text-accent-700'
-                    } ${compact ? 'h-10 w-10' : 'h-14 w-14'}`}
+                      call.call_type === 'onboarding' ? 'bg-mist text-ink' : 'bg-danfo-soft text-ink'
+                    } ${compact ? 'h-10 w-10' : 'h-11 w-11 sm:h-14 sm:w-14'}`}
                   >
                     {call.call_type === 'onboarding' ? (
-                      <UserPlusIcon className={compact ? 'h-5 w-5' : 'h-7 w-7'} />
+                      <UserPlusIcon className={compact ? 'h-5 w-5' : 'h-5 w-5 sm:h-7 sm:w-7'} />
                     ) : (
-                      <BoxIcon className={compact ? 'h-5 w-5' : 'h-7 w-7'} />
+                      <BoxIcon className={compact ? 'h-5 w-5' : 'h-5 w-5 sm:h-7 sm:w-7'} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className={`truncate font-bold ${compact ? 'text-base' : 'text-xl'}`}>{who?.name ?? 'Unknown customer'}</div>
-                    <div className={`truncate text-slate-500 ${compact ? 'text-xs' : 'text-base'}`}>
+                    <div className={`truncate font-bold ${compact ? 'text-base' : 'text-base sm:text-xl'}`}>{who?.name ?? 'Unknown customer'}</div>
+                    <div className={`truncate text-ink-muted ${compact ? 'text-xs' : 'text-sm sm:text-base'}`}>
                       {call.call_type === 'onboarding' ? 'Onboarding' : `Delivery${item ? ` · ${item}` : ''}`}
                       {!compact && who && ` · ${formatPhone(who.phone)}`}
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
                     <div className="flex flex-wrap justify-end gap-1.5">
-                      {/* Compact view: one badge (the outcome once known) so names have room */}
-                      {(!compact || !call.outcome) && <StatusBadge status={call.status} size={compact ? 'sm' : 'lg'} />}
-                      {call.outcome && <StatusBadge status={call.outcome} size={compact ? 'sm' : 'lg'} />}
+                      {/* Compact view and phones: one badge (the outcome once known) so names have room */}
+                      {(!compact || !call.outcome) && (
+                        <span className={call.outcome ? 'hidden sm:inline-flex' : 'inline-flex'}>
+                          <StatusBadge status={call.status} size={compact ? 'sm' : 'md'} />
+                        </span>
+                      )}
+                      {call.outcome && <StatusBadge status={call.outcome} size={compact ? 'sm' : 'md'} />}
                     </div>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-ink-faint">
                       {timeAgo(call.created_at)}
                       {call.duration_seconds != null && ` · ${formatDuration(call.duration_seconds)}`}
                     </span>
