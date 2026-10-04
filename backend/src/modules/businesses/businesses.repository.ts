@@ -10,6 +10,7 @@ export interface Business {
   plan: string | null;
   plan_started_at: Date | null;
   plan_expires_at: Date | null;
+  call_credits: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -42,23 +43,36 @@ export const businessesRepository = {
     );
   },
 
-  /** Calls that count against the allowance: every call placed since the plan started, except ones that never dialled. */
+  /** Calls that used a credit since the plan started (answered calls; refunded ones don't count). */
   async callsUsedSince(id: number, since: Date): Promise<number> {
     const result = await one<{ total: string }>(
-      `SELECT COUNT(*) AS total FROM calls WHERE business_id = ? AND created_at >= ?
-       AND NOT (status = 'failed' AND provider_call_id IS NULL)`,
+      "SELECT COUNT(*) AS total FROM calls WHERE business_id = ? AND created_at >= ? AND credit_charged",
       [id, since]
     );
     return Number(result?.total ?? 0);
   },
 
-  /** Every business except the website account, newest first, with its numbers for /admin. */
-  listForAdmin: () =>
-    rows<Business & { customers: string; orders: string; calls: string }>(
+  addCredits: async (id: number, calls: number): Promise<void> => {
+    await run("UPDATE businesses SET call_credits = call_credits + ? WHERE id = ?", [calls, id]);
+  },
+
+  /** Takes one credit if there is one. Atomic, so two calls at once can't both spend the last credit. */
+  async takeCredit(id: number): Promise<boolean> {
+    const result = await run("UPDATE businesses SET call_credits = call_credits - 1 WHERE id = ? AND call_credits > 0", [id]);
+    return result.affectedRows === 1;
+  },
+
+  /** Every business with its numbers for /admin; "month" figures count calls since `monthStart`. */
+  listForAdmin: (monthStart: Date) =>
+    rows<Business & { customers: string; orders: string; calls: string; month_minutes: string; month_answered: string; revenue_kobo: string }>(
       `SELECT b.*,
         (SELECT COUNT(*) FROM customers c WHERE c.business_id = b.id) AS customers,
         (SELECT COUNT(*) FROM orders o WHERE o.business_id = b.id) AS orders,
-        (SELECT COUNT(*) FROM calls l WHERE l.business_id = b.id) AS calls
-       FROM businesses b ORDER BY b.is_house, b.created_at DESC`
+        (SELECT COUNT(*) FROM calls l WHERE l.business_id = b.id) AS calls,
+        (SELECT COALESCE(SUM(CEIL(COALESCE(l.duration_seconds, 0) / 60.0)), 0) FROM calls l WHERE l.business_id = b.id AND l.created_at >= ?) AS month_minutes,
+        (SELECT COUNT(*) FROM calls l WHERE l.business_id = b.id AND l.created_at >= ? AND l.credit_charged) AS month_answered,
+        (SELECT COALESCE(SUM(p.amount_kobo), 0) FROM payments p WHERE p.business_id = b.id AND p.status = 'paid') AS revenue_kobo
+       FROM businesses b ORDER BY b.is_house, b.created_at DESC`,
+      [monthStart, monthStart]
     )
 };

@@ -2,6 +2,7 @@ import { one, rows, run } from "../../db/pool";
 import { fromDbUtc, toDbUtc } from "../../utils/dbTime";
 import { Order, OrderWithCustomer } from "../../types/models";
 import { CreateOrderInput } from "./orders.schema";
+import { CAN_CALL_SQL } from "../businesses/access";
 
 const WITH_CUSTOMER = `SELECT o.*, c.name AS customer_name, c.phone AS customer_phone
   FROM orders o JOIN customers c ON c.id = o.customer_id`;
@@ -56,13 +57,26 @@ export const ordersRepository = {
     await run("UPDATE orders SET status = 'calling', attempts = attempts + 1, call_at = NULL WHERE id = ?", [id]);
   },
 
-  /** Orders whose scheduled call time has arrived, oldest first. */
+  /**
+   * Orders whose scheduled call time has arrived, oldest first, for businesses that can call
+   * right now. Orders of a business with no plan or no credits stay scheduled and wait.
+   */
   findDue: (limit: number) =>
     rows<{ id: number; customer_id: number }>(
-      `SELECT id, customer_id FROM orders
-       WHERE status = 'scheduled' AND call_at IS NOT NULL AND call_at <= now()
-       ORDER BY call_at, id LIMIT ${Math.max(1, Math.floor(limit))}`
+      `SELECT o.id, o.customer_id FROM orders o JOIN businesses b ON b.id = o.business_id
+       WHERE o.status = 'scheduled' AND o.call_at IS NOT NULL AND o.call_at <= now() AND ${CAN_CALL_SQL}
+       ORDER BY o.call_at, o.id LIMIT ${Math.max(1, Math.floor(limit))}`
     ),
+
+  /** Waiting for credit until the delivery time passed: too late to call, so tell the owner. */
+  markMissedForCredit: async (): Promise<number> =>
+    (await run(
+      `UPDATE orders o SET status = 'failed', call_at = NULL,
+         outcome_notes = 'Not called: no plan or call credits before the delivery time. Top up so this doesn''t happen again.'
+       FROM businesses b
+       WHERE b.id = o.business_id AND o.status = 'scheduled' AND o.call_at IS NOT NULL AND o.call_at <= now()
+         AND o.delivery_at IS NOT NULL AND o.delivery_at < now() AND NOT ${CAN_CALL_SQL}`
+    )).affectedRows,
 
   /** Atomically takes a due order so it can only ever be dialled once. */
   async claimDue(id: number): Promise<boolean> {

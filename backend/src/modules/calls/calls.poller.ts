@@ -3,6 +3,7 @@ import { getCall } from "../../integrations/bimpeClient";
 import { ordersRepository } from "../orders/orders.repository";
 import { applyCallResult } from "./callResults.service";
 import { callsRepository } from "./calls.repository";
+import { refundCredit } from "../businesses/access";
 
 const MAX_WAIT_MS = 15 * 60 * 1000;
 const STUCK_AFTER_SECONDS = 120;
@@ -15,6 +16,7 @@ export async function checkLiveCalls(limit = 10): Promise<number> {
   // A request that died between claiming and dialling leaves a call with no provider id.
   for (const stuck of await callsRepository.findStuckWithoutProvider(STUCK_AFTER_SECONDS)) {
     await callsRepository.markFailed(stuck.id);
+    await refundCredit(stuck.id);
     if (stuck.order_id !== null) await ordersRepository.markFailed(stuck.order_id, "The call could not be placed. Try again.");
   }
   if (env.mockCalls) return 0;

@@ -7,7 +7,8 @@ import { badRequest, HttpError, notFound } from "../../utils/errors";
 import { asyncHandler } from "../../utils/http";
 import { businessIdOf, publicBusiness, requireBusiness } from "../auth/auth";
 import { businessesRepository } from "../businesses/businesses.repository";
-import { PLAN_DAYS, PLANS, isPlanId } from "../businesses/plans";
+import { PLAN_DAYS, PLANS, TOP_UPS, isPlanId, isTopUpId } from "../businesses/plans";
+import { grantPlan } from "../businesses/access";
 
 /**
  * Plan payments through Paystack (https://paystack.com/docs/api/transaction):
@@ -34,7 +35,7 @@ async function paystack<T>(method: "GET" | "POST", path: string, body?: unknown)
   return payload.data as T;
 }
 
-interface PaymentRow { id: number; business_id: number; reference: string; plan: string; amount_kobo: number; status: string }
+interface PaymentRow { id: number; business_id: number; reference: string; plan: string; kind: string; amount_kobo: number; status: string }
 
 /**
  * Starts the plan for a payment Paystack says succeeded. Checks amount and currency against
@@ -56,7 +57,10 @@ async function confirmPayment(reference: string): Promise<"paid" | "pending" | "
     return "failed";
   }
   const claimed = await run("UPDATE payments SET status = 'paid', paid_at = now() WHERE id = ? AND status <> 'paid'", [payment.id]);
-  if (claimed.affectedRows === 1) await businessesRepository.setPlan(payment.business_id, payment.plan, PLAN_DAYS);
+  if (claimed.affectedRows === 1) {
+    if (payment.kind === "topup" && isTopUpId(payment.plan)) await businessesRepository.addCredits(payment.business_id, TOP_UPS[payment.plan].calls);
+    else if (isPlanId(payment.plan)) await grantPlan(payment.business_id, payment.plan);
+  }
   return "paid";
 }
 
@@ -76,16 +80,22 @@ billingRoutes.get("/", asyncHandler(async (req, res) => {
   res.json({
     business: await publicBusiness(business),
     plans: Object.entries(PLANS).map(([id, p]) => ({ id, ...p, days: PLAN_DAYS })),
+    topUps: Object.entries(TOP_UPS).map(([id, p]) => ({ id, ...p })),
     paymentsEnabled: Boolean(env.paystack.secretKey)
   });
 }));
 
 billingRoutes.post("/checkout", asyncHandler(async (req, res) => {
+  // {plan: "starter"} buys a month; {plan: "topup_10"} buys extra calls (needs an active plan).
   const { plan } = z.object({ plan: z.string() }).parse(req.body);
-  if (!isPlanId(plan)) throw badRequest("Unknown plan");
+  const kind = isTopUpId(plan) ? "topup" : "plan";
+  if (!isPlanId(plan) && !isTopUpId(plan)) throw badRequest("Unknown plan");
   const business = await businessesRepository.findById(businessIdOf(req));
   if (!business) throw notFound("Business");
-  const amountKobo = PLANS[plan].priceNaira * 100;
+  if (isTopUpId(plan) && !(business.plan_expires_at && new Date(business.plan_expires_at).getTime() > Date.now())) {
+    throw badRequest("Top-ups add calls to an active plan. Choose a plan first.");
+  }
+  const amountKobo = (isTopUpId(plan) ? TOP_UPS[plan].priceNaira : PLANS[plan as keyof typeof PLANS].priceNaira) * 100;
   const reference = `tl_${business.id}_${randomBytes(8).toString("hex")}`;
   const callback = `${returnUrl(req)}?reference=${reference}`;
   const tx = await paystack<{ authorization_url: string }>("POST", "/transaction/initialize", {
@@ -94,9 +104,9 @@ billingRoutes.post("/checkout", asyncHandler(async (req, res) => {
     currency: "NGN",
     reference,
     callback_url: callback,
-    metadata: { business_id: business.id, plan }
+    metadata: { business_id: business.id, plan, kind }
   });
-  await run("INSERT INTO payments (business_id, reference, plan, amount_kobo) VALUES (?, ?, ?, ?)", [business.id, reference, plan, amountKobo]);
+  await run("INSERT INTO payments (business_id, reference, plan, kind, amount_kobo) VALUES (?, ?, ?, ?, ?)", [business.id, reference, plan, kind, amountKobo]);
   res.json({ url: tx.authorization_url, reference });
 }));
 

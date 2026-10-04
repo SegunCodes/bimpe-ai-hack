@@ -67,6 +67,7 @@ export const api = {
   adminLogin: (password: string) => post<{ token: string }>('/admin-auth/login', { password }),
   adminOverview: () => request<AdminOverview>('/admin/overview'),
   adminSetPlan: (businessId: number, plan: string | null) => post<{ id: number }>(`/admin/businesses/${businessId}/plan`, { plan }),
+  adminSetCapacity: (minutes: number) => post<{ ok: true }>('/admin/capacity', { minutes }),
 
   listCustomers: () => request<Customer[]>('/customers'),
   createCustomer: (data: NewCustomer) => post<Customer>('/customers', data),

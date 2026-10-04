@@ -76,6 +76,13 @@ email and password, and only ever sees its own customers, orders and calls.
 - **Payments** (`src/modules/billing/billing.ts`): Paystack. Set `PAYSTACK_SECRET_KEY` and `APP_URL`,
   and point Paystack's webhook at `https://<backend>/api/webhooks/paystack`. A payment starts its
   plan exactly once, whether confirmed by the return page or the webhook.
+- **Credits**: a plan adds its calls to the business's credit balance (top-up packs add more). A
+  call takes one credit when it is placed and gives it back if nobody answers or it never connects.
+  With no credits, due orders wait as "Waiting for call credits"; if the delivery time passes they
+  are marked missed.
+- **Shared limits** (`src/modules/capacity`): every business's calls use one BimpeAI account, so
+  calls pause for everyone when this month's minute budget (`BIMPE_MONTHLY_MINUTES`, or the number
+  set in /admin after a wallet top-up) is used up, and at most `MAX_CONCURRENT_CALLS` run at once.
 - **Admin** (`/admin` on the dashboard): signs in with `ADMIN_PASSWORD`. Shows every business,
   its plan and calls, revenue, and lets you switch a plan on by hand (demos, bank transfers).
 - The website's "Call me" form and `/join` use a built-in "Tellero website" account that needs no plan.

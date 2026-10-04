@@ -51,7 +51,7 @@ function PlanPill() {
   const { business } = useBusiness()
   if (!business) return null
   const { active, planName, callsLeft } = business.plan
-  const empty = active && callsLeft === 0
+  const empty = business.plan.outOfCredits
   return (
     <Link
       href="/dashboard/billing"
@@ -59,7 +59,7 @@ function PlanPill() {
         !active || empty ? 'bg-danfo text-ink ring-danfo' : 'bg-white/10 text-white ring-white/15 hover:bg-white/15'
       }`}
     >
-      {!active ? 'Choose a plan' : empty ? 'No calls left' : (
+      {!active ? 'Choose a plan' : empty ? 'Top up calls' : (
         <>
           <span className="hidden sm:inline">{planName} · </span>
           {callsLeft} calls left
@@ -74,17 +74,17 @@ function PlanBanner() {
   const { business } = useBusiness()
   const pathname = usePathname()
   if (!business || pathname.startsWith('/dashboard/billing')) return null
-  const { active, callsLeft, callsIncluded, planName } = business.plan
-  if (active && callsLeft > 0) return null
+  const { active, outOfCredits } = business.plan
+  if (active && !outOfCredits) return null
   return (
     <div className="bg-danfo-soft px-4 py-3 text-center text-[15px] text-ink ring-1 ring-danfo/50 sm:px-8">
       {active ? (
-        <>You’ve used all {callsIncluded} calls in your {planName} plan, so Tellero isn’t calling anyone right now. </>
+        <>You’re out of call credits. Scheduled calls are waiting and go out as soon as you top up. </>
       ) : (
         <>Tellero can’t call your customers until you choose a plan. You can add orders and customers now. </>
       )}
       <Link href="/dashboard/billing" className="font-semibold underline underline-offset-4">
-        {active ? 'Upgrade or renew' : 'Choose a plan'}
+        {active ? 'Top up now' : 'Choose a plan'}
       </Link>
     </div>
   )

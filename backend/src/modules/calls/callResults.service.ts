@@ -5,6 +5,7 @@ import { CallResult, CallType } from "../../types/models";
 import { callsRepository } from "./calls.repository";
 import { customersRepository } from "../customers/customers.repository";
 import { ordersRepository } from "../orders/orders.repository";
+import { refundCredit } from "../businesses/access";
 
 
 function storedReport(value: unknown): Record<string, unknown> | undefined {
@@ -67,6 +68,9 @@ export async function applyCallResult(result: CallResult): Promise<void> {
     durationSeconds: result.durationSeconds
   });
   if (!updated) return;
+
+  // Credits pay for conversations: nobody picked up, or the call never connected → credit back.
+  if (outcome === "no_answer" || result.status === "failed" || result.status === "busy") await refundCredit(call.id);
 
   if (call.call_type === "delivery" && call.order_id !== null) {
     await applyDeliveryOutcome(call.customer_id, call.order_id, outcome, extracted || {});

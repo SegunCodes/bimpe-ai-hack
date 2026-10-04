@@ -6,7 +6,9 @@ import { api, errorMessage } from '../lib/api'
 import { formatDateTime, formatDuration, languageName } from '../lib/format'
 import { computeStats, type Range, type Stats } from '../lib/stats'
 import { SIGNED_OUT_EVENT, clearToken, getToken, type SessionKind } from '../lib/session'
-import type { AdminBusiness, AdminOverview } from '../lib/types'
+import type { AdminBusiness, AdminOverview, Capacity } from '../lib/types'
+import { Button } from '../components/Button'
+import { inputClass } from '../components/Overlay'
 import { usePolling } from '../hooks/usePolling'
 import { AdminSignIn } from '../components/AdminSignIn'
 import { PhoneIcon } from '../components/Icons'
@@ -168,7 +170,8 @@ function PlanCell({ business }: { business: AdminBusiness }) {
   if (!p.active) return <span className="font-semibold text-bad">{p.planName ? `${p.planName} ended` : 'No plan'}</span>
   return (
     <span className="text-ink-soft">
-      <span className="font-semibold text-ink">{p.planName}</span> · {p.callsUsed}/{p.callsIncluded} calls · until {formatDateTime(p.expiresAt)}
+      <span className="font-semibold text-ink">{p.planName}</span> · until {formatDateTime(p.expiresAt)}
+      {p.outOfCredits && <span className="font-semibold text-bad"> · out of credits</span>}
     </span>
   )
 }
@@ -209,6 +212,76 @@ function PlanSwitch({ business, plans, onChanged }: { business: AdminBusiness; p
   )
 }
 
+/**
+ * Tellero's shared BimpeAI minutes this month. All businesses' calls come out of one BimpeAI
+ * account, so this is the number to watch: when it fills up, new calls pause for everyone.
+ */
+function CapacityCard({ capacity, onChanged }: { capacity: Capacity; onChanged: () => void }) {
+  const toast = useToast()
+  const [minutes, setMinutes] = useState('')
+  const [busy, setBusy] = useState(false)
+  const used = Math.min(100, (capacity.minutesUsed / Math.max(1, capacity.minuteBudget)) * 100)
+  const short = capacity.minutesNeededForCredits - capacity.minutesLeft
+  const save = async () => {
+    const value = Number(minutes)
+    if (!Number.isInteger(value) || value < 0) return toast.error('Enter a whole number of minutes.')
+    setBusy(true)
+    try {
+      await api.adminSetCapacity(value)
+      toast.success(`This month's BimpeAI minutes set to ${value}`)
+      setMinutes('')
+      onChanged()
+    } catch (err) {
+      toast.error(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <section className={`mb-4 rounded-3xl p-4 shadow-sm ring-1 sm:p-6 ${capacity.paused ? 'bg-bad-soft ring-bad/20' : 'bg-white ring-ink/10'}`}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="font-display text-lg font-bold text-ink sm:text-xl">BimpeAI minutes this month</h2>
+          <p className="mt-0.5 text-sm text-ink-muted">Every business’s calls come out of your one BimpeAI account. When it’s full, new calls pause for everyone.</p>
+        </div>
+        {capacity.paused && <span className="rounded-full bg-bad px-3 py-1 text-sm font-semibold text-white">Calls paused</span>}
+      </div>
+      <div className="mt-4 flex items-baseline justify-between gap-3">
+        <span className="font-display text-3xl font-bold tabular-nums text-ink">
+          {capacity.minutesUsed} <span className="text-lg font-semibold text-ink-muted">of {capacity.minuteBudget} min</span>
+        </span>
+        <span className="text-sm text-ink-muted">
+          {capacity.onThePhone}/{capacity.maxConcurrentCalls} lines busy now
+        </span>
+      </div>
+      <div className="mt-2 h-3 overflow-hidden rounded-full bg-mist">
+        <div className={`h-full rounded-full ${capacity.paused ? 'bg-bad' : used > 80 ? 'bg-danfo' : 'bg-ink'}`} style={{ width: `${used}%` }} />
+      </div>
+      <p className="mt-2 text-sm text-ink-muted">
+        ≈ ₦{(capacity.minutesUsed * capacity.costPerMinuteNaira).toLocaleString('en-NG')} of BimpeAI usage · {capacity.minutesLeft} min left ·{' '}
+        {capacity.budgetSetByAdmin ? 'set by you for this month' : 'default budget'}
+      </p>
+      <p className={`mt-3 rounded-2xl px-4 py-3 text-[15px] ${short > 0 ? 'bg-danfo-soft text-ink ring-1 ring-danfo/60' : 'bg-paper text-ink-soft'}`}>
+        Businesses hold <b>{capacity.creditsOutstanding}</b> unused call credits, about <b>{capacity.minutesNeededForCredits} min</b> of calls.{' '}
+        {short > 0 ? (
+          <>That’s {short} min more than you have left. Top up your BimpeAI wallet, then raise the minutes below.</>
+        ) : (
+          <>You have enough minutes to cover them.</>
+        )}
+      </p>
+      <div className="mt-4 flex flex-wrap items-end gap-2">
+        <label className="min-w-0 flex-1 sm:max-w-xs">
+          <span className="mb-1.5 block text-sm font-semibold text-ink-soft">After topping up BimpeAI, set this month’s minutes</span>
+          <input type="number" inputMode="numeric" min={0} value={minutes} onChange={(e) => setMinutes(e.target.value)} placeholder={String(capacity.minuteBudget)} className={inputClass} />
+        </label>
+        <Button size="md" onClick={save} loading={busy} disabled={!minutes}>
+          Save
+        </Button>
+      </div>
+    </section>
+  )
+}
+
 function Businesses({ overview, stats, onChanged }: { overview: AdminOverview; stats: Stats; onChanged: () => void }) {
   const rate = new Map(stats.businesses.map((b) => [b.id, b]))
   if (overview.businesses.length === 0) return <p className="py-6 text-center text-base text-ink-muted">No businesses have signed up yet.</p>
@@ -229,6 +302,10 @@ function Businesses({ overview, stats, onChanged }: { overview: AdminOverview; s
               <div className="mt-1 text-sm text-ink-muted">
                 Joined {formatDateTime(b.created_at)} · {b.customers} customers · {b.orders} orders · {b.calls} calls
                 {r && r.calls > 0 && ` · ${fmtPct(r.pickRate)} picked up · ${fmtPct(r.goodRate)} went well (this period)`}
+              </div>
+              <div className="mt-1 text-sm text-ink-soft">
+                This month: <b className="text-ink">{b.usage.answeredThisMonth}</b> answered calls · <b className="text-ink">{b.usage.minutesThisMonth}</b> min · costs you ≈{' '}
+                {naira(b.usage.costThisMonthNaira)} · paid you {naira(b.usage.revenueNaira)} in total · <b className="text-ink">{b.plan.callsLeft}</b> credits left
               </div>
             </div>
             <PlanSwitch business={b} plans={overview.plans} onChanged={onChanged} />
@@ -298,6 +375,7 @@ function AdminDashboard() {
         actions={<Segmented id="admin-range" options={RANGES} value={range} onChange={setRange} className="w-full sm:w-[420px]" />}
       />
       {error && <StaleBanner message={error} />}
+      <CapacityCard capacity={data.capacity} onChanged={refresh} />
 
       <div className="mb-2.5 grid grid-cols-2 gap-2.5 sm:mb-3 sm:gap-3 lg:grid-cols-4">
         <StatCard label="Businesses signed up" value={accounts.length} />

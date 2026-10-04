@@ -1,21 +1,29 @@
 import { Call, CallType } from "../../types/models";
 import { notFound } from "../../utils/errors";
-import { assertCanCall } from "../businesses/access";
+import { refundCredit, reserveCall } from "../businesses/access";
 import { customersRepository } from "../customers/customers.repository";
+import { businessesRepository } from "../businesses/businesses.repository";
 import { ordersRepository } from "../orders/orders.repository";
 import { callsRepository } from "./calls.repository";
 import { dispatchCall } from "./calls.dispatch";
 
 /**
  * Creates a call record, marks the order as calling (delivery), and dials it straight away.
- * Refuses (HTTP 402) before anything is dialled unless the customer's business has an
- * active plan with calls left.
+ * Refuses before anything is dialled unless the business has a plan and a credit (402) and
+ * Tellero's shared minute budget has room (503). The call is dialled now if a line is free,
+ * otherwise it waits in the queue and the next background tick dials it.
  */
 export async function createCall(callType: CallType, customerId: number, orderId: number | null): Promise<Call> {
   const customer = await customersRepository.findById(customerId);
   if (!customer) throw notFound("Customer");
-  await assertCanCall(customer.business_id);
-  const id = await callsRepository.insert(customer.business_id, callType, customerId, orderId);
+  const charged = await reserveCall(customer.business_id);
+  let id: number;
+  try {
+    id = await callsRepository.insert(customer.business_id, callType, customerId, orderId, charged);
+  } catch (error) {
+    if (charged) await businessesRepository.addCredits(customer.business_id, 1);
+    throw error;
+  }
   const call = await callsRepository.findById(id);
   if (!call) throw new Error("Could not create call record");
   if (orderId !== null) await ordersRepository.markCalling(orderId);

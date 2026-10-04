@@ -1,5 +1,6 @@
 import { PoolClient } from "pg";
 import { run, transaction } from "./pool";
+import { PLANS } from "../modules/businesses/plans";
 
 const ORDER_STATUSES = "'pending','scheduled','calling','confirmed','rescheduled','address_updated','no_answer','failed'";
 
@@ -117,6 +118,22 @@ async function createTables(db: PoolClient): Promise<void> {
     value TEXT NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
+
+  // Credits: each business has a balance of calls. A call reserves one credit when it is placed
+  // and gets it back if nobody picks up or it never connects (calls.credit_charged tracks that).
+  const hadCredits = await db.query(
+    "SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'call_credits'"
+  );
+  await db.query("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS call_credits INT NOT NULL DEFAULT 0");
+  if (!hadCredits.rowCount) {
+    // Businesses already on a plan when credits were introduced get that plan's calls.
+    for (const [id, plan] of Object.entries(PLANS)) {
+      await db.query("UPDATE businesses SET call_credits = $1 WHERE plan = $2 AND plan_expires_at > now()", [plan.calls, id]);
+    }
+  }
+  await db.query("ALTER TABLE calls ADD COLUMN IF NOT EXISTS credit_charged BOOLEAN NOT NULL DEFAULT false");
+  // A payment is either a monthly plan or a top-up pack of extra calls.
+  await db.query("ALTER TABLE payments ADD COLUMN IF NOT EXISTS kind VARCHAR(10) NOT NULL DEFAULT 'plan'");
 
   await db.query("CREATE INDEX IF NOT EXISTS idx_customers_business ON customers (business_id)");
   await db.query("CREATE INDEX IF NOT EXISTS idx_orders_business ON orders (business_id, created_at)");

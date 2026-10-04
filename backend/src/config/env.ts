@@ -52,6 +52,16 @@ export const env = {
       (process.env.SESSION_SECRET || "").trim() ||
       (process.env.CRON_SECRET ? createHash("sha256").update(`tellero-sessions:${process.env.CRON_SECRET}`).digest("hex") : "")
   },
+  capacity: {
+    /** BimpeAI telephony minutes Tellero may use per calendar month unless /admin sets another number. */
+    monthlyMinutes: Number(process.env.BIMPE_MONTHLY_MINUTES || 200),
+    /** Most calls allowed on the phone at the same time, across every business. */
+    maxConcurrentCalls: Math.max(1, Number(process.env.MAX_CONCURRENT_CALLS || 3)),
+    /** What one BimpeAI minute costs Tellero, for the admin cost estimates. */
+    costPerMinuteNaira: Number(process.env.BIMPE_COST_PER_MINUTE || 200),
+    /** Minutes held back per call that is still on the phone (its length isn't known yet). */
+    minutesPerLiveCall: 2
+  },
   paystack: {
     /** Paystack secret key (sk_test_… or sk_live_…). Without it, plans can only be switched on from /admin. */
     secretKey: (process.env.PAYSTACK_SECRET_KEY || "").trim()

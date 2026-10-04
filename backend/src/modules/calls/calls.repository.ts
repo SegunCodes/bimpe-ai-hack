@@ -29,10 +29,10 @@ export const callsRepository = {
 
   findByOrder: (orderId: number) => rows<Call>("SELECT * FROM calls WHERE order_id = ? ORDER BY created_at DESC, id DESC", [orderId]),
 
-  async insert(businessId: number, callType: CallType, customerId: number, orderId: number | null): Promise<number> {
+  async insert(businessId: number, callType: CallType, customerId: number, orderId: number | null, creditCharged: boolean): Promise<number> {
     const result = await run(
-      "INSERT INTO calls (business_id, call_type, customer_id, order_id, status) VALUES (?, ?, ?, ?, 'queued')",
-      [businessId, callType, customerId, orderId]
+      "INSERT INTO calls (business_id, call_type, customer_id, order_id, status, credit_charged) VALUES (?, ?, ?, ?, 'queued', ?)",
+      [businessId, callType, customerId, orderId, creditCharged]
     );
     return result.insertId;
   },
@@ -49,8 +49,13 @@ export const callsRepository = {
     (await rows<{ id: number }>(`SELECT id FROM calls WHERE status = 'queued' ORDER BY created_at, id LIMIT ${Math.max(1, Math.floor(limit))}`)).map((r) => r.id),
 
   /** Atomically takes a queued call so only one request ever dials it. */
-  async claimQueued(id: number): Promise<boolean> {
-    const result = await run("UPDATE calls SET status = 'in_progress' WHERE id = ? AND status = 'queued'", [id]);
+  async claimQueued(id: number, maxOnThePhone: number): Promise<boolean> {
+    // Only if fewer than maxOnThePhone calls are live, so the shared line never gets overloaded.
+    const result = await run(
+      `UPDATE calls SET status = 'in_progress' WHERE id = ? AND status = 'queued'
+       AND (SELECT COUNT(*) FROM calls WHERE status = 'in_progress') < ?`,
+      [id, maxOnThePhone]
+    );
     return result.affectedRows === 1;
   },
 

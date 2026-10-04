@@ -10,7 +10,7 @@ import { useToast } from '../components/Toast'
 import { Button } from '../components/Button'
 import { PageHeader } from '../components/Layout'
 import { ErrorState, LoadingState } from '../components/States'
-import type { Plan } from '../lib/types'
+import type { Plan, TopUp } from '../lib/types'
 
 const naira = (n: number) => `₦${n.toLocaleString('en-NG')}`
 
@@ -74,14 +74,37 @@ function PlanCard({ plan, current, onChoose, busy, disabled }: { plan: Plan; cur
         <li>
           <span className="font-semibold text-ink">{plan.calls.toLocaleString('en-NG')} calls</span> included
         </li>
-        <li>About {naira(perCall)} per call</li>
+        <li>About {naira(perCall)} per answered call</li>
+        <li>Calls nobody picks up are free</li>
         <li>English, Pidgin, Yorùbá, Hausa and Igbo</li>
         <li>Automatic retries when nobody picks up</li>
       </ul>
       <Button variant={current ? 'secondary' : 'brand'} className="mt-5 w-full" loading={busy} disabled={disabled} onClick={onChoose}>
-        {current ? 'Renew for another month' : `Choose ${plan.name}`}
+        {current ? `Renew: +${plan.calls} calls, 30 more days` : `Choose ${plan.name}`}
       </Button>
     </div>
+  )
+}
+
+function TopUps({ topUps, onChoose, paying, disabled }: { topUps: TopUp[]; onChoose: (id: string) => void; paying: string | null; disabled: boolean }) {
+  return (
+    <section className="mb-8">
+      <h2 className="font-display text-xl font-bold text-ink">Need more calls this month?</h2>
+      <p className="mt-0.5 text-[15px] text-ink-muted">Top-ups add calls to your current plan straight away. They never expire while you have a plan.</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        {topUps.map((t) => (
+          <div key={t.id} className="flex items-center justify-between gap-4 rounded-3xl bg-white p-4 ring-1 ring-ink/10 sm:p-5">
+            <div>
+              <p className="text-base font-semibold text-ink">{t.name}</p>
+              <p className="text-[15px] text-ink-muted">{naira(t.priceNaira)}</p>
+            </div>
+            <Button variant="secondary" size="sm" loading={paying === t.id} disabled={disabled || (paying !== null && paying !== t.id)} onClick={() => onChoose(t.id)}>
+              Buy
+            </Button>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -126,22 +149,18 @@ export function BillingPage() {
             <div>
               <p className="text-sm font-semibold text-ink-muted">Current plan</p>
               <p className="font-display text-3xl font-bold text-ink">{status.planName}</p>
-              <p className="mt-1 text-[15px] text-ink-soft">Renews or ends on {formatDateTime(status.expiresAt)}</p>
+              <p className="mt-1 text-[15px] text-ink-soft">Active until {formatDateTime(status.expiresAt)}</p>
             </div>
-            <div className="w-full sm:w-72">
-              <div className="mb-1.5 flex justify-between text-[15px]">
-                <span className="text-ink-soft">Calls used</span>
-                <span className="font-semibold tabular-nums text-ink">
-                  {status.callsUsed} of {status.callsIncluded}
-                </span>
-              </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-mist">
-                <div
-                  className={`h-full rounded-full ${status.callsLeft === 0 ? 'bg-bad' : 'bg-ink'}`}
-                  style={{ width: `${Math.min(100, (status.callsUsed / Math.max(1, status.callsIncluded)) * 100)}%` }}
-                />
-              </div>
+            <div className="text-left sm:text-right">
+              <p className="text-sm font-semibold text-ink-muted">Calls left</p>
+              <p className={`font-display text-4xl font-bold tabular-nums ${status.outOfCredits ? 'text-bad' : 'text-ink'}`}>{status.callsLeft}</p>
+              <p className="text-[15px] text-ink-soft">{status.callsUsed} answered calls this plan period</p>
             </div>
+            {status.outOfCredits && (
+              <p className="w-full rounded-2xl bg-bad-soft px-4 py-3 text-[15px] text-bad">
+                You’re out of calls. Scheduled calls are waiting, not cancelled: buy a top-up below and they go out right away. Any order whose delivery time passes while waiting is marked as missed.
+              </p>
+            )}
           </div>
         ) : (
           <div>
@@ -157,6 +176,9 @@ export function BillingPage() {
         </p>
       )}
 
+      {status.active && <TopUps topUps={data.topUps} onChoose={choose} paying={paying} disabled={!data.paymentsEnabled} />}
+
+      <h2 className="mb-3 font-display text-xl font-bold text-ink">{status.active ? 'Change or renew your plan' : 'Choose a plan'}</h2>
       <div className="grid gap-4 md:grid-cols-3">
         {data.plans.map((p) => (
           <PlanCard
@@ -170,7 +192,7 @@ export function BillingPage() {
         ))}
       </div>
       <p className="mt-4 text-sm text-ink-muted">
-        Payments are handled securely by Paystack. Choosing a plan starts a new 30-day period with a fresh set of calls.
+        Payments are handled securely by Paystack. A plan runs for 30 days and adds its calls to your balance; unused calls carry over when you renew. A call only uses a credit if the customer picks up.
       </p>
     </>
   )

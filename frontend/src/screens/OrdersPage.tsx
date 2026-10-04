@@ -1,7 +1,9 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
+import Link from 'next/link'
 import { useState } from 'react'
+import { useBusiness } from '../hooks/useBusiness'
 import { api } from '../lib/api'
 import { parseDate } from '../lib/format'
 import { formatPhone } from '../lib/phone'
@@ -37,12 +39,20 @@ function sortOrders(orders: OrderRow[]): OrderRow[] {
   })
 }
 
-function NextCallCell({ order, now }: { order: OrderRow; now: Date }) {
+function NextCallCell({ order, now, canCall = true }: { order: OrderRow; now: Date; canCall?: boolean }) {
   if (order.status === 'calling') {
     return (
       <span className="inline-flex items-center gap-2 whitespace-nowrap text-base font-semibold text-ink">
         <Spinner className="h-4 w-4" /> On the phone now
       </span>
+    )
+  }
+  // Due, but the business has no plan or credits: the call is held, not lost.
+  if (isWaiting(order) && !canCall && (parseDate(order.call_at)?.getTime() ?? 0) <= now.getTime()) {
+    return (
+      <Link href="/dashboard/billing" onClick={(e) => e.stopPropagation()} className="text-sm font-semibold text-bad underline-offset-4 hover:underline">
+        Waiting for call credits · top up
+      </Link>
     )
   }
   if (isWaiting(order)) {
@@ -67,6 +77,8 @@ function NextCallCell({ order, now }: { order: OrderRow; now: Date }) {
 export function OrdersPage() {
   const now = useNow()
   const { data: rawOrders, error, loading, refresh } = usePolling(api.listOrders, 'orders')
+  const { business } = useBusiness()
+  const canCall = business ? business.plan.active && !business.plan.outOfCredits : true
   const orders = rawOrders ? sortOrders(rawOrders) : null
   const { added, changed } = useChangedIds(rawOrders)
   const [modal, setModal] = useState<'add' | 'import' | null>(null)
@@ -109,7 +121,13 @@ export function OrdersPage() {
               </span>
               <span className="min-w-0">
                 Next Tellero call: <span className="font-bold">{next.customer_name}</span> about {next.item},{' '}
-                <span className="font-bold">{friendlyWhen(next.call_at, now)}</span> ({countdown(next.call_at, now)})
+                {canCall ? (
+                  <>
+                    <span className="font-bold">{friendlyWhen(next.call_at, now)}</span> ({countdown(next.call_at, now)})
+                  </>
+                ) : (
+                  <span className="font-bold text-danfo">waiting for call credits</span>
+                )}
               </span>
             </div>
           )}
@@ -165,7 +183,7 @@ export function OrdersPage() {
                           <div className="text-sm text-ink-soft">{o.delivery_window || (o.delivery_at ? friendlyWhen(o.delivery_at, now) : '—')}</div>
                         </div>
                         <div className="text-right [&_*]:text-sm">
-                          <NextCallCell order={o} now={now} />
+                          <NextCallCell order={o} now={now} canCall={canCall} />
                         </div>
                       </div>
                     </button>
@@ -215,7 +233,7 @@ export function OrdersPage() {
                             <StatusBadge status={o.status} />
                           </td>
                           <td className="px-4 py-4">
-                            <NextCallCell order={o} now={now} />
+                            <NextCallCell order={o} now={now} canCall={canCall} />
                           </td>
                         </motion.tr>
                       )

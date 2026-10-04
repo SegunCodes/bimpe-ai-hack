@@ -103,7 +103,10 @@ export interface PlanStatus {
   expiresAt: string | null
   callsUsed: number
   callsIncluded: number
+  /** Call credits left. A credit is used only when a call is answered. */
   callsLeft: number
+  /** Has a plan but no credits: scheduled calls wait until a top-up. */
+  outOfCredits: boolean
 }
 
 export interface Business {
@@ -122,9 +125,17 @@ export interface Plan {
   days: number
 }
 
+export interface TopUp {
+  id: string
+  name: string
+  priceNaira: number
+  calls: number
+}
+
 export interface Billing {
   business: Business
   plans: Plan[]
+  topUps: TopUp[]
   paymentsEnabled: boolean
 }
 
@@ -138,6 +149,22 @@ export interface AdminBusiness {
   orders: number
   calls: number
   plan: PlanStatus
+  usage: { minutesThisMonth: number; answeredThisMonth: number; costThisMonthNaira: number; revenueNaira: number }
+}
+
+export interface Capacity {
+  month: string
+  minutesUsed: number
+  minutesOnLiveCalls: number
+  minuteBudget: number
+  budgetSetByAdmin: boolean
+  minutesLeft: number
+  paused: boolean
+  onThePhone: number
+  maxConcurrentCalls: number
+  costPerMinuteNaira: number
+  creditsOutstanding: number
+  minutesNeededForCredits: number
 }
 
 export interface AdminOverview {
@@ -147,4 +174,5 @@ export interface AdminOverview {
   customers: Customer[]
   plans: { id: string; name: string; priceNaira: number; calls: number }[]
   revenue: { payments: number; totalNaira: number }
+  capacity: Capacity
 }
