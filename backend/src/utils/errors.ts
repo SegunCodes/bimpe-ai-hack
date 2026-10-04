@@ -8,3 +8,4 @@ export const forbidden = (message: string): HttpError => new HttpError(403, mess
 export const notFound = (what: string): HttpError => new HttpError(404, `${what} not found`);
 export const conflict = (message: string): HttpError => new HttpError(409, message);
 export const tooManyRequests = (message: string): HttpError => new HttpError(429, message);
+export const unauthorized = (message: string): HttpError => new HttpError(401, message);

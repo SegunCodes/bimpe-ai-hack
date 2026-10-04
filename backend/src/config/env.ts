@@ -39,6 +39,10 @@ export const env = {
   },
   /** Public address of this API (used to tell BimpeAI where our tools live). */
   publicBaseUrl: (process.env.PUBLIC_BASE_URL || "").trim().replace(/\/+$/, ""),
+  admin: {
+    // The dashboard password. Empty means nobody can sign in until it is set.
+    password: (process.env.ADMIN_PASSWORD || "").trim()
+  },
   agentTools: {
     /**
      * Bearer token BimpeAI sends when its agent calls our tools mid-call.

@@ -3,11 +3,13 @@
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { API_URL } from '../lib/api'
 import { useHealth } from '../hooks/useHealth'
 import { PhoneIcon } from './Icons'
 import { EASE_IN_OUT } from './Overlay'
+import { SignIn } from './SignIn'
+import { SIGNED_OUT_EVENT, clearToken, currentToken } from '../lib/session'
 
 const tabs = [
   { href: '/dashboard', label: 'Orders' },
@@ -16,7 +18,24 @@ const tabs = [
   { href: '/dashboard/admin', label: 'Admin' },
 ]
 
+/** Shows the sign-in screen until this browser has a session; the backend checks it on every request. */
 export function DashboardShell({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<'checking' | 'in' | 'out'>('checking')
+
+  useEffect(() => {
+    // Read storage after mount: the server-rendered page can't know about this browser's session.
+    setSession(currentToken() ? 'in' : 'out')
+    const onSignedOut = () => setSession('out')
+    window.addEventListener(SIGNED_OUT_EVENT, onSignedOut)
+    return () => window.removeEventListener(SIGNED_OUT_EVENT, onSignedOut)
+  }, [])
+
+  if (session === 'checking') return <div className="min-h-screen bg-ink" />
+  if (session === 'out') return <SignIn onSignedIn={() => setSession('in')} />
+  return <SignedInShell>{children}</SignedInShell>
+}
+
+function SignedInShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const { online, mockMode, checked } = useHealth()
 
@@ -82,6 +101,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             <a href="/join" target="_blank" rel="noreferrer" className="btn hidden rounded-xl px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white md:inline">
               Signup page ↗
             </a>
+            <button onClick={clearToken} className="btn rounded-xl px-2.5 py-1.5 text-xs font-semibold text-white/70 ring-1 ring-white/15 hover:bg-white/10 hover:text-white sm:px-3 sm:py-2 sm:text-sm sm:ring-0">
+              Sign out
+            </button>
           </div>
         </div>
       </header>

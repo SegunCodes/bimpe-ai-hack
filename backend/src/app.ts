@@ -11,6 +11,7 @@ import { tickRoutes } from "./modules/tick/tick.routes";
 import { webhooksRoutes } from "./modules/webhooks/webhooks.routes";
 import { agentSetupStatus } from "./modules/bimpeSetup/bimpeSetup.auto";
 import { apiRoutes } from "./routes";
+import { requireAdmin } from "./modules/auth/auth";
 
 export function createApp(): express.Express {
   const app = express();
@@ -51,6 +52,7 @@ export function createApp(): express.Express {
       mockMode: env.mockCalls,
       cronSecretSet: Boolean(env.tick.cronSecret),
       bimpeKeySet: Boolean(env.bimpe.apiKey),
+      adminPasswordSet: Boolean(env.admin.password),
       agentScript: database === "ok" ? await agentSetupStatus().catch(() => ({ status: "unknown" })) : { status: "waiting for the database" }
     });
   });
@@ -76,7 +78,7 @@ export function createApp(): express.Express {
 
   app.use("/api/cron", tickRoutes);
   app.use("/api", apiRoutes);
-  app.use(["/api/dev", "/dev"], devRoutes);
+  app.use(["/api/dev", "/dev"], requireAdmin, devRoutes);
 
   app.use(errorHandler);
   return app;
