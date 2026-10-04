@@ -63,6 +63,7 @@ export function createApp(): express.Express {
       bimpeKeySet: Boolean(env.bimpe.apiKey),
       adminPasswordSet: Boolean(env.admin.password),
       paymentsSet: Boolean(env.paystack.secretKey),
+      emailSet: Boolean(env.email.resendApiKey),
       agentScript: database === "ok" ? await agentSetupStatus().catch(() => ({ status: "unknown" })) : { status: "waiting for the database" },
       lastBackgroundRun: database === "ok" ? await lastTick().catch(() => null) : null
     });
