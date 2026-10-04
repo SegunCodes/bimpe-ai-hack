@@ -2,10 +2,10 @@ import Link from 'next/link'
 import { PhoneIcon, Wordmark } from '../Icons'
 
 const links = [
-  { href: '#how', label: 'How it works' },
-  { href: '#try', label: 'Hear a call' },
-  { href: '#languages', label: 'Languages' },
-  { href: '#owners', label: 'For businesses' },
+  { href: '/#how', label: 'How it works' },
+  { href: '/#try', label: 'Hear a call' },
+  { href: '/#pricing', label: 'Pricing' },
+  { href: '/#faq', label: 'FAQ' },
 ]
 
 export function SiteNav() {
@@ -31,7 +31,7 @@ export function SiteNav() {
           <Link href="/login" className="btn btn-ghost inline-flex rounded-full px-3 py-2 text-[15px] font-semibold text-ink sm:px-4">
             Log in
           </Link>
-          <a href="#call-me" className="btn btn-ghost hidden h-10 items-center gap-2 rounded-full px-4 text-[15px] font-semibold text-ink md:inline-flex">
+          <a href="/#call-me" className="btn btn-ghost hidden h-10 items-center gap-2 rounded-full px-4 text-[15px] font-semibold text-ink md:inline-flex">
             <PhoneIcon className="h-4 w-4" />
             Get a call
           </a>

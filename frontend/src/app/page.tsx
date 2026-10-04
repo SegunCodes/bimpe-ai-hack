@@ -5,6 +5,8 @@ import { Hero } from '@/components/marketing/Hero'
 import { HowItWorks } from '@/components/marketing/HowItWorks'
 import { Languages } from '@/components/marketing/Languages'
 import { Owners } from '@/components/marketing/Owners'
+import { Pricing } from '@/components/marketing/Pricing'
+import { Faq } from '@/components/marketing/Faq'
 import { Problem } from '@/components/marketing/Problem'
 import { Reveal } from '@/components/marketing/Reveal'
 import { SiteNav } from '@/components/marketing/SiteNav'
@@ -28,6 +30,8 @@ export default function Home() {
         </section>
         <Languages />
         <Owners />
+        <Pricing />
+        <Faq />
         <CallMe />
       </main>
       <Footer />

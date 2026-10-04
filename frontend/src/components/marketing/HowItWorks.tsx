@@ -12,7 +12,7 @@ const steps = [
   },
   {
     title: 'Read the answer',
-    body: 'Confirmed, rescheduled, or a cleaner address with a landmark, plus the full transcript and recording.',
+    body: 'Confirmed, rescheduled, or a cleaner address with a landmark, plus the full transcript of the call.',
   },
 ]
 

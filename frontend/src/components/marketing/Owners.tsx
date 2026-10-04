@@ -14,7 +14,7 @@ const rows = [
 const points = [
   'Retries twice, 30 minutes apart, then flags it for you',
   'Asks for a landmark a rider can actually see',
-  'Every call recorded and transcribed',
+  'Every call transcribed, line by line',
   'Import a CSV from your store in one go',
 ]
 

@@ -67,7 +67,9 @@ export function BusinessAuth({ mode }: { mode: 'login' | 'signup' }) {
         : await api.login({ email: email.trim(), password })
       setToken('business', token)
       const next = new URLSearchParams(window.location.search).get('next')
-      router.push(signup ? '/dashboard/billing?welcome=1' : next && next.startsWith('/dashboard') ? next : '/dashboard')
+      const plan = new URLSearchParams(window.location.search).get('plan')
+      const chosen = plan && /^[a-z_]+$/.test(plan) ? `&plan=${plan}` : ''
+      router.push(signup ? `/dashboard/billing?welcome=1${chosen}` : next && next.startsWith('/dashboard') ? next : '/dashboard')
     } catch (err) {
       setError(errorMessage(err))
       setBusy(false)
@@ -118,6 +120,19 @@ export function BusinessAuth({ mode }: { mode: 'login' | 'signup' }) {
         <Button type="submit" variant="brand" size="lg" loading={busy} className="w-full">
           {signup ? 'Create account' : 'Log in'}
         </Button>
+        {signup && (
+          <p className="text-center text-sm text-ink-muted">
+            By creating an account you agree to the{' '}
+            <Link href="/terms" className="font-semibold text-ink underline-offset-4 hover:underline">
+              Terms
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="font-semibold text-ink underline-offset-4 hover:underline">
+              Privacy policy
+            </Link>
+            .
+          </p>
+        )}
       </form>
     </AuthFrame>
   )

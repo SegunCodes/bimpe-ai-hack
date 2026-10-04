@@ -47,13 +47,16 @@ function PaymentReturn({ onDone }: { onDone: () => void }) {
   return <div className="mb-5 rounded-2xl bg-danfo-soft px-4 py-3 text-[15px] text-ink ring-1 ring-danfo/60">Confirming your payment with Paystack…</div>
 }
 
-function Welcome() {
+function Welcome({ plans }: { plans: Plan[] }) {
   const params = useSearchParams()
   if (!params.get('welcome')) return null
+  const picked = plans.find((p) => p.id === params.get('plan'))
   return (
     <div className="mb-5 rounded-3xl bg-ink px-5 py-4 text-white">
       <p className="font-display text-xl font-bold">Your account is ready.</p>
-      <p className="mt-1 text-white/70">Choose a plan so Tellero AI can start calling your customers. You can add orders and customers before you pay.</p>
+      <p className="mt-1 text-white/70">
+        {picked ? `You picked ${picked.name}. Pay below and Tellero AI can start calling your customers.` : 'Choose a plan so Tellero AI can start calling your customers.'} You can add orders and customers before you pay.
+      </p>
     </div>
   )
 }
@@ -139,7 +142,7 @@ export function BillingPage() {
     <>
       <PageHeader title="Plan & billing" subtitle="Tellero AI calls your customers while your plan is active. Each plan lasts 30 days." />
       <Suspense>
-        <Welcome />
+        <Welcome plans={data.plans} />
         <PaymentReturn onDone={afterPayment} />
       </Suspense>
 
