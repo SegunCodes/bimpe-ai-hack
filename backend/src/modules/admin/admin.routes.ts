@@ -6,6 +6,8 @@ import { callsOnThePhone, currentMonth, minuteBudget, minutesUsedThisMonth, mont
 import { badRequest, notFound } from "../../utils/errors";
 import { asyncHandler, idParam } from "../../utils/http";
 import { grantPlan, planStatus } from "../businesses/access";
+import { documentFile, documentInfo, sendDocument } from "../onboarding/onboarding.service";
+import { emails } from "../../integrations/email";
 import { businessesRepository } from "../businesses/businesses.repository";
 import { PLAN_DAYS, PLANS, isPlanId, type PlanId } from "../businesses/plans";
 import { ordersRepository } from "../orders/orders.repository";
@@ -26,6 +28,9 @@ adminRoutes.get("/overview", asyncHandler(async (_req, res) => {
       orders: Number(b.orders),
       calls: Number(b.calls),
       plan: await planStatus(b),
+      ownerName: b.owner_name,
+      emailVerified: Boolean(b.email_verified_at),
+      verification: { status: b.verification_status, note: b.verification_note, updatedAt: b.verification_updated_at, document: await documentInfo(b.id) },
       usage: {
         minutesThisMonth: Number(b.month_minutes),
         answeredThisMonth: Number(b.month_answered),
@@ -72,6 +77,27 @@ adminRoutes.post("/capacity", asyncHandler(async (req, res) => {
   const { minutes } = z.object({ minutes: z.coerce.number().int().min(0).max(1_000_000) }).parse(req.body);
   await setMinuteBudget(minutes);
   res.json({ ok: true, minuteBudget: minutes });
+}));
+
+/** The business's CAC certificate, for review. */
+adminRoutes.get("/businesses/:id/document", asyncHandler(async (req, res) => {
+  const file = await documentFile(idParam(req));
+  if (!file) throw notFound("Document");
+  sendDocument(res, file);
+}));
+
+/** Approve or reject a business's CAC certificate. The business is emailed either way. */
+adminRoutes.post("/businesses/:id/verification", asyncHandler(async (req, res) => {
+  const id = idParam(req);
+  const input = z.object({ status: z.enum(["approved", "rejected"]), note: z.string().trim().max(500).optional() }).parse(req.body);
+  if (input.status === "rejected" && !input.note) throw badRequest("Say why, so the business knows what to fix.");
+  const business = await businessesRepository.findById(id);
+  if (!business || business.is_house) throw notFound("Business");
+  await businessesRepository.setVerification(id, input.status, input.status === "rejected" ? input.note ?? null : null);
+  const name = business.owner_name || business.name;
+  if (input.status === "approved") await emails.approved(business.email, name, business.name);
+  else await emails.rejected(business.email, name, input.note as string);
+  res.json({ ok: true });
 }));
 
 /** Switch a plan on (or off) by hand: for demos, bank transfers, or before Paystack is set up. */

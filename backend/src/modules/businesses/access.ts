@@ -47,6 +47,9 @@ export async function reserveCall(businessId: number): Promise<boolean> {
     throw new HttpError(503, "Tellero AI has paused new calls for a short while. Scheduled calls will go out on their own as soon as calling resumes.");
   }
   if (business.is_house) return false;
+  if (business.verification_status !== "approved") {
+    throw new HttpError(403, "Your business isn’t approved yet. Upload your CAC certificate and we’ll review it.");
+  }
   const active = Boolean(business.plan && business.plan_expires_at && new Date(business.plan_expires_at).getTime() > Date.now());
   if (!active) throw new HttpError(402, "Choose a plan to start calls. Go to Plan & billing in your dashboard.");
   if (!(await businessesRepository.takeCredit(business.id))) {
@@ -77,4 +80,4 @@ export async function grantPlan(businessId: number, plan: PlanId, days = PLAN_DA
 }
 
 /** SQL condition: this business (alias b) may place calls right now. */
-export const CAN_CALL_SQL = "(b.is_house OR (b.plan_expires_at > now() AND b.call_credits > 0))";
+export const CAN_CALL_SQL = "(b.is_house OR (b.verification_status = 'approved' AND b.plan_expires_at > now() AND b.call_credits > 0))";

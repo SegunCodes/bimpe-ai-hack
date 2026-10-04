@@ -76,6 +76,10 @@ email and password, and only ever sees its own customers, orders and calls.
 - **Payments** (`src/modules/billing/billing.ts`): Paystack. Set `PAYSTACK_SECRET_KEY` and `APP_URL`,
   and point Paystack's webhook at `https://<backend>/api/webhooks/paystack`. A payment starts its
   plan exactly once, whether confirmed by the return page or the webhook.
+- **Onboarding**: sign-up sends a 6-digit email code (Resend); after confirming, the business
+  uploads its CAC certificate (PDF/JPG/PNG/WebP, 4 MB max, stored in Postgres). The admin views
+  it on /admin and approves or rejects it with a reason; the business is emailed either way. A
+  business can only pay and make calls once approved.
 - **Credits**: a plan adds its calls to the business's credit balance (top-up packs add more). A
   call takes one credit when it is placed and gives it back if nobody answers or it never connects.
   With no credits, due orders wait as "Waiting for call credits"; if the delivery time passes they

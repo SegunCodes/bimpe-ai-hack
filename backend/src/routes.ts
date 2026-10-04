@@ -4,6 +4,7 @@ import { adminRoutes } from "./modules/admin/admin.routes";
 import { agentContextRoutes } from "./modules/agentContext/agentContext.routes";
 import { agentToolsRoutes, requireAgentToolSecret } from "./modules/agentTools/agentTools.routes";
 import { billingRoutes } from "./modules/billing/billing";
+import { onboardingRoutes } from "./modules/onboarding/onboarding";
 import { bimpeSetupRoutes } from "./modules/bimpeSetup/bimpeSetup.routes";
 import { callsRoutes } from "./modules/calls/calls.routes";
 import { customersRoutes } from "./modules/customers/customers.routes";
@@ -19,6 +20,8 @@ apiRoutes.use("/customers", requireBusiness, customersRoutes);
 apiRoutes.use("/orders", requireBusiness, ordersRoutes);
 apiRoutes.use("/calls", requireBusiness, callsRoutes);
 apiRoutes.use("/billing", billingRoutes);
+// Confirm email and upload the CAC certificate.
+apiRoutes.use("/onboarding", onboardingRoutes);
 
 // The website's "Call me" form and /join (Tellero AI's own account).
 apiRoutes.use("/public", signupRoutes);

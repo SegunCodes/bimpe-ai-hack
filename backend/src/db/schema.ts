@@ -133,6 +133,39 @@ async function createTables(db: PoolClient): Promise<void> {
     }
   }
   await db.query("ALTER TABLE calls ADD COLUMN IF NOT EXISTS credit_charged BOOLEAN NOT NULL DEFAULT false");
+  // Onboarding: the owner's name, a confirmed email, and a CAC certificate the admin approves.
+  const hadOnboarding = await db.query(
+    "SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'verification_status'"
+  );
+  await db.query("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS owner_name VARCHAR(160) NULL");
+  await db.query("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ NULL");
+  await db.query(`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS verification_status VARCHAR(20) NOT NULL DEFAULT 'none'
+    CHECK (verification_status IN ('none','pending','approved','rejected'))`);
+  await db.query("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS verification_note TEXT NULL");
+  await db.query("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS verification_updated_at TIMESTAMPTZ NULL");
+  if (!hadOnboarding.rowCount) {
+    // Accounts from before onboarding existed: their email is trusted, and any business already
+    // paying keeps calling (approved). Everyone else uploads CAC like a new business.
+    await db.query("UPDATE businesses SET email_verified_at = COALESCE(email_verified_at, created_at)");
+    await db.query("UPDATE businesses SET verification_status = 'approved', verification_updated_at = now() WHERE is_house OR plan_expires_at > now()");
+  }
+  await db.query(`CREATE TABLE IF NOT EXISTS email_codes (
+    business_id INT PRIMARY KEY REFERENCES businesses(id),
+    code_hash TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    sent_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`);
+  // The CAC certificate itself (PDF or photo, up to 4 MB). Only the latest upload is kept.
+  await db.query(`CREATE TABLE IF NOT EXISTS business_documents (
+    business_id INT PRIMARY KEY REFERENCES businesses(id),
+    filename VARCHAR(200) NOT NULL,
+    content_type VARCHAR(80) NOT NULL,
+    size_bytes INT NOT NULL,
+    data BYTEA NOT NULL,
+    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`);
+
   // A payment is either a monthly plan or a top-up pack of extra calls.
   await db.query("ALTER TABLE payments ADD COLUMN IF NOT EXISTS kind VARCHAR(10) NOT NULL DEFAULT 'plan'");
 

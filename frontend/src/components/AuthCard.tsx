@@ -42,6 +42,7 @@ function Field({ label, children, hint }: { label: string; children: ReactNode; 
 export function BusinessAuth({ mode }: { mode: 'login' | 'signup' }) {
   const router = useRouter()
   const [name, setName] = useState('')
+  const [owner, setOwner] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -57,19 +58,21 @@ export function BusinessAuth({ mode }: { mode: 'login' | 'signup' }) {
     e.preventDefault()
     setError(null)
     if (signup && name.trim().length < 2) return setError('Enter your business name.')
+    if (signup && owner.trim().length < 3) return setError('Enter your full name.')
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('Enter a valid email address.')
     if (signup && password.length < 8) return setError('Use a password of at least 8 characters.')
     if (!password) return setError('Enter your password.')
     setBusy(true)
     try {
       const { token } = signup
-        ? await api.signup({ business_name: name.trim(), email: email.trim(), password })
+        ? await api.signup({ business_name: name.trim(), owner_name: owner.trim(), email: email.trim(), password })
         : await api.login({ email: email.trim(), password })
       setToken('business', token)
       const next = new URLSearchParams(window.location.search).get('next')
       const plan = new URLSearchParams(window.location.search).get('plan')
       const chosen = plan && /^[a-z_]+$/.test(plan) ? `&plan=${plan}` : ''
-      router.push(signup ? `/dashboard/billing?welcome=1${chosen}` : next && next.startsWith('/dashboard') ? next : '/dashboard')
+      // New businesses confirm their email and upload their CAC before anything else.
+      router.push(signup ? `/dashboard/onboarding${chosen ? `?${chosen.slice(1)}` : ''}` : next && next.startsWith('/dashboard') ? next : '/dashboard')
     } catch (err) {
       setError(errorMessage(err))
       setBusy(false)
@@ -100,9 +103,14 @@ export function BusinessAuth({ mode }: { mode: 'login' | 'signup' }) {
     >
       <form onSubmit={submit} className="flex flex-col gap-4 rounded-3xl bg-white p-5 sm:p-6" noValidate>
         {signup && (
-          <Field label="Business name">
-            <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="organization" className={inputClass} placeholder="e.g. Ada Fabrics" />
-          </Field>
+          <>
+            <Field label="Business name" hint="As it appears on your CAC certificate.">
+              <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="organization" className={inputClass} placeholder="e.g. Ada Fabrics" />
+            </Field>
+            <Field label="Your full name">
+              <input value={owner} onChange={(e) => setOwner(e.target.value)} autoComplete="name" className={inputClass} placeholder="e.g. Adaeze Okafor" />
+            </Field>
+          </>
         )}
         <Field label="Email">
           <input type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className={inputClass} />

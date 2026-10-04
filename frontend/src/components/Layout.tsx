@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { API_URL } from '../lib/api'
 import { useHealth } from '../hooks/useHealth'
 import { PhoneIcon, Wordmark } from './Icons'
+import { LoadingState } from './States'
 import { EASE_IN_OUT } from './Overlay'
 import { SIGNED_OUT_EVENT, clearToken, getToken, type SessionKind } from '../lib/session'
 import { BusinessProvider, useBusiness } from '../hooks/useBusiness'
@@ -52,6 +53,13 @@ function PlanPill() {
   if (!business) return null
   const { active, planName, callsLeft } = business.plan
   const empty = business.plan.outOfCredits
+  if (business.verification.status !== 'approved') {
+    return (
+      <Link href="/dashboard/onboarding" className="btn whitespace-nowrap rounded-full bg-danfo px-3 py-1 text-xs font-semibold text-ink ring-1 ring-danfo sm:text-sm">
+        {business.verification.status === 'pending' ? 'In review' : 'Finish setup'}
+      </Link>
+    )
+  }
   return (
     <Link
       href="/dashboard/billing"
@@ -73,7 +81,26 @@ function PlanPill() {
 function PlanBanner() {
   const { business } = useBusiness()
   const pathname = usePathname()
-  if (!business || pathname.startsWith('/dashboard/billing')) return null
+  if (!business || pathname.startsWith('/dashboard/billing') || pathname.startsWith('/dashboard/onboarding')) return null
+  const v = business.verification.status
+  if (v !== 'approved') {
+    return (
+      <div className="bg-danfo-soft px-4 py-3 text-center text-[15px] text-ink ring-1 ring-danfo/50 sm:px-8">
+        {v === 'pending' ? (
+          <>We’re checking your CAC certificate. Once it’s approved you can choose a plan and start calls. </>
+        ) : v === 'rejected' ? (
+          <>We couldn’t approve your CAC certificate. Please upload it again. </>
+        ) : (
+          <>Finish setting up: upload your CAC certificate so we can approve your business. </>
+        )}
+        {v !== 'pending' && (
+          <Link href="/dashboard/onboarding" className="font-semibold underline underline-offset-4">
+            {v === 'rejected' ? 'Upload again' : 'Finish setup'}
+          </Link>
+        )}
+      </div>
+    )
+  }
   const { active, outOfCredits } = business.plan
   if (active && !outOfCredits) return null
   return (
@@ -92,8 +119,15 @@ function PlanBanner() {
 
 function SignedInShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { online, mockMode, checked } = useHealth()
   const { business } = useBusiness()
+
+  // An unconfirmed email comes first: everything else waits until it's done.
+  const needsEmail = business !== null && !business.emailVerified && !pathname.startsWith('/dashboard/onboarding')
+  useEffect(() => {
+    if (needsEmail) router.replace('/dashboard/onboarding')
+  }, [needsEmail, router])
 
   return (
     <div className="min-h-screen">
@@ -157,7 +191,7 @@ function SignedInShell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <main className="mx-auto max-w-[1500px] px-4 pb-10 pt-5 sm:px-8 sm:py-8">{children}</main>
+      <main className="mx-auto max-w-[1500px] px-4 pb-10 pt-5 sm:px-8 sm:py-8">{needsEmail ? <LoadingState label="Opening setup…" /> : children}</main>
     </div>
   )
 }

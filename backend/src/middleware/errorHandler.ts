@@ -13,6 +13,10 @@ export function errorHandler(error: unknown, req: Request, res: Response, _next:
     res.status(400).json({ error: "Validation failed", details: error.flatten() });
     return;
   }
+  if (error && typeof error === "object" && "type" in error && error.type === "entity.too.large") {
+    res.status(413).json({ error: "That file is too big. The limit is 4 MB." });
+    return;
+  }
   if (error instanceof HttpError) {
     res.status(error.status).json({ error: error.message });
     return;

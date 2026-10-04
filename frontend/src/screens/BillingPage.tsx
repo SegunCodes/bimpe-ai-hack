@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { api, errorMessage } from '../lib/api'
@@ -137,6 +138,9 @@ export function BillingPage() {
   if (error && !data) return <ErrorState message={error} onRetry={refresh} />
   if (!data) return null
   const status = data.business.plan
+  // Paying is only possible once the CAC certificate is approved.
+  const approved = data.business.verification.status === 'approved'
+  const payable = data.paymentsEnabled && approved
 
   return (
     <>
@@ -168,18 +172,33 @@ export function BillingPage() {
         ) : (
           <div>
             <p className="font-display text-xl font-bold text-ink">You don’t have a plan yet</p>
-            <p className="mt-1 text-[15px] text-ink-soft">Pick one below. Calls start as soon as the payment goes through.</p>
+            <p className="mt-1 text-[15px] text-ink-soft">
+              {approved ? 'Pick one below. Calls start as soon as the payment goes through.' : 'Here’s what each plan includes. You can pay once your business is approved.'}
+            </p>
           </div>
         )}
       </section>
 
-      {!data.paymentsEnabled && (
+      {!approved && (
+        <div className="mb-5 rounded-2xl bg-danfo-soft px-4 py-3 text-[15px] text-ink ring-1 ring-danfo/60">
+          {data.business.verification.status === 'pending'
+            ? 'We’re reviewing your CAC certificate. You can choose a plan as soon as it’s approved, and we’ll email you.'
+            : 'Before you can pay, we need to approve your business. '}
+          {data.business.verification.status !== 'pending' && (
+            <Link href="/dashboard/onboarding" className="font-semibold underline underline-offset-4">
+              Upload your CAC certificate
+            </Link>
+          )}
+        </div>
+      )}
+
+      {approved && !data.paymentsEnabled && (
         <p className="mb-5 rounded-2xl bg-white px-4 py-3 text-[15px] text-ink-soft ring-1 ring-ink/10">
           Online payment isn’t switched on yet. Contact the Tellero AI team and they’ll turn your plan on for you.
         </p>
       )}
 
-      {status.active && <TopUps topUps={data.topUps} onChoose={choose} paying={paying} disabled={!data.paymentsEnabled} />}
+      {status.active && <TopUps topUps={data.topUps} onChoose={choose} paying={paying} disabled={!payable} />}
 
       <h2 className="mb-3 font-display text-xl font-bold text-ink">{status.active ? 'Change or renew your plan' : 'Choose a plan'}</h2>
       <div className="grid gap-4 md:grid-cols-3">
@@ -189,7 +208,7 @@ export function BillingPage() {
             plan={p}
             current={status.active && status.plan === p.id}
             busy={paying === p.id}
-            disabled={!data.paymentsEnabled || (paying !== null && paying !== p.id)}
+            disabled={!payable || (paying !== null && paying !== p.id)}
             onChoose={() => choose(p.id)}
           />
         ))}

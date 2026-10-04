@@ -11,6 +11,11 @@ export interface Business {
   plan_started_at: Date | null;
   plan_expires_at: Date | null;
   call_credits: number;
+  owner_name: string | null;
+  email_verified_at: Date | null;
+  verification_status: "none" | "pending" | "approved" | "rejected";
+  verification_note: string | null;
+  verification_updated_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -26,9 +31,22 @@ export const businessesRepository = {
     return found;
   },
 
-  async insert(name: string, email: string, passwordHash: string): Promise<number> {
-    const result = await run("INSERT INTO businesses (name, email, password_hash) VALUES (?, ?, ?)", [name, email.trim().toLowerCase(), passwordHash]);
+  async insert(name: string, email: string, passwordHash: string, ownerName: string): Promise<number> {
+    const result = await run("INSERT INTO businesses (name, email, password_hash, owner_name) VALUES (?, ?, ?, ?)", [
+      name,
+      email.trim().toLowerCase(),
+      passwordHash,
+      ownerName
+    ]);
     return result.insertId;
+  },
+
+  markEmailVerified: async (id: number): Promise<void> => {
+    await run("UPDATE businesses SET email_verified_at = COALESCE(email_verified_at, now()) WHERE id = ?", [id]);
+  },
+
+  setVerification: async (id: number, status: Business["verification_status"], note: string | null): Promise<void> => {
+    await run("UPDATE businesses SET verification_status = ?, verification_note = ?, verification_updated_at = now() WHERE id = ?", [status, note, id]);
   },
 
   /** Starts (or restarts) a plan now for `days` days. The call allowance resets with it. */

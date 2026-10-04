@@ -59,9 +59,14 @@ const post = <T>(path: string, body?: unknown) =>
 
 export const api = {
   health: () => request<Health>('/health'),
-  signup: (data: { business_name: string; email: string; password: string }) => post<{ token: string; business: Business }>('/auth/signup', data),
+  signup: (data: { business_name: string; owner_name: string; email: string; password: string }) => post<{ token: string; business: Business }>('/auth/signup', data),
   login: (data: { email: string; password: string }) => post<{ token: string; business: Business }>('/auth/login', data),
   me: () => request<Business>('/auth/me'),
+
+  verifyEmail: (code: string) => post<{ ok: true }>('/onboarding/verify-email', { code }),
+  resendCode: () => post<{ ok: true }>('/onboarding/resend-code'),
+  uploadDocument: (file: File) => upload('/onboarding/document', file),
+  myDocument: () => download('/onboarding/document'),
 
   billing: () => request<Billing>('/billing'),
   checkout: (plan: string) => post<{ url: string; reference: string }>('/billing/checkout', { plan }),
@@ -72,6 +77,9 @@ export const api = {
   adminLogin: (password: string) => post<{ token: string }>('/admin-auth/login', { password }),
   adminOverview: () => request<AdminOverview>('/admin/overview'),
   adminSetPlan: (businessId: number, plan: string | null) => post<{ id: number }>(`/admin/businesses/${businessId}/plan`, { plan }),
+  adminDocument: (businessId: number) => download(`/admin/businesses/${businessId}/document`),
+  adminSetVerification: (businessId: number, status: 'approved' | 'rejected', note?: string) =>
+    post<{ ok: true }>(`/admin/businesses/${businessId}/verification`, { status, note }),
   adminSetCapacity: (minutes: number) => post<{ ok: true }>('/admin/capacity', { minutes }),
 
   listCustomers: () => request<Customer[]>('/customers'),
@@ -90,6 +98,36 @@ export const api = {
   getCall: (id: number) => request<Call>(`/calls/${id}`),
 
   publicSignup: (data: { name?: string; phone: string }) => post<{ ok: true }>('/public/signup', data),
+}
+
+/** Sends a file as the raw request body (the CAC certificate). */
+async function upload(path: string, file: File): Promise<unknown> {
+  const token = getToken(sessionFor(path))
+  let res: Response
+  try {
+    res = await fetch(API_URL + path, {
+      method: 'POST',
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+        'X-Filename': encodeURIComponent(file.name),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: file,
+    })
+  } catch {
+    throw new Error('Upload failed. Check your connection and try again.')
+  }
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(body.error || `Upload failed (${res.status})`)
+  return body
+}
+
+/** Fetches a private file (needs the session header) and returns a link the browser can open. */
+async function download(path: string): Promise<string> {
+  const token = getToken(sessionFor(path))
+  const res = await fetch(API_URL + path, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  if (!res.ok) throw new Error(res.status === 404 ? 'No document uploaded yet.' : `Couldn't open the document (${res.status})`)
+  return URL.createObjectURL(await res.blob())
 }
 
 export function errorMessage(err: unknown): string {

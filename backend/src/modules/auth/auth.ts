@@ -7,6 +7,7 @@ import { asyncHandler } from "../../utils/http";
 import { planStatus } from "../businesses/access";
 import { Business, businessesRepository } from "../businesses/businesses.repository";
 import { hashPassword, passwordMatches } from "../businesses/passwords";
+import { documentInfo, sendEmailCode } from "../onboarding/onboarding.service";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -110,15 +111,30 @@ function tooManyAttempts(key: string, now = Date.now()): boolean {
 const clientIp = (req: Request) => String(req.headers["x-forwarded-for"] || req.ip || "unknown").split(",")[0].trim();
 const pause = () => new Promise((resolve) => setTimeout(resolve, 300));
 
-/** What the dashboard needs to know about the signed-in business. */
+/** What the dashboard needs to know about the signed-in business, including where it is in onboarding. */
 export async function publicBusiness(business: Business) {
-  return { id: business.id, name: business.name, email: business.email, created_at: business.created_at, plan: await planStatus(business) };
+  return {
+    id: business.id,
+    name: business.name,
+    email: business.email,
+    ownerName: business.owner_name,
+    created_at: business.created_at,
+    emailVerified: Boolean(business.email_verified_at),
+    verification: {
+      status: business.verification_status,
+      note: business.verification_note,
+      updatedAt: business.verification_updated_at,
+      document: await documentInfo(business.id)
+    },
+    plan: await planStatus(business)
+  };
 }
 
 // ---------- Routes ----------
 const email = z.string().trim().toLowerCase().email().max(254);
 const signupSchema = z.object({
   business_name: z.string().trim().min(2, "Enter your business name").max(160),
+  owner_name: z.string().trim().min(3, "Enter your full name").max(160),
   email,
   password: z.string().min(8, "Use at least 8 characters").max(200)
 });
@@ -130,8 +146,9 @@ authRoutes.post("/signup", asyncHandler(async (req, res) => {
   if (tooManyAttempts(`signup:${clientIp(req)}`)) throw tooManyRequests("Too many sign-ups from here. Try again in 15 minutes.");
   const input = signupSchema.parse(req.body);
   if (await businessesRepository.findByEmail(input.email)) throw conflict("An account with this email already exists. Sign in instead.");
-  const id = await businessesRepository.insert(input.business_name, input.email, await hashPassword(input.password));
+  const id = await businessesRepository.insert(input.business_name, input.email, await hashPassword(input.password), input.owner_name);
   const business = (await businessesRepository.findById(id)) as Business;
+  await sendEmailCode(business);
   res.status(201).json({ token: issueBusinessToken(id), business: await publicBusiness(business) });
 }));
 

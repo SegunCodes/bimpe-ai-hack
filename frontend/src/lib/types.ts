@@ -109,11 +109,24 @@ export interface PlanStatus {
   outOfCredits: boolean
 }
 
+export type VerificationStatus = 'none' | 'pending' | 'approved' | 'rejected'
+
+export interface Verification {
+  status: VerificationStatus
+  /** Why it was rejected, when it was */
+  note: string | null
+  updatedAt: string | null
+  document: { filename: string; contentType: string; sizeBytes: number; uploadedAt: string } | null
+}
+
 export interface Business {
   id: number
   name: string
   email: string
+  ownerName: string | null
   created_at: string
+  emailVerified: boolean
+  verification: Verification
   plan: PlanStatus
 }
 
@@ -149,6 +162,9 @@ export interface AdminBusiness {
   orders: number
   calls: number
   plan: PlanStatus
+  ownerName: string | null
+  emailVerified: boolean
+  verification: Verification
   usage: { minutesThisMonth: number; answeredThisMonth: number; costThisMonthNaira: number; revenueNaira: number }
 }
 

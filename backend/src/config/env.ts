@@ -62,6 +62,14 @@ export const env = {
     /** Minutes held back per call that is still on the phone (its length isn't known yet). */
     minutesPerLiveCall: 2
   },
+  email: {
+    /** Resend API key. Without it, emails are logged instead of sent (and codes can't arrive). */
+    resendApiKey: (process.env.RESEND_API_KEY || "").trim(),
+    from: (process.env.EMAIL_FROM || "Tellero AI <no-reply@usetellero.com>").trim(),
+    replyTo: (process.env.EMAIL_REPLY_TO || "support@usetellero.com").trim(),
+    /** Where "a business uploaded its CAC" alerts go. */
+    adminInbox: (process.env.ADMIN_NOTIFY_EMAIL || "support@usetellero.com").trim()
+  },
   paystack: {
     /** Paystack secret key (sk_test_… or sk_live_…). Without it, plans can only be switched on from /admin. */
     secretKey: (process.env.PAYSTACK_SECRET_KEY || "").trim()

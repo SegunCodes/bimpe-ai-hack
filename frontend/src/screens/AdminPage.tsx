@@ -282,20 +282,123 @@ function CapacityCard({ capacity, onChanged }: { capacity: Capacity; onChanged: 
   )
 }
 
+const VERIFICATION: Record<string, { label: string; className: string }> = {
+  none: { label: 'No CAC yet', className: 'bg-mist text-ink-soft' },
+  pending: { label: 'CAC to review', className: 'bg-danfo-soft text-ink ring-1 ring-danfo' },
+  approved: { label: 'Verified', className: 'bg-good-soft text-good' },
+  rejected: { label: 'CAC rejected', className: 'bg-bad-soft text-bad' },
+}
+
+/** View the uploaded CAC certificate and approve or reject it (a reason is required to reject). */
+function VerificationActions({ business, onChanged }: { business: AdminBusiness; onChanged: () => void }) {
+  const toast = useToast()
+  const [busy, setBusy] = useState<'view' | 'approve' | 'reject' | null>(null)
+  const [rejecting, setRejecting] = useState(false)
+  const [reason, setReason] = useState('')
+  const v = business.verification
+  if (business.is_house) return null
+
+  const view = async () => {
+    setBusy('view')
+    try {
+      window.open(await api.adminDocument(business.id), '_blank', 'noopener')
+    } catch (err) {
+      toast.error(errorMessage(err))
+    } finally {
+      setBusy(null)
+    }
+  }
+  const decide = async (status: 'approved' | 'rejected') => {
+    if (status === 'rejected' && reason.trim().length < 5) return toast.error('Say why, so the business knows what to fix.')
+    setBusy(status === 'approved' ? 'approve' : 'reject')
+    try {
+      await api.adminSetVerification(business.id, status, status === 'rejected' ? reason.trim() : undefined)
+      toast.success(status === 'approved' ? `${business.name} approved and emailed` : `${business.name} asked to upload again`)
+      setRejecting(false)
+      setReason('')
+      onChanged()
+    } catch (err) {
+      toast.error(errorMessage(err))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${VERIFICATION[v.status].className}`}>{VERIFICATION[v.status].label}</span>
+        {!business.emailVerified && <span className="text-xs text-ink-muted">email not confirmed</span>}
+        {v.document && (
+          <button onClick={view} disabled={busy !== null} className="font-semibold text-ink underline-offset-4 hover:underline">
+            {busy === 'view' ? 'Opening…' : `View CAC (${v.document.filename})`}
+          </button>
+        )}
+        {v.document && v.status !== 'approved' && (
+          <>
+            <Button size="sm" onClick={() => decide('approved')} loading={busy === 'approve'} disabled={busy !== null}>
+              Approve
+            </Button>
+            {!rejecting && (
+              <Button size="sm" variant="secondary" onClick={() => setRejecting(true)} disabled={busy !== null}>
+                Reject
+              </Button>
+            )}
+          </>
+        )}
+      </div>
+      {v.status === 'rejected' && v.note && <p className="text-sm text-bad">Rejected: {v.note}</p>}
+      {rejecting && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            autoFocus
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Reason, e.g. the certificate is blurry or the name doesn’t match"
+            className={`${inputClass} sm:max-w-md`}
+          />
+          <div className="flex gap-2">
+            <Button size="sm" variant="danger" onClick={() => decide('rejected')} loading={busy === 'reject'}>
+              Reject and email
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setRejecting(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Businesses({ overview, stats, onChanged }: { overview: AdminOverview; stats: Stats; onChanged: () => void }) {
   const rate = new Map(stats.businesses.map((b) => [b.id, b]))
+  const [onlyPending, setOnlyPending] = useState(false)
+  const pending = overview.businesses.filter((b) => b.verification.status === 'pending')
+  const list = onlyPending ? pending : overview.businesses
   if (overview.businesses.length === 0) return <p className="py-6 text-center text-base text-ink-muted">No businesses have signed up yet.</p>
   return (
+    <>
+    {pending.length > 0 && (
+      <button
+        onClick={() => setOnlyPending((v) => !v)}
+        className="mb-2 rounded-full bg-danfo-soft px-3 py-1 text-sm font-semibold text-ink ring-1 ring-danfo"
+      >
+        {onlyPending ? 'Show all businesses' : `${pending.length} CAC certificate${pending.length === 1 ? '' : 's'} to review`}
+      </button>
+    )}
     <ul className="divide-y divide-line">
-      {overview.businesses.map((b) => {
+      {list.map((b) => {
         const r = rate.get(b.id)
         return (
           <li key={b.id} className="flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-baseline gap-x-2">
                 <span className="text-base font-semibold text-ink">{b.name}</span>
+                {b.ownerName && <span className="text-sm text-ink-soft">{b.ownerName}</span>}
                 {b.email && <span className="truncate text-sm text-ink-muted">{b.email}</span>}
               </div>
+              <VerificationActions business={b} onChanged={onChanged} />
               <div className="mt-0.5 text-sm">
                 <PlanCell business={b} />
               </div>
@@ -313,6 +416,7 @@ function Businesses({ overview, stats, onChanged }: { overview: AdminOverview; s
         )
       })}
     </ul>
+    </>
   )
 }
 

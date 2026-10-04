@@ -9,6 +9,7 @@ import { businessIdOf, publicBusiness, requireBusiness } from "../auth/auth";
 import { businessesRepository } from "../businesses/businesses.repository";
 import { PLAN_DAYS, PLANS, TOP_UPS, isPlanId, isTopUpId } from "../businesses/plans";
 import { grantPlan } from "../businesses/access";
+import { emails } from "../../integrations/email";
 
 /**
  * Plan payments through Paystack (https://paystack.com/docs/api/transaction):
@@ -60,6 +61,11 @@ async function confirmPayment(reference: string): Promise<"paid" | "pending" | "
   if (claimed.affectedRows === 1) {
     if (payment.kind === "topup" && isTopUpId(payment.plan)) await businessesRepository.addCredits(payment.business_id, TOP_UPS[payment.plan].calls);
     else if (isPlanId(payment.plan)) await grantPlan(payment.business_id, payment.plan);
+    const business = await businessesRepository.findById(payment.business_id);
+    if (business) {
+      const pack = isTopUpId(payment.plan) ? TOP_UPS[payment.plan] : isPlanId(payment.plan) ? PLANS[payment.plan] : null;
+      if (pack) await emails.planActive(business.email, business.owner_name || business.name, pack.name, pack.calls);
+    }
   }
   return "paid";
 }
@@ -92,6 +98,10 @@ billingRoutes.post("/checkout", asyncHandler(async (req, res) => {
   if (!isPlanId(plan) && !isTopUpId(plan)) throw badRequest("Unknown plan");
   const business = await businessesRepository.findById(businessIdOf(req));
   if (!business) throw notFound("Business");
+  if (!business.email_verified_at) throw new HttpError(403, "Confirm your email before choosing a plan.");
+  if (business.verification_status !== "approved") {
+    throw new HttpError(403, "We need to approve your CAC certificate before you can pay. Upload it on the onboarding page.");
+  }
   if (isTopUpId(plan) && !(business.plan_expires_at && new Date(business.plan_expires_at).getTime() > Date.now())) {
     throw badRequest("Top-ups add calls to an active plan. Choose a plan first.");
   }
