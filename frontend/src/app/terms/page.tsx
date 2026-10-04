@@ -47,7 +47,7 @@ export default function Page() {
         </li>
         <li>Unused calls carry over while you keep an active plan. Top-ups add calls to an active plan.</li>
         <li>Plans don’t renew automatically. There’s nothing to cancel: if you don’t pay again, calls stop when the plan ends.</li>
-        <li>Prices are shown in naira on our website and in your dashboard, and payments are handled by Paystack.</li>
+        <li>Prices are shown in naira on our website and in your dashboard. Payments are processed securely; we never see your card or bank details.</li>
         <li>
           Payments aren’t refundable once calls have been used. If you’re charged in error, email {SUPPORT_EMAIL} within 30 days and we’ll put it right.
         </li>

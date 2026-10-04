@@ -8,10 +8,7 @@ export function Hero() {
     <section className="relative overflow-hidden px-4 pb-16 pt-14 sm:px-6 sm:pt-20">
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="hero-fade text-base font-semibold text-ink-soft" style={{ ['--i' as string]: 0 }}>
-            AI delivery calls for Lagos sellers
-          </p>
-          <h1 className="mt-4 font-display text-[2.3rem] font-extrabold leading-[1.02] tracking-[-0.03em] text-ink sm:text-6xl md:text-7xl">
+          <h1 className="font-display text-[2.3rem] font-extrabold leading-[1.02] tracking-[-0.03em] text-ink sm:text-6xl md:text-7xl">
             <span className="hero-line" style={{ ['--i' as string]: 0 }}>
               Confirmed before
             </span>

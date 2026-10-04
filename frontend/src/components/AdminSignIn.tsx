@@ -42,9 +42,9 @@ export function AdminSignIn({ onSignedIn }: { onSignedIn: () => void }) {
         <div className="rounded-3xl bg-white p-5 text-[15px] leading-relaxed text-ink-soft sm:p-6">
           <p className="font-semibold text-ink">The admin password hasn’t been set up yet.</p>
           <ol className="mt-3 list-decimal space-y-1.5 pl-5">
-            <li>Open your backend project on Vercel.</li>
+            <li>Open your backend’s hosting settings.</li>
             <li>
-              Go to Settings → Environment Variables and add <code className="rounded bg-mist px-1.5 py-0.5 text-sm text-ink">ADMIN_PASSWORD</code> with a long password.
+              Add an environment variable called <code className="rounded bg-mist px-1.5 py-0.5 text-sm text-ink">ADMIN_PASSWORD</code> with a long password.
             </li>
             <li>Redeploy the backend, then refresh this page.</li>
           </ol>

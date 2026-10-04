@@ -56,22 +56,6 @@ export default function Page() {
         codes. If a customer receives a call asking for any of these, it isn’t from Tellero AI.
       </p>
 
-      <h2>Who processes the information</h2>
-      <p>We use a small number of service providers to run Tellero AI:</p>
-      <ul>
-        <li>
-          <strong>BimpeAI</strong> places the phone calls and produces the transcripts.
-        </li>
-        <li>
-          <strong>Paystack</strong> takes payments. Card and bank details go to Paystack directly.
-        </li>
-        <li>
-          <strong>Vercel</strong> and <strong>Neon</strong> host the website and store the data.
-        </li>
-        <li>When a transcript needs reading to work out the result of a call, we may use an AI service from Anthropic to do so.</li>
-      </ul>
-      <p>These providers may store data outside Nigeria. They only use it to provide their service to us.</p>
-
       <h2>Who can see it</h2>
       <p>
         A business can see only its own customers, orders and calls. A small number of Tellero AI staff can see account and usage information to run the

@@ -67,7 +67,7 @@ export function Pricing() {
                   </span>
                 </span>
               ))}{' '}
-              from your dashboard at any time. Payments go through Paystack.
+              from your dashboard at any time.
             </p>
           </div>
         </Reveal>

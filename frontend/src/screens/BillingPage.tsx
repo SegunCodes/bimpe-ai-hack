@@ -33,7 +33,7 @@ function PaymentReturn({ onDone }: { onDone: () => void }) {
       .verifyPayment(reference)
       .then((r) => {
         if (r.status === 'paid') toast.success(`Payment received. ${r.business?.plan.planName ?? 'Your'} plan is on, and Tellero AI can start calling.`)
-        else if (r.status === 'pending') toast.info('Paystack is still confirming your payment. This page will update when it does.')
+        else if (r.status === 'pending') toast.info('Your payment is still being confirmed. This page will update when it is.')
         else toast.error("The payment didn't go through. You haven't been charged for a plan.")
       })
       .catch((err) => toast.error(`Couldn't confirm the payment: ${errorMessage(err)}`))
@@ -45,7 +45,7 @@ function PaymentReturn({ onDone }: { onDone: () => void }) {
   }, [reference, router, toast, onDone])
 
   if (!checking) return null
-  return <div className="mb-5 rounded-2xl bg-danfo-soft px-4 py-3 text-[15px] text-ink ring-1 ring-danfo/60">Confirming your payment with Paystack…</div>
+  return <div className="mb-5 rounded-2xl bg-danfo-soft px-4 py-3 text-[15px] text-ink ring-1 ring-danfo/60">Confirming your payment…</div>
 }
 
 function Welcome({ plans }: { plans: Plan[] }) {
@@ -214,7 +214,7 @@ export function BillingPage() {
         ))}
       </div>
       <p className="mt-4 text-sm text-ink-muted">
-        Payments are handled securely by Paystack. A plan runs for 30 days and adds its calls to your balance; unused calls carry over when you renew. A call only uses a credit if the customer picks up.
+        Payments are processed securely; we never see your card details. A plan runs for 30 days and adds its calls to your balance; unused calls carry over when you renew. A call only uses a credit if the customer picks up.
       </p>
     </>
   )

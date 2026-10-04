@@ -43,7 +43,7 @@ export function Footer() {
               <Wordmark className="text-xl text-ink" />
             </Link>
             <p className="mt-4 max-w-xs text-[15px] leading-relaxed text-ink-soft">
-              AI calls that confirm every delivery before the rider leaves. Built in Lagos.
+              AI calls that confirm every delivery before the rider leaves.
             </p>
             <a href={`mailto:${SUPPORT_EMAIL}`} className="mt-4 inline-block text-[15px] font-semibold text-ink underline-offset-4 hover:underline">
               {SUPPORT_EMAIL}
@@ -66,7 +66,7 @@ export function Footer() {
         </div>
         <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-ink/10 pt-6 text-sm text-ink-soft">
           <p>© {new Date().getFullYear()} Tellero AI. All rights reserved.</p>
-          <p>Payments by Paystack · Calls by BimpeAI</p>
+          <p>Built in Lagos</p>
         </div>
       </div>
     </footer>

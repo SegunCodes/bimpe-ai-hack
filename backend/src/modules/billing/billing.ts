@@ -32,7 +32,11 @@ async function paystack<T>(method: "GET" | "POST", path: string, body?: unknown)
     body: body ? JSON.stringify(body) : undefined
   });
   const payload = (await response.json().catch(() => ({}))) as Partial<PaystackEnvelope<T>>;
-  if (!response.ok || !payload.status) throw new HttpError(502, `Paystack: ${payload.message || `request failed (${response.status})`}`);
+  if (!response.ok || !payload.status) {
+    // Details go to the server log; the business sees a plain message without the provider's name.
+    console.error(`Payment provider error (${response.status}): ${payload.message || "no details"}`);
+    throw new HttpError(502, "We couldn’t reach the payment service. Please try again in a minute.");
+  }
   return payload.data as T;
 }
 
