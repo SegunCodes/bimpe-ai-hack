@@ -2,7 +2,7 @@ import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { databaseSettingNames, env } from "./config/env";
 import { ensureDatabase } from "./db/schema";
-import { pool } from "./db/pool";
+import { one, pool } from "./db/pool";
 import { errorHandler } from "./middleware/errorHandler";
 import { runInBackground } from "./utils/background";
 import { devRoutes } from "./modules/dev/dev.routes";
@@ -13,6 +13,14 @@ import { agentSetupStatus } from "./modules/bimpeSetup/bimpeSetup.auto";
 import { apiRoutes } from "./routes";
 import { requireAdmin } from "./modules/auth/auth";
 import { paystackWebhookRoutes } from "./modules/billing/billing";
+
+/** When the background job last ran and whether every step worked (counts and error messages only). */
+async function lastTick(): Promise<unknown> {
+  const row = await one<{ value: string; updated_at: Date }>("SELECT value, updated_at FROM app_settings WHERE key = 'last_tick'");
+  if (!row) return null;
+  const summary = JSON.parse(row.value) as { errors?: string[] };
+  return { at: row.updated_at, ok: !summary.errors?.length, ...summary };
+}
 
 export function createApp(): express.Express {
   const app = express();
@@ -55,7 +63,8 @@ export function createApp(): express.Express {
       bimpeKeySet: Boolean(env.bimpe.apiKey),
       adminPasswordSet: Boolean(env.admin.password),
       paymentsSet: Boolean(env.paystack.secretKey),
-      agentScript: database === "ok" ? await agentSetupStatus().catch(() => ({ status: "unknown" })) : { status: "waiting for the database" }
+      agentScript: database === "ok" ? await agentSetupStatus().catch(() => ({ status: "unknown" })) : { status: "waiting for the database" },
+      lastBackgroundRun: database === "ok" ? await lastTick().catch(() => null) : null
     });
   });
 

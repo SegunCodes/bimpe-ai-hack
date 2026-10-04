@@ -1,4 +1,5 @@
 import { env } from "../../config/env";
+import { run } from "../../db/pool";
 import { dispatchQueued } from "../calls/calls.dispatch";
 import { settleMockCalls } from "../calls/calls.mock";
 import { checkLiveCalls } from "../calls/calls.poller";
@@ -13,6 +14,7 @@ export interface TickSummary {
   liveFinished: number;
   repaired: number;
   agentScript: string;
+  errors: string[];
   ms: number;
 }
 
@@ -28,26 +30,50 @@ let lastStartedAt = 0;
  *   4. re-read a few calls whose result could not be worked out earlier
  *   5. send the call script and tools to BimpeAI if they changed since the last deploy
  */
+/** Runs one step; a failure is logged and recorded but never stops the steps after it. */
+async function step<T>(name: string, errors: string[], fallback: T, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error(`Tick step "${name}" failed:`, error);
+    errors.push(`${name}: ${(error as Error).message}`.slice(0, 300));
+    return fallback;
+  }
+}
+
+/** Saves the last tick's result for the self-check page (no secrets: counts and error messages). */
+async function recordTick(summary: TickSummary): Promise<void> {
+  await run(
+    `INSERT INTO app_settings (key, value, updated_at) VALUES ('last_tick', ?, now())
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now() RETURNING key`,
+    [JSON.stringify(summary)]
+  ).catch((error) => console.error("Could not record the tick:", error));
+}
+
+// A tick that hangs (for example a network call that never returns) must not block every
+// later tick on this instance forever.
+const STALE_TICK_MS = 2 * 60 * 1000;
+
 export function runTick(): Promise<TickSummary> {
-  if (running) return running;
+  if (running && Date.now() - lastStartedAt < STALE_TICK_MS) return running;
   lastStartedAt = Date.now();
-  running = (async () => {
+  const current = (async () => {
     const started = Date.now();
-    const scheduled = await runSchedulerTick();
-    const dialled = await dispatchQueued(10);
-    const mockSettled = await settleMockCalls();
-    const liveFinished = await checkLiveCalls();
-    const repaired = await repairUndeterminedCalls();
-    // Last, and never allowed to break the tick: keep BimpeAI's script in step with this code.
-    const agentScript = await syncAgentIfChanged().catch((error: unknown) => {
-      console.error("Agent script sync failed:", error);
-      return "failed";
-    });
-    return { scheduled, dialled, mockSettled, liveFinished, repaired, agentScript, ms: Date.now() - started };
+    const errors: string[] = [];
+    const scheduled = await step("scheduler", errors, 0, runSchedulerTick);
+    const dialled = await step("dial queue", errors, 0, () => dispatchQueued(10));
+    const mockSettled = await step("demo calls", errors, 0, settleMockCalls);
+    const liveFinished = await step("live calls", errors, 0, () => checkLiveCalls());
+    const repaired = await step("re-read results", errors, 0, () => repairUndeterminedCalls());
+    const agentScript = await step("agent script", errors, "failed", syncAgentIfChanged);
+    const summary: TickSummary = { scheduled, dialled, mockSettled, liveFinished, repaired, agentScript, errors, ms: Date.now() - started };
+    await recordTick(summary);
+    return summary;
   })().finally(() => {
-    running = null;
+    if (running === current) running = null;
   });
-  return running;
+  running = current;
+  return current;
 }
 
 /** True when enough time has passed that a request may kick off another background tick. */
