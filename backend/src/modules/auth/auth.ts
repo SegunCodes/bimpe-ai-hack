@@ -1,13 +1,15 @@
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import { NextFunction, Request, Response, Router } from "express";
 import { z } from "zod";
 import { env } from "../../config/env";
-import { conflict, HttpError, tooManyRequests, unauthorized } from "../../utils/errors";
+import { badRequest, conflict, HttpError, tooManyRequests, unauthorized } from "../../utils/errors";
 import { asyncHandler } from "../../utils/http";
 import { planStatus } from "../businesses/access";
 import { Business, businessesRepository } from "../businesses/businesses.repository";
 import { hashPassword, passwordMatches } from "../businesses/passwords";
-import { documentInfo, sendEmailCode } from "../onboarding/onboarding.service";
+import { documentInfo, hashCode, sendEmailCode } from "../onboarding/onboarding.service";
+import { one, run } from "../../db/pool";
+import { emails } from "../../integrations/email";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -45,11 +47,26 @@ export function issueBusinessToken(businessId: number, now = Date.now()): string
 }
 
 export function businessIdFromToken(token: string, now = Date.now()): number | null {
+  return readBusinessToken(token, now)?.businessId ?? null;
+}
+
+/**
+ * Session for a business, dated no earlier than its last password change (by the database's
+ * clock), so a fresh sign-in is never mistaken for an old session.
+ */
+function sessionFor(business: Business): string {
+  const changed = business.password_changed_at ? new Date(business.password_changed_at).getTime() + 1 : 0;
+  return issueBusinessToken(business.id, Math.max(Date.now(), changed));
+}
+
+/** A valid business token's id and the moment it was issued (expiry minus its lifetime). */
+function readBusinessToken(token: string, now = Date.now()): { businessId: number; issuedAt: number } | null {
   const parts = token.split(".");
   if (parts.length !== 4 || parts[0] !== "b" || !env.auth.sessionSecret) return null;
   const [, id, expires, signature] = parts;
   if (!/^\d+$/.test(id) || !/^\d+$/.test(expires) || Number(expires) < now) return null;
-  return sameText(signature, hmac(env.auth.sessionSecret, `b.${id}.${expires}`)) ? Number(id) : null;
+  if (!sameText(signature, hmac(env.auth.sessionSecret, `b.${id}.${expires}`))) return null;
+  return { businessId: Number(id), issuedAt: Number(expires) - BUSINESS_SESSION_DAYS * DAY_MS };
 }
 
 /** Admin session: "a.<expiry>.<sig>", signed with a key derived from ADMIN_PASSWORD (changing it signs the admin out). */
@@ -75,12 +92,23 @@ function bearer(req: Request): string {
   return header.startsWith("Bearer ") ? header.slice(7).trim() : "";
 }
 
-/** Guards every dashboard route and records which business is asking. */
+/**
+ * Guards every dashboard route and records which business is asking. A session from before
+ * the account's last password change is refused, so resetting a password signs out everyone else.
+ */
 export function requireBusiness(req: Request, _res: Response, next: NextFunction): void {
-  const businessId = businessIdFromToken(bearer(req));
-  if (!businessId) return next(unauthorized("Please sign in."));
-  req.businessId = businessId;
-  next();
+  const session = readBusinessToken(bearer(req));
+  if (!session) return next(unauthorized("Please sign in."));
+  businessesRepository
+    .findById(session.businessId)
+    .then((business) => {
+      if (!business) return next(unauthorized("Please sign in."));
+      const changed = business.password_changed_at ? new Date(business.password_changed_at).getTime() : 0;
+      if (changed > session.issuedAt) return next(unauthorized("Your password was changed. Please sign in again."));
+      req.businessId = session.businessId;
+      next();
+    })
+    .catch(next);
 }
 
 /** The signed-in business. Only valid behind requireBusiness. */
@@ -149,7 +177,7 @@ authRoutes.post("/signup", asyncHandler(async (req, res) => {
   const id = await businessesRepository.insert(input.business_name, input.email, await hashPassword(input.password), input.owner_name);
   const business = (await businessesRepository.findById(id)) as Business;
   await sendEmailCode(business);
-  res.status(201).json({ token: issueBusinessToken(id), business: await publicBusiness(business) });
+  res.status(201).json({ token: sessionFor(business), business: await publicBusiness(business) });
 }));
 
 authRoutes.post("/login", asyncHandler(async (req, res) => {
@@ -162,13 +190,75 @@ authRoutes.post("/login", asyncHandler(async (req, res) => {
     throw unauthorized("That email and password don't match.");
   }
   attempts.delete(`login:${clientIp(req)}:${input.email}`);
-  res.json({ token: issueBusinessToken(business.id), business: await publicBusiness(business) });
+  res.json({ token: sessionFor(business), business: await publicBusiness(business) });
 }));
 
 authRoutes.get("/me", requireBusiness, asyncHandler(async (req, res) => {
   const business = await businessesRepository.findById(businessIdOf(req));
   if (!business) throw unauthorized("Please sign in.");
   res.json(await publicBusiness(business));
+}));
+
+// ---------- Forgotten password ----------
+// A 6-digit code by email, then a new password. The answer is the same whether or not the email
+// has an account, so the form can't be used to find out who uses Tellero AI.
+
+const RESET_MINUTES = 15;
+const RESET_MAX_TRIES = 5;
+const resetHash = (businessId: number, code: string) => hashCode(businessId, `reset:${code}`);
+
+authRoutes.post("/forgot-password", asyncHandler(async (req, res) => {
+  const { email: address } = z.object({ email }).parse(req.body);
+  if (tooManyAttempts(`forgot:${clientIp(req)}`)) throw tooManyRequests("Too many requests. Try again in 15 minutes.");
+  const business = await businessesRepository.findByEmail(address);
+  if (business && !business.is_house) {
+    const recent = await one<{ seconds: string }>("SELECT EXTRACT(EPOCH FROM now() - sent_at) AS seconds FROM password_resets WHERE business_id = ?", [business.id]);
+    // At most one email a minute per account; quietly skip otherwise.
+    if (!recent || Number(recent.seconds) >= 60) {
+      const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+      await run(
+        `INSERT INTO password_resets (business_id, code_hash, expires_at, attempts, sent_at)
+         VALUES (?, ?, now() + make_interval(mins => ?), 0, now())
+         ON CONFLICT (business_id) DO UPDATE SET code_hash = EXCLUDED.code_hash, expires_at = EXCLUDED.expires_at, attempts = 0, sent_at = now()
+         RETURNING business_id`,
+        [business.id, resetHash(business.id, code), RESET_MINUTES]
+      );
+      const sent = await emails.passwordResetCode(business.email, business.owner_name || business.name, code);
+      if (!sent && !env.email.resendApiKey && process.env.NODE_ENV !== "production") console.log(`[dev] Password reset code for ${business.email}: ${code}`);
+    }
+  }
+  res.json({ ok: true });
+}));
+
+const resetSchema = z.object({
+  email,
+  code: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code"),
+  password: z.string().min(8, "Use at least 8 characters").max(200)
+});
+
+authRoutes.post("/reset-password", asyncHandler(async (req, res) => {
+  const input = resetSchema.parse(req.body);
+  if (tooManyAttempts(`reset:${clientIp(req)}`)) throw tooManyRequests("Too many tries. Wait 15 minutes and try again.");
+  const business = await businessesRepository.findByEmail(input.email);
+  const row = business
+    ? await one<{ code_hash: string; expires_at: Date; attempts: number }>(
+        "SELECT code_hash, expires_at, attempts FROM password_resets WHERE business_id = ?",
+        [business.id]
+      )
+    : undefined;
+  const invalid = () => badRequest("That code isn’t right or has expired. Ask for a new one.");
+  if (!business || !row) throw invalid();
+  if (row.attempts >= RESET_MAX_TRIES || new Date(row.expires_at).getTime() < Date.now()) throw invalid();
+  if (!sameText(resetHash(business.id, input.code), row.code_hash)) {
+    await run("UPDATE password_resets SET attempts = attempts + 1 WHERE business_id = ?", [business.id]);
+    throw invalid();
+  }
+  await businessesRepository.setPassword(business.id, await hashPassword(input.password));
+  // Getting the code proves they own the inbox, so the email counts as confirmed too.
+  await businessesRepository.markEmailVerified(business.id);
+  await run("DELETE FROM password_resets WHERE business_id = ?", [business.id]);
+  const updated = (await businessesRepository.findById(business.id)) as Business;
+  res.json({ token: sessionFor(updated), business: await publicBusiness(updated) });
 }));
 
 export const adminAuthRoutes = Router();

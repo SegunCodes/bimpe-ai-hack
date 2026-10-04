@@ -12,6 +12,7 @@ export interface Business {
   plan_expires_at: Date | null;
   call_credits: number;
   owner_name: string | null;
+  password_changed_at: Date | null;
   email_verified_at: Date | null;
   verification_status: "none" | "pending" | "approved" | "rejected";
   verification_note: string | null;
@@ -39,6 +40,10 @@ export const businessesRepository = {
       ownerName
     ]);
     return result.insertId;
+  },
+
+  setPassword: async (id: number, passwordHash: string): Promise<void> => {
+    await run("UPDATE businesses SET password_hash = ?, password_changed_at = now() WHERE id = ?", [passwordHash, id]);
   },
 
   markEmailVerified: async (id: number): Promise<void> => {

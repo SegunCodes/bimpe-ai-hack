@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Suspense, useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent, type KeyboardEvent, type ReactNode } from 'react'
+import { Suspense, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { api, errorMessage } from '../lib/api'
 import { formatDateTime } from '../lib/format'
 import type { Business } from '../lib/types'
@@ -30,146 +30,6 @@ function Step({ n, title, state, children }: { n: number; title: string; state: 
       </div>
       {children && <div className="mt-4 sm:pl-11">{children}</div>}
     </li>
-  )
-}
-
-/** Six boxes; the code is checked as soon as the sixth digit lands (typed or pasted). */
-function CodeInput({ onComplete, busy }: { onComplete: (code: string) => void; busy: boolean }) {
-  const [digits, setDigits] = useState<string[]>(Array(6).fill(''))
-  const refs = useRef<(HTMLInputElement | null)[]>([])
-
-  const update = (next: string[]) => {
-    setDigits(next)
-    if (next.every((d) => d !== '')) onComplete(next.join(''))
-  }
-  const onChange = (i: number, e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '')
-    if (!value) return
-    const next = [...digits]
-    // Typing (or autofill) can deliver several digits at once: spread them forward.
-    value.split('').forEach((d, k) => {
-      if (i + k < 6) next[i + k] = d
-    })
-    update(next)
-    refs.current[Math.min(5, i + value.length)]?.focus()
-  }
-  const onKeyDown = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace') {
-      e.preventDefault()
-      const next = [...digits]
-      if (next[i]) next[i] = ''
-      else if (i > 0) {
-        next[i - 1] = ''
-        refs.current[i - 1]?.focus()
-      }
-      setDigits(next)
-    }
-    if (e.key === 'ArrowLeft' && i > 0) refs.current[i - 1]?.focus()
-    if (e.key === 'ArrowRight' && i < 5) refs.current[i + 1]?.focus()
-  }
-  const onPaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
-    if (!pasted) return
-    e.preventDefault()
-    const next = Array(6).fill('').map((_, k) => pasted[k] ?? '')
-    update(next)
-    refs.current[Math.min(5, pasted.length)]?.focus()
-  }
-
-  // Clear the boxes after a wrong code so they can type again.
-  useEffect(() => {
-    if (!busy && digits.every((d) => d !== '')) {
-      const t = setTimeout(() => {
-        setDigits(Array(6).fill(''))
-        refs.current[0]?.focus()
-      }, 600)
-      return () => clearTimeout(t)
-    }
-  }, [busy]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  return (
-    <div className="flex gap-2 sm:gap-3" aria-label="6-digit code">
-      {digits.map((d, i) => (
-        <input
-          key={i}
-          ref={(el) => {
-            refs.current[i] = el
-          }}
-          value={d}
-          onChange={(e) => onChange(i, e)}
-          onKeyDown={(e) => onKeyDown(i, e)}
-          onPaste={onPaste}
-          inputMode="numeric"
-          autoComplete={i === 0 ? 'one-time-code' : 'off'}
-          maxLength={6}
-          disabled={busy}
-          autoFocus={i === 0}
-          aria-label={`Digit ${i + 1}`}
-          className="h-14 w-11 rounded-xl bg-paper text-center font-display text-2xl font-bold text-ink ring-1 ring-inset ring-ink/20 focus:outline-none focus:ring-2 focus:ring-ink disabled:opacity-60 sm:w-12"
-        />
-      ))}
-    </div>
-  )
-}
-
-function EmailStep({ business, onDone }: { business: Business; onDone: () => Promise<void> }) {
-  const toast = useToast()
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [wait, setWait] = useState(0)
-
-  useEffect(() => {
-    if (wait <= 0) return
-    const t = setTimeout(() => setWait((w) => w - 1), 1000)
-    return () => clearTimeout(t)
-  }, [wait])
-
-  const verify = async (code: string) => {
-    setBusy(true)
-    setError(null)
-    try {
-      await api.verifyEmail(code)
-      toast.success('Email confirmed')
-      await onDone()
-    } catch (err) {
-      setError(errorMessage(err))
-    } finally {
-      setBusy(false)
-    }
-  }
-  const resend = async () => {
-    setError(null)
-    try {
-      await api.resendCode()
-      toast.success(`New code sent to ${business.email}`)
-      setWait(60)
-    } catch (err) {
-      setError(errorMessage(err))
-    }
-  }
-
-  return (
-    <>
-      <p className="mb-4 text-[15px] text-ink-soft">
-        We sent a 6-digit code to <span className="font-semibold text-ink">{business.email}</span>. It expires in 15 minutes.
-      </p>
-      <CodeInput onComplete={verify} busy={busy} />
-      <div className="mt-3 min-h-6 text-sm" aria-live="polite">
-        {busy && (
-          <span className="inline-flex items-center gap-2 text-ink-soft">
-            <Spinner className="h-4 w-4" /> Checking…
-          </span>
-        )}
-        {error && <span className="font-medium text-bad">{error}</span>}
-      </div>
-      <p className="mt-2 text-sm text-ink-muted">
-        No email? Check spam, or{' '}
-        <button onClick={resend} disabled={wait > 0} className="font-semibold text-ink underline-offset-4 hover:underline disabled:text-ink-muted disabled:no-underline">
-          {wait > 0 ? `send a new code in ${wait}s` : 'send a new code'}
-        </button>
-        .
-      </p>
-    </>
   )
 }
 
@@ -308,17 +168,14 @@ function Steps() {
         subtitle={
           approved
             ? 'Your business is verified.'
-            : 'Three quick steps so we know you’re a real, registered business. Your customers trust calls that come from verified sellers.'
+            : 'Two quick steps so we know you’re a real, registered business. Your customers trust calls that come from verified sellers.'
         }
       />
       <ol className="flex max-w-3xl flex-col gap-3">
-        <Step n={1} title="Confirm your email" state={emailDone ? 'done' : 'current'}>
-          {!emailDone && <EmailStep business={business} onDone={refresh} />}
-        </Step>
-        <Step n={2} title="Upload your CAC certificate" state={docDone ? 'done' : emailDone ? 'current' : 'waiting'}>
+        <Step n={1} title="Upload your CAC certificate" state={docDone ? 'done' : emailDone ? 'current' : 'waiting'}>
           {emailDone && !docDone && <DocumentStep business={business} onDone={refresh} />}
         </Step>
-        <Step n={3} title={approved ? 'Approved' : 'We review it'} state={approved ? 'done' : docDone ? 'current' : 'waiting'}>
+        <Step n={2} title={approved ? 'Approved' : 'We review it'} state={approved ? 'done' : docDone ? 'current' : 'waiting'}>
           {docDone && <ReviewStep business={business} />}
         </Step>
       </ol>

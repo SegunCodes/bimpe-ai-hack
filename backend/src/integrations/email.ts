@@ -76,6 +76,22 @@ export const emails = {
     });
   },
 
+  passwordResetCode(to: string, name: string, code: string) {
+    return sendEmail({
+      to,
+      subject: `${code} is your Tellero AI password reset code`,
+      html: layout({
+        heading: "Reset your password",
+        big: code,
+        paragraphs: [
+          `Hi ${escape(name)}, enter this code in Tellero AI to choose a new password. It expires in 15 minutes.`,
+          "If you didn’t ask to reset your password, ignore this email. Your password stays the same."
+        ]
+      }),
+      text: `Hi ${name}, your Tellero AI password reset code is ${code}. It expires in 15 minutes. If you didn't ask for this, ignore this email.`
+    });
+  },
+
   welcome(to: string, name: string, business: string) {
     return sendEmail({
       to,

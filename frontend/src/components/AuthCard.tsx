@@ -28,10 +28,13 @@ export function AuthFrame({ title, subtitle, children, footer }: { title: string
   )
 }
 
-function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
+function Field({ label, children, hint, action }: { label: string; children: ReactNode; hint?: string; action?: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-semibold text-ink-soft">{label}</span>
+      <span className="mb-1.5 flex items-center justify-between gap-3 text-sm font-semibold text-ink-soft">
+        {label}
+        {action}
+      </span>
       {children}
       {hint && <span className="mt-1 block text-sm text-ink-muted">{hint}</span>}
     </label>
@@ -64,15 +67,16 @@ export function BusinessAuth({ mode }: { mode: 'login' | 'signup' }) {
     if (!password) return setError('Enter your password.')
     setBusy(true)
     try {
-      const { token } = signup
+      const { token, business } = signup
         ? await api.signup({ business_name: name.trim(), owner_name: owner.trim(), email: email.trim(), password })
         : await api.login({ email: email.trim(), password })
       setToken('business', token)
       const next = new URLSearchParams(window.location.search).get('next')
       const plan = new URLSearchParams(window.location.search).get('plan')
       const chosen = plan && /^[a-z_]+$/.test(plan) ? `&plan=${plan}` : ''
-      // New businesses confirm their email and upload their CAC before anything else.
-      router.push(signup ? `/dashboard/onboarding${chosen ? `?${chosen.slice(1)}` : ''}` : next && next.startsWith('/dashboard') ? next : '/dashboard')
+      // The email is confirmed before the dashboard opens: right after sign-up, or on log-in if it never was.
+      if (!business.emailVerified) router.push(`/verify-email${chosen ? `?${chosen.slice(1)}` : ''}`)
+      else router.push(next && next.startsWith('/dashboard') ? next : '/dashboard')
     } catch (err) {
       setError(errorMessage(err))
       setBusy(false)
@@ -115,7 +119,17 @@ export function BusinessAuth({ mode }: { mode: 'login' | 'signup' }) {
         <Field label="Email">
           <input type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className={inputClass} />
         </Field>
-        <Field label="Password" hint={signup ? 'At least 8 characters.' : undefined}>
+        <Field
+          label="Password"
+          hint={signup ? 'At least 8 characters.' : undefined}
+          action={
+            signup ? undefined : (
+              <Link href="/forgot-password" className="text-sm font-semibold text-ink underline-offset-4 hover:underline">
+                Forgot password?
+              </Link>
+            )
+          }
+        >
           <input
             type="password"
             value={password}

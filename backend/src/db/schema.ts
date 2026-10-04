@@ -156,6 +156,17 @@ async function createTables(db: PoolClient): Promise<void> {
     attempts INT NOT NULL DEFAULT 0,
     sent_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
+  // Password reset codes (one live code per business) and when the password last changed:
+  // sessions issued before a password change stop working.
+  await db.query("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ NULL");
+  await db.query(`CREATE TABLE IF NOT EXISTS password_resets (
+    business_id INT PRIMARY KEY REFERENCES businesses(id),
+    code_hash TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    sent_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`);
+
   // The CAC certificate itself (PDF or photo, up to 4 MB). Only the latest upload is kept.
   await db.query(`CREATE TABLE IF NOT EXISTS business_documents (
     business_id INT PRIMARY KEY REFERENCES businesses(id),

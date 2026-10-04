@@ -123,10 +123,10 @@ function SignedInShell({ children }: { children: ReactNode }) {
   const { online, mockMode, checked } = useHealth()
   const { business } = useBusiness()
 
-  // An unconfirmed email comes first: everything else waits until it's done.
-  const needsEmail = business !== null && !business.emailVerified && !pathname.startsWith('/dashboard/onboarding')
+  // The dashboard opens only once the email is confirmed.
+  const needsEmail = business !== null && !business.emailVerified
   useEffect(() => {
-    if (needsEmail) router.replace('/dashboard/onboarding')
+    if (needsEmail) router.replace('/verify-email')
   }, [needsEmail, router])
 
   return (
@@ -191,7 +191,7 @@ function SignedInShell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <main className="mx-auto max-w-[1500px] px-4 pb-10 pt-5 sm:px-8 sm:py-8">{needsEmail ? <LoadingState label="Opening setup…" /> : children}</main>
+      <main className="mx-auto max-w-[1500px] px-4 pb-10 pt-5 sm:px-8 sm:py-8">{needsEmail ? <LoadingState label="One more step…" /> : children}</main>
     </div>
   )
 }

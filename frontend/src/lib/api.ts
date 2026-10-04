@@ -62,6 +62,8 @@ export const api = {
   signup: (data: { business_name: string; owner_name: string; email: string; password: string }) => post<{ token: string; business: Business }>('/auth/signup', data),
   login: (data: { email: string; password: string }) => post<{ token: string; business: Business }>('/auth/login', data),
   me: () => request<Business>('/auth/me'),
+  forgotPassword: (email: string) => post<{ ok: true }>('/auth/forgot-password', { email }),
+  resetPassword: (data: { email: string; code: string; password: string }) => post<{ token: string; business: Business }>('/auth/reset-password', data),
 
   verifyEmail: (code: string) => post<{ ok: true }>('/onboarding/verify-email', { code }),
   resendCode: () => post<{ ok: true }>('/onboarding/resend-code'),
