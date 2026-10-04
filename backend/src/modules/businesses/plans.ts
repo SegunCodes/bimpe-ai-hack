@@ -1,5 +1,5 @@
 /**
- * What businesses buy. Priced at about ₦650–700 per answered call, above Tellero's cost of
+ * What businesses buy. Priced at about ₦650–700 per answered call, above Tellero AI's cost of
  * roughly ₦400 per call on BimpeAI (₦200 per minute, about 2 minutes per answered call).
  *
  * A plan lasts 30 days and adds its calls to the business's credit balance. Unused credits

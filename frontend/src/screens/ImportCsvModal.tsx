@@ -157,7 +157,7 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
         {rows && (
           <>
             <label className="block">
-              <span className="mb-1.5 block text-sm font-semibold text-ink-soft">When should Tellero call? (applies to every order in this file)</span>
+              <span className="mb-1.5 block text-sm font-semibold text-ink-soft">When should Tellero AI call? (applies to every order in this file)</span>
               <select className={inputClass} value={plan} onChange={(e) => setPlan(e.target.value)}>
                 {CALL_PLANS.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -178,7 +178,7 @@ export function ImportCsvModal({ onClose, onImported }: { onClose: () => void; o
                     <th className="px-3 py-2">Phone</th>
                     <th className="px-3 py-2">Item</th>
                     <th className="px-3 py-2">Delivery</th>
-                    <th className="px-3 py-2">Tellero calls</th>
+                    <th className="px-3 py-2">Tellero AI calls</th>
                   </tr>
                 </thead>
                 <tbody>

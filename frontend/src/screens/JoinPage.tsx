@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion
 import { useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../lib/api'
 import { formatPhone, toE164 } from '../lib/phone'
-import { PhoneIcon } from '../components/Icons'
+import { PhoneIcon, Wordmark } from '../components/Icons'
 import { EASE_OUT } from '../components/Overlay'
 import { Spinner } from '../components/States'
 
@@ -83,7 +83,7 @@ export function JoinPage() {
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-danfo text-ink">
           <PhoneIcon className="h-[18px] w-[18px]" />
         </span>
-        <span className="font-display text-xl font-bold tracking-tight">Tellero</span>
+        <Wordmark className="text-xl" />
       </a>
       <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10">
         <AnimatePresence mode="wait" initial={true}>
@@ -94,7 +94,7 @@ export function JoinPage() {
                 Your phone should ring in a few seconds.
               </motion.h1>
               <motion.p variants={item} className="mt-4 text-xl text-white/70">
-                We&apos;re calling <span className="font-semibold text-white">{formatPhone(doneFor)}</span>. Pick up to chat with Tellero. You can
+                We&apos;re calling <span className="font-semibold text-white">{formatPhone(doneFor)}</span>. Pick up to chat with Tellero AI. You can
                 speak English, Pidgin, Yorùbá, Hausa or Igbo.
               </motion.p>
               <motion.button
@@ -112,7 +112,7 @@ export function JoinPage() {
           ) : (
             <motion.div key="form" variants={container} initial="hidden" animate="show" exit="exit">
               <motion.h1 variants={item} className="font-display text-[2.6rem] font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl">
-                Get a call from Tellero in seconds
+                Get a call from Tellero AI in seconds
               </motion.h1>
               <motion.p variants={item} className="mt-4 text-xl text-white/70">
                 Enter your number and we&apos;ll ring you right away.
@@ -169,7 +169,7 @@ export function JoinPage() {
                   </button>
                 </motion.div>
                 <motion.p variants={item} className="text-center text-sm text-white/50">
-                  By tapping “Call me” you agree to receive a call from Tellero’s AI assistant.
+                  By tapping “Call me” you agree to receive a call from Tellero AI’s AI assistant.
                 </motion.p>
               </form>
             </motion.div>

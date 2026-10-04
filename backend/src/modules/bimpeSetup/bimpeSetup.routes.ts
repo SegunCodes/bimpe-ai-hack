@@ -14,7 +14,7 @@ function authorised(req: Request): boolean {
 export const bimpeSetupRoutes = Router();
 
 /**
- * Configures the BimpeAI agent(s) for Tellero: call script, business profile, and our tools.
+ * Configures the BimpeAI agent(s) for Tellero AI: call script, business profile, and our tools.
  * Open https://<api>/api/admin/bimpe-setup?key=<CRON_SECRET> in a browser, or POST with the header.
  */
 bimpeSetupRoutes.all("/bimpe-setup", asyncHandler(async (req, res) => {

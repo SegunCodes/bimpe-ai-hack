@@ -8,9 +8,9 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
 const display = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-bricolage', display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'Tellero · Delivery calls, handled',
-  description: 'Tellero’s AI agent phones your customers before the rider leaves: confirms they are home, fixes the address with a landmark, and logs the answer. In English, Pidgin, Yorùbá, Hausa and Igbo.',
-  icons: { icon: '/favicon.svg' },
+  title: 'Tellero AI · Delivery calls, handled',
+  description: 'Tellero AI’s AI agent phones your customers before the rider leaves: confirms they are home, fixes the address with a landmark, and logs the answer. In English, Pidgin, Yorùbá, Hausa and Igbo.',
+  icons: { icon: '/favicon.svg', apple: '/apple-touch-icon.png' },
 }
 
 export const viewport: Viewport = {

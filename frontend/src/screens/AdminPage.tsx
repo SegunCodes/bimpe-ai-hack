@@ -11,7 +11,7 @@ import { Button } from '../components/Button'
 import { inputClass } from '../components/Overlay'
 import { usePolling } from '../hooks/usePolling'
 import { AdminSignIn } from '../components/AdminSignIn'
-import { PhoneIcon } from '../components/Icons'
+import { PhoneIcon, Wordmark } from '../components/Icons'
 import { PageHeader, StatCard } from '../components/Layout'
 import { Segmented } from '../components/Overlay'
 import { ErrorState, LoadingState, StaleBanner } from '../components/States'
@@ -213,7 +213,7 @@ function PlanSwitch({ business, plans, onChanged }: { business: AdminBusiness; p
 }
 
 /**
- * Tellero's shared BimpeAI minutes this month. All businesses' calls come out of one BimpeAI
+ * Tellero AI's shared BimpeAI minutes this month. All businesses' calls come out of one BimpeAI
  * account, so this is the number to watch: when it fills up, new calls pause for everyone.
  */
 function CapacityCard({ capacity, onChanged }: { capacity: Capacity; onChanged: () => void }) {
@@ -334,11 +334,11 @@ export function AdminPage() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 bg-ink text-white">
         <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-4 py-3 sm:px-8">
-          <Link href="/" className="flex h-9 w-9 items-center justify-center rounded-xl bg-danfo text-ink" aria-label="Tellero home">
+          <Link href="/" className="flex h-9 w-9 items-center justify-center rounded-xl bg-danfo text-ink" aria-label="Tellero AI home">
             <PhoneIcon className="h-5 w-5" />
           </Link>
           <div className="leading-tight">
-            <div className="font-display text-lg font-bold">Tellero admin</div>
+            <div className="flex items-center gap-2 text-lg"><Wordmark /> <span className="font-display font-bold">admin</span></div>
             <div className="text-xs text-white/55">All businesses</div>
           </div>
           <button onClick={() => clearToken('admin')} className="btn ml-auto rounded-xl px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white">
@@ -371,7 +371,7 @@ function AdminDashboard() {
     <>
       <PageHeader
         title="Admin"
-        subtitle="Every business on Tellero: who signed up, who's paying, and how their calls are going."
+        subtitle="Every business on Tellero AI: who signed up, who's paying, and how their calls are going."
         actions={<Segmented id="admin-range" options={RANGES} value={range} onChange={setRange} className="w-full sm:w-[420px]" />}
       />
       {error && <StaleBanner message={error} />}

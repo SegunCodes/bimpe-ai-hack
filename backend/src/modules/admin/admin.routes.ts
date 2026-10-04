@@ -67,7 +67,7 @@ adminRoutes.get("/overview", asyncHandler(async (_req, res) => {
   });
 }));
 
-/** After topping up BimpeAI: set how many BimpeAI minutes Tellero may use this month. */
+/** After topping up BimpeAI: set how many BimpeAI minutes Tellero AI may use this month. */
 adminRoutes.post("/capacity", asyncHandler(async (req, res) => {
   const { minutes } = z.object({ minutes: z.coerce.number().int().min(0).max(1_000_000) }).parse(req.body);
   await setMinuteBudget(minutes);

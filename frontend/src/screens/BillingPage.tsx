@@ -31,7 +31,7 @@ function PaymentReturn({ onDone }: { onDone: () => void }) {
     api
       .verifyPayment(reference)
       .then((r) => {
-        if (r.status === 'paid') toast.success(`Payment received. ${r.business?.plan.planName ?? 'Your'} plan is on, and Tellero can start calling.`)
+        if (r.status === 'paid') toast.success(`Payment received. ${r.business?.plan.planName ?? 'Your'} plan is on, and Tellero AI can start calling.`)
         else if (r.status === 'pending') toast.info('Paystack is still confirming your payment. This page will update when it does.')
         else toast.error("The payment didn't go through. You haven't been charged for a plan.")
       })
@@ -53,7 +53,7 @@ function Welcome() {
   return (
     <div className="mb-5 rounded-3xl bg-ink px-5 py-4 text-white">
       <p className="font-display text-xl font-bold">Your account is ready.</p>
-      <p className="mt-1 text-white/70">Choose a plan so Tellero can start calling your customers. You can add orders and customers before you pay.</p>
+      <p className="mt-1 text-white/70">Choose a plan so Tellero AI can start calling your customers. You can add orders and customers before you pay.</p>
     </div>
   )
 }
@@ -137,7 +137,7 @@ export function BillingPage() {
 
   return (
     <>
-      <PageHeader title="Plan & billing" subtitle="Tellero calls your customers while your plan is active. Each plan lasts 30 days." />
+      <PageHeader title="Plan & billing" subtitle="Tellero AI calls your customers while your plan is active. Each plan lasts 30 days." />
       <Suspense>
         <Welcome />
         <PaymentReturn onDone={afterPayment} />
@@ -172,7 +172,7 @@ export function BillingPage() {
 
       {!data.paymentsEnabled && (
         <p className="mb-5 rounded-2xl bg-white px-4 py-3 text-[15px] text-ink-soft ring-1 ring-ink/10">
-          Online payment isn’t switched on yet. Contact the Tellero team and they’ll turn your plan on for you.
+          Online payment isn’t switched on yet. Contact the Tellero AI team and they’ll turn your plan on for you.
         </p>
       )}
 

@@ -18,12 +18,12 @@ export function Hero() {
             </span>
           </h1>
           <p className="hero-fade mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-ink-soft sm:text-xl" style={{ ['--i' as string]: 1 }}>
-            Tellero phones every customer at the time you choose, checks they&apos;re home, turns “by the yellow gate” into an address a rider can find, and
+            Tellero AI phones every customer at the time you choose, checks they&apos;re home, turns “by the yellow gate” into an address a rider can find, and
             logs the answer. In English, Pidgin, Yorùbá, Hausa or Igbo.
           </p>
           <div className="hero-fade mt-8 flex flex-wrap items-center justify-center gap-3" style={{ ['--i' as string]: 2 }}>
             <a href="#call-me" className="btn btn-danfo inline-flex h-14 items-center rounded-full px-7 text-lg font-bold">
-              Get a call from Tellero
+              Get a call from Tellero AI
             </a>
             <a href="#try" className="btn btn-secondary inline-flex h-14 items-center rounded-full bg-white px-7 text-lg font-semibold text-ink">
               Hear a sample call

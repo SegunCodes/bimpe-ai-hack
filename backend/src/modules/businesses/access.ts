@@ -36,7 +36,7 @@ export async function planStatus(business: Business): Promise<PlanStatus> {
 
 /**
  * Before a call is placed: the business needs an active plan and a credit (the website account
- * is exempt), and Tellero's shared BimpeAI minute budget must have room. On success one credit is
+ * is exempt), and Tellero AI's shared BimpeAI minute budget must have room. On success one credit is
  * taken; the caller records it on the call so it can be given back if nobody answers.
  * Returns whether a credit was taken.
  */
@@ -44,13 +44,13 @@ export async function reserveCall(businessId: number): Promise<boolean> {
   const business = await businessesRepository.findById(businessId);
   if (!business) throw new HttpError(404, "Business not found");
   if (!(await budgetAllowsCall())) {
-    throw new HttpError(503, "Tellero has paused new calls for a short while. Scheduled calls will go out on their own as soon as calling resumes.");
+    throw new HttpError(503, "Tellero AI has paused new calls for a short while. Scheduled calls will go out on their own as soon as calling resumes.");
   }
   if (business.is_house) return false;
   const active = Boolean(business.plan && business.plan_expires_at && new Date(business.plan_expires_at).getTime() > Date.now());
   if (!active) throw new HttpError(402, "Choose a plan to start calls. Go to Plan & billing in your dashboard.");
   if (!(await businessesRepository.takeCredit(business.id))) {
-    throw new HttpError(402, "You've used all your call credits. Buy a top-up or renew your plan and Tellero will carry on calling.");
+    throw new HttpError(402, "You've used all your call credits. Buy a top-up or renew your plan and Tellero AI will carry on calling.");
   }
   return true;
 }

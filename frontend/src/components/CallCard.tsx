@@ -47,7 +47,7 @@ export function CallCard({ call, highlight }: { call: Call; highlight?: boolean 
 
       {extracted.length > 0 && (
         <details className="mt-4 rounded-2xl bg-paper p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-ink-soft">What Tellero noted</summary>
+          <summary className="cursor-pointer text-sm font-semibold text-ink-soft">What Tellero AI noted</summary>
           <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
             {extracted.map(([k, v]) => (
               <div key={k}>

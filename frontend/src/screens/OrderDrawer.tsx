@@ -62,7 +62,7 @@ export function OrderDrawer({ id, onClose, onChanged }: { id: number; onClose: (
               <p className="mt-2 text-base text-ink-soft sm:text-lg">{order.address_on_file || '—'}</p>
             </div>
             <div className="rounded-3xl bg-danfo-soft p-4 ring-1 ring-danfo/50 sm:rounded-[28px] sm:p-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink">Cleaned by Tellero</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink">Cleaned by Tellero AI</h3>
               <p className="mt-2 text-base font-semibold text-ink sm:text-lg">
                 {order.cleaned_address || <span className="font-normal text-ink-faint">Not confirmed yet</span>}
               </p>
@@ -105,7 +105,7 @@ function ScheduleCard({
   return (
     <section className="flex flex-col gap-4 rounded-3xl bg-ink p-5 text-white sm:flex-row sm:items-center sm:rounded-[28px]">
       <div className="min-w-0 flex-1">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-danfo">Tellero call</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-danfo">Tellero AI call</h3>
         {calling ? (
           <p className="mt-1 text-xl font-bold text-white">On the phone right now…</p>
         ) : waiting ? (

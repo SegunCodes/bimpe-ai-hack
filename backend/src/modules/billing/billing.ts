@@ -24,7 +24,7 @@ const PAYSTACK = (process.env.PAYSTACK_API_BASE || "https://api.paystack.co").re
 interface PaystackEnvelope<T> { status: boolean; message: string; data: T }
 
 async function paystack<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
-  if (!env.paystack.secretKey) throw new HttpError(503, "Online payments aren't set up yet. Contact Tellero to switch on your plan.");
+  if (!env.paystack.secretKey) throw new HttpError(503, "Online payments aren't set up yet. Contact Tellero AI to switch on your plan.");
   const response = await fetch(`${PAYSTACK}${path}`, {
     method,
     headers: { Authorization: `Bearer ${env.paystack.secretKey}`, ...(body ? { "Content-Type": "application/json" } : {}) },

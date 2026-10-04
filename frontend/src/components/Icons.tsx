@@ -32,3 +32,11 @@ export const PlusIcon = ({ className = 'h-5 w-5' }) => (
     <path d="M12 5v14M5 12h14" />
   </svg>
 )
+
+/** The Tellero AI wordmark: "Tellero" with "AI" on a danfo-yellow tag. Inherits size and colour. */
+export const Wordmark = ({ className = '' }: { className?: string }) => (
+  <span className={`inline-flex items-center gap-[0.18em] font-display font-bold tracking-tight ${className}`}>
+    Tellero
+    <span className="rounded-[0.22em] bg-danfo px-[0.2em] text-[0.82em] leading-[1.2] text-ink">AI</span>
+  </span>
+)

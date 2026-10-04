@@ -20,7 +20,7 @@ apiRoutes.use("/orders", requireBusiness, ordersRoutes);
 apiRoutes.use("/calls", requireBusiness, callsRoutes);
 apiRoutes.use("/billing", billingRoutes);
 
-// The website's "Call me" form and /join (Tellero's own account).
+// The website's "Call me" form and /join (Tellero AI's own account).
 apiRoutes.use("/public", signupRoutes);
 
 // Used by BimpeAI's agent during calls (its own secret).

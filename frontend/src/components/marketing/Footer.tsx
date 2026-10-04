@@ -5,7 +5,7 @@ export function Footer() {
     <footer className="border-t border-ink/10 px-4 py-10 sm:px-6">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 text-sm text-ink-soft">
         <p>
-          <span className="font-display font-bold text-ink">Tellero</span> · AI delivery calls, handled. Built in Lagos.
+          <span className="font-display font-bold text-ink">Tellero AI</span> · Delivery calls, handled. Built in Lagos.
         </p>
         <div className="flex gap-5">
           <Link href="/signup" className="hover:text-ink">

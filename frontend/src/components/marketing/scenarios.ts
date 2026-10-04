@@ -49,7 +49,7 @@ export const SCENARIOS: Scenario[] = [
     start: { status: 'scheduled', address: '12 Admiralty Way, Lekki Phase 1' },
     outcome: 'confirmed',
     turns: [
-      { who: 'agent', text: 'Good afternoon Adaeze, this is Tellero calling for Jumia about your Bluetooth speaker.' },
+      { who: 'agent', text: 'Good afternoon Adaeze, this is Tellero AI calling for Jumia about your Bluetooth speaker.' },
       { who: 'customer', text: 'Oh yes! I’ve been waiting for it.' },
       { who: 'agent', text: 'The rider can bring it between 3 and 6 this evening. Will you be home?' },
       { who: 'customer', text: 'Yes, I’ll be home from 4.', patch: { note: 'Home from 4pm' } },
@@ -71,7 +71,7 @@ export const SCENARIOS: Scenario[] = [
     start: { status: 'scheduled', address: 'Bode Thomas, by the yellow gate' },
     outcome: 'address_updated',
     turns: [
-      { who: 'agent', text: 'Good afternoon sir, na Tellero dey call from Mama Nkechi Fabrics. Your Ankara go reach today.' },
+      { who: 'agent', text: 'Good afternoon sir, na Tellero AI dey call from Mama Nkechi Fabrics. Your Ankara go reach today.' },
       { who: 'customer', text: 'Ah, thank God. Una go fit find the place?' },
       { who: 'agent', text: 'The address wey we get na “Bode Thomas, by the yellow gate”. Abeg, which number be the house?' },
       { who: 'customer', text: 'Plot 4, Bode Thomas Street, Surulere.', patch: { cleanAddress: 'Plot 4, Bode Thomas Street, Surulere' } },
@@ -94,7 +94,7 @@ export const SCENARIOS: Scenario[] = [
     start: { status: 'scheduled', address: '5 Allen Avenue, Ikeja' },
     outcome: 'rescheduled',
     turns: [
-      { who: 'agent', text: 'Hello Chiamaka, Tellero here from Konga. Your rice cooker is due between 3 and 6 today.' },
+      { who: 'agent', text: 'Hello Chiamaka, Tellero AI here from Konga. Your rice cooker is due between 3 and 6 today.' },
       { who: 'customer', text: 'Ah, I won’t be home today. I travelled to Ibadan.' },
       { who: 'agent', text: 'No problem. When should the rider come instead?' },
       { who: 'customer', text: 'Tomorrow morning, any time before 12.', patch: { note: 'Customer in Ibadan today' } },
@@ -112,7 +112,7 @@ export const SCENARIOS: Scenario[] = [
     start: { status: 'new', address: 'Not given yet' },
     outcome: 'verified',
     turns: [
-      { who: 'agent', text: 'Hello Ibrahim, this is Tellero. You signed up for delivery calls. Which language do you prefer?' },
+      { who: 'agent', text: 'Hello Ibrahim, this is Tellero AI. You signed up for delivery calls. Which language do you prefer?' },
       { who: 'customer', text: 'Hausa, or English is fine.', patch: { language: 'Hausa' } },
       { who: 'agent', text: 'Sannu! Where should riders bring your orders?' },
       {

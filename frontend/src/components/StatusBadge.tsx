@@ -3,7 +3,7 @@ import { humanize } from '../lib/format'
 /**
  * Five meanings, each with one look, built only from the brand palette plus green/red:
  *   waiting  – nothing has happened yet (mist)
- *   live     – Tellero is on the phone (danfo yellow, pulsing)
+ *   live     – Tellero AI is on the phone (danfo yellow, pulsing)
  *   done     – it went well (green)
  *   changed  – it went well but something moved: new time or address (ink outline)
  *   attention – a person needs to look at it (red)

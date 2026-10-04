@@ -2,7 +2,7 @@ import { env } from "../../config/env";
 import { one, run } from "../../db/pool";
 
 /**
- * Keeps Tellero inside what its BimpeAI account can pay for. All businesses share one BimpeAI
+ * Keeps Tellero AI inside what its BimpeAI account can pay for. All businesses share one BimpeAI
  * workspace, so two limits apply to everyone together:
  *   - a monthly minute budget (BimpeAI plan minutes plus what the wallet covers)
  *   - a cap on calls running at the same time

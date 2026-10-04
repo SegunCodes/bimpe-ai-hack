@@ -49,7 +49,7 @@ export function LiveFeed({ compact, limit }: { compact?: boolean; limit?: number
     <div>
       {error && <StaleBanner message={error} />}
       {calls.length === 0 ? (
-        <EmptyState title="No calls yet" hint="Calls show up here the moment Tellero dials. Scheduled orders call on their own." />
+        <EmptyState title="No calls yet" hint="Calls show up here the moment Tellero AI dials. Scheduled orders call on their own." />
       ) : (
         <motion.ul layoutRoot className={`flex flex-col ${compact ? 'gap-2' : 'gap-3'}`}>
           {/* initial={false}: no entrance on page load, only for calls that arrive while watching */}

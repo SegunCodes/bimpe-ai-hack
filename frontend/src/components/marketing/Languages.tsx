@@ -7,11 +7,11 @@ import { Reveal } from './Reveal'
 
 // Sample greetings. Have a native speaker review before launch.
 const LANGS = [
-  { code: 'en', name: 'English', line: 'Good afternoon! This is Tellero, calling about your delivery.' },
-  { code: 'pcm', name: 'Pidgin', line: 'Good afternoon o! Na Tellero dey call you about your delivery.' },
-  { code: 'yo', name: 'Yorùbá', line: 'Ẹ káàsán o! Tellero ló ń pè yín nípa ẹrù yín.' },
-  { code: 'ha', name: 'Hausa', line: 'Barka da rana! Tellero ce ke kiran ku game da kayanku.' },
-  { code: 'ig', name: 'Igbo', line: 'Ehihie ọma! Ọ bụ Tellero na-akpọ gị maka ngwongwo gị.' },
+  { code: 'en', name: 'English', line: 'Good afternoon! This is Tellero AI, calling about your delivery.' },
+  { code: 'pcm', name: 'Pidgin', line: 'Good afternoon o! Na Tellero AI dey call you about your delivery.' },
+  { code: 'yo', name: 'Yorùbá', line: 'Ẹ káàsán o! Tellero AI ló ń pè yín nípa ẹrù yín.' },
+  { code: 'ha', name: 'Hausa', line: 'Barka da rana! Tellero AI ce ke kiran ku game da kayanku.' },
+  { code: 'ig', name: 'Igbo', line: 'Ehihie ọma! Ọ bụ Tellero AI na-akpọ gị maka ngwongwo gị.' },
 ]
 
 export function Languages() {
@@ -24,7 +24,7 @@ export function Languages() {
         <Reveal>
           <h2 className="font-display text-4xl font-bold tracking-[-0.02em] text-ink sm:text-5xl">Speaks the way your customers speak.</h2>
           <p className="mt-4 max-w-lg text-lg leading-relaxed text-ink/80">
-            Tellero greets people in their language and switches when they do. Onboarding calls ask for a preference once, so every delivery call after that
+            Tellero AI greets people in their language and switches when they do. Onboarding calls ask for a preference once, so every delivery call after that
             starts right.
           </p>
           <div className="mt-8 flex flex-wrap gap-2" role="radiogroup" aria-label="Pick a language">
@@ -44,7 +44,7 @@ export function Languages() {
 
         <Reveal>
           <div className="relative rounded-[28px] bg-ink p-6 text-white shadow-[0_30px_70px_-30px_rgb(11_18_32/0.7)] sm:p-8">
-            <p className="text-sm font-semibold text-white/60">Tellero, opening line</p>
+            <p className="text-sm font-semibold text-white/60">Tellero AI, opening line</p>
             {/* Both lines share one grid cell so the card never jumps in height */}
             <div className="mt-4 grid min-h-[7.5rem]">
               <AnimatePresence initial={false}>

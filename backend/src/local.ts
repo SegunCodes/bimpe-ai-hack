@@ -11,7 +11,7 @@ import { runTick } from "./modules/tick/tick.service";
  */
 async function main(): Promise<void> {
   await ensureDatabase();
-  app.listen(env.port, () => console.log(`Tellero call API listening on http://localhost:${env.port}`));
+  app.listen(env.port, () => console.log(`Tellero AI call API listening on http://localhost:${env.port}`));
   setInterval(() => {
     runTick().catch((error: unknown) => console.error("Tick failed:", error));
   }, env.tick.intervalMs);

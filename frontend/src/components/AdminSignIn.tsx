@@ -37,7 +37,7 @@ export function AdminSignIn({ onSignedIn }: { onSignedIn: () => void }) {
   }
 
   return (
-    <AuthFrame title="Tellero admin" subtitle="Every business, every call. For the Tellero team only.">
+    <AuthFrame title="Tellero AI admin" subtitle="Every business, every call. For the Tellero AI team only.">
       {passwordSet === false ? (
         <div className="rounded-3xl bg-white p-5 text-[15px] leading-relaxed text-ink-soft sm:p-6">
           <p className="font-semibold text-ink">The admin password hasn’t been set up yet.</p>

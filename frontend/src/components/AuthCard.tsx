@@ -9,13 +9,13 @@ import { Button } from './Button'
 import { PhoneIcon } from './Icons'
 import { inputClass } from './Overlay'
 
-/** Ink page with the Tellero mark and a white card: shared by sign up, log in and admin sign-in. */
+/** Ink page with the Tellero AI mark and a white card: shared by sign up, log in and admin sign-in. */
 export function AuthFrame({ title, subtitle, children, footer }: { title: string; subtitle: string; children: ReactNode; footer?: ReactNode }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          <Link href="/" aria-label="Tellero home" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-danfo text-ink">
+          <Link href="/" aria-label="Tellero AI home" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-danfo text-ink">
             <PhoneIcon className="h-6 w-6" />
           </Link>
           <h1 className="mt-4 font-display text-3xl font-bold tracking-[-0.02em] text-white">{title}</h1>
@@ -76,8 +76,8 @@ export function BusinessAuth({ mode }: { mode: 'login' | 'signup' }) {
 
   return (
     <AuthFrame
-      title={signup ? 'Start with Tellero' : 'Welcome back'}
-      subtitle={signup ? 'Create your business account. Tellero calls your customers before every delivery.' : 'Log in to your business dashboard.'}
+      title={signup ? 'Start with Tellero AI' : 'Welcome back'}
+      subtitle={signup ? 'Create your business account. Tellero AI calls your customers before every delivery.' : 'Log in to your business dashboard.'}
       footer={
         signup ? (
           <>
@@ -88,7 +88,7 @@ export function BusinessAuth({ mode }: { mode: 'login' | 'signup' }) {
           </>
         ) : (
           <>
-            New to Tellero?{' '}
+            New to Tellero AI?{' '}
             <Link href="/signup" className="font-semibold text-danfo underline-offset-4 hover:underline">
               Create an account
             </Link>

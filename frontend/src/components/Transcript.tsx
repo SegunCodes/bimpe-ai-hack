@@ -13,7 +13,7 @@ export function Transcript({ text }: { text: string | null }) {
       {turns.map((t, i) => (
         <div key={i} className={`flex flex-col ${t.speaker === 'agent' ? 'items-start' : 'items-end'}`}>
           <span className="mb-0.5 px-2 text-xs font-semibold uppercase tracking-wide text-ink-faint">
-            {t.speaker === 'agent' ? 'Tellero' : 'Customer'}
+            {t.speaker === 'agent' ? 'Tellero AI' : 'Customer'}
           </span>
           <div
             className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-base leading-relaxed ${

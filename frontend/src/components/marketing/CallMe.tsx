@@ -57,7 +57,7 @@ export function CallMe() {
     <section id="call-me" className="scroll-mt-20 px-4 pb-24 sm:px-6">
       <div className="mx-auto max-w-6xl overflow-hidden rounded-[28px] bg-ink px-5 py-12 text-center text-white sm:rounded-[36px] sm:px-12 sm:py-20">
         <h2 className="font-display text-[2.15rem] font-bold leading-[1.05] tracking-[-0.02em] text-balance sm:text-6xl">Hear it on your own phone.</h2>
-        <p className="mx-auto mt-4 max-w-xl text-base text-white/70 text-pretty sm:text-lg">Enter a Nigerian number and Tellero will call you in a few seconds. It takes about a minute.</p>
+        <p className="mx-auto mt-4 max-w-xl text-base text-white/70 text-pretty sm:text-lg">Enter a Nigerian number and Tellero AI will call you in a few seconds. It takes about a minute.</p>
 
         <form onSubmit={submit} className="mx-auto mt-8 flex w-full max-w-xl flex-col gap-3 sm:mt-10 sm:flex-row">
           <label className="sr-only" htmlFor="callme-phone">

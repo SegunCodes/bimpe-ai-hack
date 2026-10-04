@@ -22,7 +22,7 @@ export const businessesRepository = {
 
   async house(): Promise<Business> {
     const found = await one<Business>("SELECT * FROM businesses WHERE email = ?", [HOUSE_BUSINESS_EMAIL]);
-    if (!found) throw new Error("The Tellero website account is missing");
+    if (!found) throw new Error("The Tellero AI website account is missing");
     return found;
   },
 

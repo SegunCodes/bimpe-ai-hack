@@ -24,7 +24,7 @@ export function Owners() {
         <Reveal>
           <h2 className="font-display text-4xl font-bold tracking-[-0.02em] text-ink sm:text-5xl">One screen. You only read it.</h2>
           <p className="mt-4 text-lg leading-relaxed text-ink-soft">
-            The Tellero dashboard shows every order, when Tellero will call, and what the customer said. Riders leave with addresses they can find.
+            The Tellero AI dashboard shows every order, when Tellero AI will call, and what the customer said. Riders leave with addresses they can find.
           </p>
           <ul className="mt-6 space-y-3">
             {points.map((p) => (

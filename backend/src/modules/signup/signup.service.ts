@@ -26,7 +26,7 @@ export async function signup(input: z.infer<typeof signupSchema>): Promise<void>
   const phone = normalizePhone(input.phone);
   checkRateLimit(phone);
 
-  // The website's "Call me" form and /join belong to Tellero's own account, not a customer business.
+  // The website's "Call me" form and /join belong to Tellero AI's own account, not a customer business.
   const house = await businessesRepository.house();
   let customer = await customersRepository.findByPhone(phone, house.id);
   if (!customer) {

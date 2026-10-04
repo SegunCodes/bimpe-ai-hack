@@ -7,7 +7,7 @@ const steps = [
     body: 'Type it in or import a CSV from your store: who, what, where, and the delivery slot.',
   },
   {
-    title: 'Pick when Tellero calls',
+    title: 'Pick when Tellero AI calls',
     body: 'Two hours before, the morning of, or the evening before. One choice, then you’re done.',
   },
   {
@@ -21,7 +21,7 @@ export function HowItWorks() {
     <section id="how" className="scroll-mt-20 bg-white px-4 py-24 sm:px-6">
       <div className="mx-auto max-w-6xl">
         <Reveal className="max-w-2xl">
-          <h2 className="font-display text-4xl font-bold tracking-[-0.02em] text-ink sm:text-5xl">You add the order. Tellero makes the call.</h2>
+          <h2 className="font-display text-4xl font-bold tracking-[-0.02em] text-ink sm:text-5xl">You add the order. Tellero AI makes the call.</h2>
           <p className="mt-4 text-lg leading-relaxed text-ink-soft">The whole job for the business owner is one form. Everything after it happens on its own.</p>
         </Reveal>
 

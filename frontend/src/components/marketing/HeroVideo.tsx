@@ -56,7 +56,7 @@ export function HeroVideo() {
         preload="metadata"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        aria-label="A 30-second film: Tellero calls a Lagos customer, fixes a vague address with a landmark, and confirms the delivery."
+        aria-label="A 30-second film: Tellero AI calls a Lagos customer, fixes a vague address with a landmark, and confirms the delivery."
       />
       <button
         onClick={toggle}

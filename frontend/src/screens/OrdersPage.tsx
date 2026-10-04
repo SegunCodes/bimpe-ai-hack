@@ -92,7 +92,7 @@ export function OrdersPage() {
     <>
       <PageHeader
         title="Orders"
-        subtitle="Add an order and pick when Tellero should call. Everything after that happens on its own."
+        subtitle="Add an order and pick when Tellero AI should call. Everything after that happens on its own."
         actions={
           <>
             <Button variant="secondary" onClick={() => setModal('import')} icon={<UploadIcon />}>
@@ -120,7 +120,7 @@ export function OrdersPage() {
                 <PhoneIcon className="h-4 w-4" />
               </span>
               <span className="min-w-0">
-                Next Tellero call: <span className="font-bold">{next.customer_name}</span> about {next.item},{' '}
+                Next Tellero AI call: <span className="font-bold">{next.customer_name}</span> about {next.item},{' '}
                 {canCall ? (
                   <>
                     <span className="font-bold">{friendlyWhen(next.call_at, now)}</span> ({countdown(next.call_at, now)})
@@ -145,7 +145,7 @@ export function OrdersPage() {
             ) : !orders || orders.length === 0 ? (
               <EmptyState
                 title="No orders yet"
-                hint="Add an order, pick the delivery time, and Tellero will call the customer at the right moment."
+                hint="Add an order, pick the delivery time, and Tellero AI will call the customer at the right moment."
                 action={
                   <div className="flex flex-wrap justify-center gap-2">
                     <Button onClick={() => setModal('add')} icon={<PlusIcon />}>
@@ -198,7 +198,7 @@ export function OrdersPage() {
                       <th className="px-3 py-4">Order</th>
                       <th className="px-3 py-4">Delivery</th>
                       <th className="px-3 py-4">Status</th>
-                      <th className="px-4 py-4">Tellero call</th>
+                      <th className="px-4 py-4">Tellero AI call</th>
                     </tr>
                   </thead>
                   <tbody>

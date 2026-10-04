@@ -40,7 +40,7 @@ export function SchedulePlayground() {
           />
         </div>
         <div>
-          <p className="mb-2 text-sm font-semibold text-ink-soft">When should Tellero call?</p>
+          <p className="mb-2 text-sm font-semibold text-ink-soft">When should Tellero AI call?</p>
           <div className="flex flex-wrap gap-2">
             {RULES.map((r) => (
               <button
@@ -92,7 +92,7 @@ export function SchedulePlayground() {
       </div>
 
       <p className="mt-2 text-lg text-ink sm:text-xl" aria-live="polite">
-        Delivery <span className="font-semibold">{slot.label}</span>. Tellero calls at{' '}
+        Delivery <span className="font-semibold">{slot.label}</span>. Tellero AI calls at{' '}
         <span className="rounded-md bg-danfo-soft px-1.5 font-bold">
           {lagosTimeLabel(callAt)}
           {lagosDateString(callAt) !== day ? ' the evening before' : ''}

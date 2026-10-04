@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
 import { API_URL } from '../lib/api'
 import { useHealth } from '../hooks/useHealth'
-import { PhoneIcon } from './Icons'
+import { PhoneIcon, Wordmark } from './Icons'
 import { EASE_IN_OUT } from './Overlay'
 import { SIGNED_OUT_EVENT, clearToken, getToken, type SessionKind } from '../lib/session'
 import { BusinessProvider, useBusiness } from '../hooks/useBusiness'
@@ -81,7 +81,7 @@ function PlanBanner() {
       {active ? (
         <>You’re out of call credits. Scheduled calls are waiting and go out as soon as you top up. </>
       ) : (
-        <>Tellero can’t call your customers until you choose a plan. You can add orders and customers now. </>
+        <>Tellero AI can’t call your customers until you choose a plan. You can add orders and customers now. </>
       )}
       <Link href="/dashboard/billing" className="font-semibold underline underline-offset-4">
         {active ? 'Top up now' : 'Choose a plan'}
@@ -104,7 +104,7 @@ function SignedInShell({ children }: { children: ReactNode }) {
               <PhoneIcon className="h-5 w-5" />
             </div>
             <div className="min-w-0 leading-tight">
-              <div className="font-display text-lg font-bold tracking-tight text-white sm:text-xl">Tellero</div>
+              <Wordmark className="text-lg text-white sm:text-xl" />
               <div className="max-w-[9rem] truncate text-xs font-medium text-white/55 sm:max-w-[14rem]">{business?.name ?? ' '}</div>
             </div>
           </Link>

@@ -55,7 +55,7 @@ export function CustomersPage() {
     <>
       <PageHeader
         title="Customers"
-        subtitle="People Tellero onboards: it confirms address, landmark, language and the best time to call."
+        subtitle="People Tellero AI onboards: it confirms address, landmark, language and the best time to call."
         actions={
           <Button variant="secondary" onClick={() => setAdding(true)} icon={<PlusIcon />}>
             Add customer

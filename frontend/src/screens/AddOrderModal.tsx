@@ -99,7 +99,7 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
         call_at: callAt.toISOString(),
         call_plan: plan,
       })
-      toast.success(`Order added. Tellero will call ${plan === 'now' ? 'right away' : friendlyWhen(callAt)}`)
+      toast.success(`Order added. Tellero AI will call ${plan === 'now' ? 'right away' : friendlyWhen(callAt)}`)
       onCreated()
       onClose()
     } catch (err) {
@@ -179,7 +179,7 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
                 ))}
               </div>
             </div>
-            <Field label="When should Tellero call?">
+            <Field label="When should Tellero AI call?">
               <select className={inputClass} value={plan} onChange={(e) => setPlan(e.target.value)}>
                 {CALL_PLANS.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -190,7 +190,7 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
             </Field>
             {schedule && (
               <p className="rounded-2xl bg-danfo-soft px-4 py-3 text-base text-ink ring-1 ring-danfo/50">
-                📞 Tellero will call {customerName || 'the customer'}{' '}
+                📞 Tellero AI will call {customerName || 'the customer'}{' '}
                 <span className="font-bold">{plan === 'now' || schedule.late ? 'right away' : friendlyWhen(schedule.callAt)}</span>
                 {schedule.late && plan !== 'now' && <span className="block text-sm">(that time has already passed)</span>}
                 <span className="block text-sm text-ink-soft">If they don't pick up, it tries again twice, 30 minutes apart.</span>

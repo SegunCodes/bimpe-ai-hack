@@ -70,10 +70,10 @@ export function agentIds(): string[] {
 }
 
 /**
- * Makes each BimpeAI agent ready for Tellero calls. Safe to run again: every step checks
+ * Makes each BimpeAI agent ready for Tellero AI calls. Safe to run again: every step checks
  * what exists first, so re-running just re-applies the latest script and tools.
  *   1. make sure the agent has a workflow the team owns (copy a public one if needed)
- *   2. write the Tellero script to the workflow's system prompt
+ *   2. write the Tellero AI script to the workflow's system prompt
  *   3. set the agent's business name, description, timezone and persona
  *   4. (re)register this API as a custom integration with two tools
  */
@@ -104,28 +104,28 @@ export async function runBimpeSetup(publicBaseUrl: string): Promise<{ ok: boolea
           record("copied the public workflow so it can be edited", true);
         }
       } else {
-        const created = await bimpe<{ id: string }>("POST", "/workflows", { name: "Tellero delivery calls", system_prompt: TELLERO_SYSTEM_PROMPT });
+        const created = await bimpe<{ id: string }>("POST", "/workflows", { name: "Tellero AI delivery calls", system_prompt: TELLERO_SYSTEM_PROMPT });
         workflowId = created.id;
         await bimpe("PATCH", a, { workflow_id: workflowId });
-        record("created a Tellero workflow", true);
+        record("created a Tellero AI workflow", true);
       }
 
       // 2. The script
       await bimpe("PATCH", `/workflows/${encodeURIComponent(workflowId as string)}`, { system_prompt: TELLERO_SYSTEM_PROMPT });
-      record("wrote the Tellero call script", true);
+      record("wrote the Tellero AI call script", true);
 
       // 3. Business profile
       await bimpe("PATCH", a, AGENT_PROFILE);
       record("set business name, timezone (Africa/Lagos) and persona", true);
 
-      // 4. Our tools: remove an older Tellero integration, then register a fresh one
+      // 4. Our tools: remove an older Tellero AI integration, then register a fresh one
       const existing = await bimpe<{ id: string; config: { name: string } }[]>("GET", `${a}/integrations/custom_api`);
       for (const old of (existing || []).filter((i) => i.config?.name === INTEGRATION_NAME)) {
         await bimpe("DELETE", `${a}/integrations/custom_api/${encodeURIComponent(old.id)}`);
       }
       const integration = await bimpe<{ id: string }>("POST", `${a}/integrations/custom_api/configure`, {
         name: INTEGRATION_NAME,
-        description: "Tellero order and customer details for delivery and onboarding calls",
+        description: "Tellero AI order and customer details for delivery and onboarding calls",
         base_url: `${publicBaseUrl}/api/agent-tools`,
         auth_type: "bearer",
         auth_config: { token: env.agentTools.secret }

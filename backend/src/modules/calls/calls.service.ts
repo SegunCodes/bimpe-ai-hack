@@ -10,7 +10,7 @@ import { dispatchCall } from "./calls.dispatch";
 /**
  * Creates a call record, marks the order as calling (delivery), and dials it straight away.
  * Refuses before anything is dialled unless the business has a plan and a credit (402) and
- * Tellero's shared minute budget has room (503). The call is dialled now if a line is free,
+ * Tellero AI's shared minute budget has room (503). The call is dialled now if a line is free,
  * otherwise it waits in the queue and the next background tick dials it.
  */
 export async function createCall(callType: CallType, customerId: number, orderId: number | null): Promise<Call> {

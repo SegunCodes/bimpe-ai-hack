@@ -40,8 +40,9 @@ async function createTables(db: PoolClient): Promise<void> {
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
-  await db.query(`INSERT INTO businesses (name, email, is_house) VALUES ('Tellero website', $1, true)
+  await db.query(`INSERT INTO businesses (name, email, is_house) VALUES ('Tellero AI website', $1, true)
     ON CONFLICT (email) DO NOTHING`, [HOUSE_BUSINESS_EMAIL]);
+  await db.query("UPDATE businesses SET name = 'Tellero AI website' WHERE email = $1 AND name = 'Tellero website'", [HOUSE_BUSINESS_EMAIL]);
 
   await db.query(`CREATE TABLE IF NOT EXISTS payments (
     id SERIAL PRIMARY KEY,

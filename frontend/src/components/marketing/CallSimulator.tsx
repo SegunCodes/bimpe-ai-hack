@@ -203,7 +203,7 @@ export function CallSimulator() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold">
-                Tellero → {scenario.customer} <span className="font-normal text-white/50">· {scenario.language}</span>
+                Tellero AI → {scenario.customer} <span className="font-normal text-white/50">· {scenario.language}</span>
               </p>
               <p className="text-sm text-white/60" aria-live="polite">
                 {phase === 'idle' && 'Ready'}
@@ -282,7 +282,7 @@ export function CallSimulator() {
             <Field label="Phone" value={scenario.phone} />
             {!isOnboarding && <Field label="Delivery" value={scenario.window} />}
             <Field
-              label={isOnboarding ? 'Address' : 'Address on file → cleaned by Tellero'}
+              label={isOnboarding ? 'Address' : 'Address on file → cleaned by Tellero AI'}
               value={<AddressSwap key={scenario.id} from={card.address} to={card.cleanAddress} />}
               highlight={changed.includes('cleanAddress')}
             />

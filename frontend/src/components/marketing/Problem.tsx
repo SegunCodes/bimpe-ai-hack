@@ -11,7 +11,7 @@ export function Problem() {
           <span className="marker" style={{ ['--i' as string]: 2 }}>rides back to the hub</span>.
         </p>
         <p className="reveal-item mt-8 max-w-2xl text-lg leading-relaxed text-ink-soft">
-          One short call before dispatch fixes all three. But nobody has time to phone a hundred customers a day. Tellero does.
+          One short call before dispatch fixes all three. But nobody has time to phone a hundred customers a day. Tellero AI does.
         </p>
       </Reveal>
     </section>

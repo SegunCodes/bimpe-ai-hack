@@ -58,7 +58,7 @@ export function AddCustomerModal({ onClose, onCreated }: { onClose: () => void; 
         </div>
         <Field label="Language (optional)">
           <select className={inputClass} value={language} onChange={(e) => setLanguage(e.target.value as Language | '')}>
-            <option value="">Let Tellero find out</option>
+            <option value="">Let Tellero AI find out</option>
             {Object.entries(LANGUAGES).map(([code, label]) => (
               <option key={code} value={code}>
                 {label}

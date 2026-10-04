@@ -58,7 +58,7 @@ export function CustomerDrawer({ id, onClose, onChanged }: { id: number; onClose
           </header>
 
           <section className="rounded-3xl bg-white p-4 ring-1 ring-ink/10 sm:p-6">
-            <h3 className="mb-4 text-lg font-bold text-ink">Profile collected by Tellero</h3>
+            <h3 className="mb-4 text-lg font-bold text-ink">Profile collected by Tellero AI</h3>
             <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <InfoItem label="Address" value={customer.address} wide />
               <InfoItem label="Landmark" value={customer.landmark} />

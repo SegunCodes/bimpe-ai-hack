@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { PhoneIcon } from '../Icons'
+import { PhoneIcon, Wordmark } from '../Icons'
 
 const links = [
   { href: '#how', label: 'How it works' },
@@ -16,7 +16,7 @@ export function SiteNav() {
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-danfo text-ink">
             <PhoneIcon className="h-[18px] w-[18px]" />
           </span>
-          <span className="font-display text-xl font-bold tracking-tight text-ink">Tellero</span>
+          <Wordmark className="text-xl text-ink" />
         </Link>
         <ul className="hidden items-center gap-1 lg:flex">
           {links.map((l) => (
