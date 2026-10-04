@@ -7,22 +7,22 @@ import { customersRepository } from "./customers.repository";
 import { CreateCustomerInput } from "./customers.schema";
 
 export const customersService = {
-  list: () => customersRepository.findAll(),
+  list: (businessId: number) => customersRepository.findAll(businessId),
 
-  async create(input: CreateCustomerInput): Promise<Customer> {
-    const id = await customersRepository.insert({ ...input, phone: normalizePhone(input.phone) });
+  async create(businessId: number, input: CreateCustomerInput): Promise<Customer> {
+    const id = await customersRepository.insert(businessId, { ...input, phone: normalizePhone(input.phone) });
     return (await customersRepository.findById(id)) as Customer;
   },
 
-  async getWithCalls(id: number): Promise<Customer & { calls: Call[] }> {
-    const customer = await customersRepository.findById(id);
+  async getWithCalls(businessId: number, id: number): Promise<Customer & { calls: Call[] }> {
+    const customer = await customersRepository.findOwned(id, businessId);
     if (!customer) throw notFound("Customer");
     const calls = await callsRepository.findByCustomer(customer.id);
     return { ...customer, calls };
   },
 
-  async startOnboardingCall(id: number): Promise<Call> {
-    const customer = await customersRepository.findById(id);
+  async startOnboardingCall(businessId: number, id: number): Promise<Call> {
+    const customer = await customersRepository.findOwned(id, businessId);
     if (!customer) throw notFound("Customer");
     return createCall("onboarding", customer.id, null);
   }

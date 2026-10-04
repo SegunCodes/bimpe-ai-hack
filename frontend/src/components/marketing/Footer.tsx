@@ -8,11 +8,14 @@ export function Footer() {
           <span className="font-display font-bold text-ink">Tellero</span> · AI delivery calls, handled. Built in Lagos.
         </p>
         <div className="flex gap-5">
-          <Link href="/dashboard" className="hover:text-ink">
-            Dashboard
+          <Link href="/signup" className="hover:text-ink">
+            Sign up
+          </Link>
+          <Link href="/login" className="hover:text-ink">
+            Log in
           </Link>
           <Link href="/join" className="hover:text-ink">
-            Signup page
+            Try a call
           </Link>
         </div>
       </div>

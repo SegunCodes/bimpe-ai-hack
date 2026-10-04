@@ -28,13 +28,16 @@ export function SiteNav() {
           ))}
         </ul>
         <div className="ml-auto flex items-center gap-2">
-          <Link href="/dashboard" className="btn btn-ghost hidden rounded-full px-4 py-2 text-[15px] font-semibold text-ink sm:inline-flex">
-            Open dashboard
+          <Link href="/login" className="btn btn-ghost inline-flex rounded-full px-3 py-2 text-[15px] font-semibold text-ink sm:px-4">
+            Log in
           </Link>
-          <a href="#call-me" className="btn btn-ink inline-flex h-10 items-center gap-2 rounded-full px-4 text-[15px] font-semibold">
+          <a href="#call-me" className="btn btn-ghost hidden h-10 items-center gap-2 rounded-full px-4 text-[15px] font-semibold text-ink md:inline-flex">
             <PhoneIcon className="h-4 w-4" />
             Get a call
           </a>
+          <Link href="/signup" className="btn btn-ink inline-flex h-10 items-center rounded-full px-4 text-[15px] font-semibold">
+            Sign up
+          </Link>
         </div>
       </nav>
     </header>

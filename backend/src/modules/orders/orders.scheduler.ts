@@ -22,7 +22,7 @@ export async function runSchedulerTick(): Promise<number> {
         started++;
       } catch (error) {
         console.error(`Scheduler could not start the call for order ${order.id}:`, error);
-        await ordersRepository.markFailed(order.id, `Scheduled call could not start: ${String(error)}`);
+        await ordersRepository.markFailed(order.id, `Call didn't go out: ${(error as Error).message}`);
       }
     }
     if (started > 0) console.log(`Scheduler started ${started} call(s).`);

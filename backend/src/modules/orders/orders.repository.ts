@@ -13,21 +13,30 @@ function serialize<T extends Order | undefined>(order: T): T {
 }
 
 export const ordersRepository = {
-  findAll: async () => (await rows<OrderWithCustomer>(`${WITH_CUSTOMER} ORDER BY o.created_at DESC, o.id DESC`)).map(serialize),
+  findAll: async (businessId: number) =>
+    (await rows<OrderWithCustomer>(`${WITH_CUSTOMER} WHERE o.business_id = ? ORDER BY o.created_at DESC, o.id DESC`, [businessId])).map(serialize),
 
+  findAllForAdmin: async () => (await rows<OrderWithCustomer>(`${WITH_CUSTOMER} ORDER BY o.created_at DESC, o.id DESC`)).map(serialize),
+
+  /** Unscoped: for background work that already knows the order exists. */
   findById: async (id: number) => serialize(await one<Order>("SELECT * FROM orders WHERE id = ?", [id])),
 
-  findByIdWithCustomer: async (id: number) => serialize(await one<OrderWithCustomer>(`${WITH_CUSTOMER} WHERE o.id = ?`, [id])),
+  findOwned: async (id: number, businessId: number) => serialize(await one<Order>("SELECT * FROM orders WHERE id = ? AND business_id = ?", [id, businessId])),
 
-  findPending: () => rows<{ id: number; customer_id: number }>("SELECT id, customer_id FROM orders WHERE status = 'pending' ORDER BY id"),
+  findByIdWithCustomer: async (id: number, businessId: number) =>
+    serialize(await one<OrderWithCustomer>(`${WITH_CUSTOMER} WHERE o.id = ? AND o.business_id = ?`, [id, businessId])),
 
-  async insert(input: CreateOrderInput): Promise<number> {
+  findPending: (businessId: number) =>
+    rows<{ id: number; customer_id: number }>("SELECT id, customer_id FROM orders WHERE status = 'pending' AND business_id = ? ORDER BY id", [businessId]),
+
+  async insert(businessId: number, input: CreateOrderInput): Promise<number> {
     // An order with a call time waits for the scheduler; one without stays pending for a manual call.
     const callAt = input.call_at ? toDbUtc(new Date(input.call_at)) : null;
     const result = await run(
-      `INSERT INTO orders (customer_id, item, seller, address_on_file, delivery_window, delivery_at, call_at, call_plan, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (business_id, customer_id, item, seller, address_on_file, delivery_window, delivery_at, call_at, call_plan, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        businessId,
         input.customer_id,
         input.item,
         input.seller,

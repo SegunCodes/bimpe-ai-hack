@@ -16,9 +16,12 @@ export interface DispatchInfo {
 }
 
 export const callsRepository = {
-  findAll: () => rows<Call>("SELECT * FROM calls ORDER BY created_at DESC, id DESC"),
+  findAll: (businessId: number) => rows<Call>("SELECT * FROM calls WHERE business_id = ? ORDER BY created_at DESC, id DESC", [businessId]),
 
+  /** Unscoped: for background work and the agent's tools. */
   findById: (id: number) => one<Call>("SELECT * FROM calls WHERE id = ?", [id]),
+
+  findOwned: (id: number, businessId: number) => one<Call>("SELECT * FROM calls WHERE id = ? AND business_id = ?", [id, businessId]),
 
   findByProviderId: (providerCallId: string) => one<Call>("SELECT * FROM calls WHERE provider_call_id = ?", [providerCallId]),
 
@@ -26,8 +29,11 @@ export const callsRepository = {
 
   findByOrder: (orderId: number) => rows<Call>("SELECT * FROM calls WHERE order_id = ? ORDER BY created_at DESC, id DESC", [orderId]),
 
-  async insert(callType: CallType, customerId: number, orderId: number | null): Promise<number> {
-    const result = await run("INSERT INTO calls (call_type, customer_id, order_id, status) VALUES (?, ?, ?, 'queued')", [callType, customerId, orderId]);
+  async insert(businessId: number, callType: CallType, customerId: number, orderId: number | null): Promise<number> {
+    const result = await run(
+      "INSERT INTO calls (business_id, call_type, customer_id, order_id, status) VALUES (?, ?, ?, ?, 'queued')",
+      [businessId, callType, customerId, orderId]
+    );
     return result.insertId;
   },
 

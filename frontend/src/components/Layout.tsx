@@ -2,54 +2,110 @@
 
 import { motion } from 'motion/react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
 import { API_URL } from '../lib/api'
 import { useHealth } from '../hooks/useHealth'
 import { PhoneIcon } from './Icons'
 import { EASE_IN_OUT } from './Overlay'
-import { SignIn } from './SignIn'
-import { SIGNED_OUT_EVENT, clearToken, currentToken } from '../lib/session'
+import { SIGNED_OUT_EVENT, clearToken, getToken, type SessionKind } from '../lib/session'
+import { BusinessProvider, useBusiness } from '../hooks/useBusiness'
 
 const tabs = [
   { href: '/dashboard', label: 'Orders' },
   { href: '/dashboard/customers', label: 'Customers' },
-  { href: '/dashboard/calls', label: 'Live Calls' },
-  { href: '/dashboard/admin', label: 'Admin' },
+  { href: '/dashboard/calls', label: 'Calls' },
+  { href: '/dashboard/billing', label: 'Plan' },
 ]
 
-/** Shows the sign-in screen until this browser has a session; the backend checks it on every request. */
+/**
+ * Business dashboard frame. Visitors without a session go to the log-in page; the backend
+ * checks the session on every request and scopes all data to the signed-in business.
+ */
 export function DashboardShell({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<'checking' | 'in' | 'out'>('checking')
+  const router = useRouter()
+  const pathname = usePathname()
+  const [signedIn, setSignedIn] = useState(false)
 
   useEffect(() => {
     // Read storage after mount: the server-rendered page can't know about this browser's session.
-    setSession(currentToken() ? 'in' : 'out')
-    const onSignedOut = () => setSession('out')
+    if (getToken('business')) setSignedIn(true)
+    else router.replace(`/login?next=${encodeURIComponent(pathname)}`)
+    const onSignedOut = (e: Event) => {
+      if ((e as CustomEvent<SessionKind>).detail === 'business') router.replace('/login')
+    }
     window.addEventListener(SIGNED_OUT_EVENT, onSignedOut)
     return () => window.removeEventListener(SIGNED_OUT_EVENT, onSignedOut)
-  }, [])
+  }, [router, pathname])
 
-  if (session === 'checking') return <div className="min-h-screen bg-ink" />
-  if (session === 'out') return <SignIn onSignedIn={() => setSession('in')} />
-  return <SignedInShell>{children}</SignedInShell>
+  if (!signedIn) return <div className="min-h-screen bg-ink" />
+  return (
+    <BusinessProvider>
+      <SignedInShell>{children}</SignedInShell>
+    </BusinessProvider>
+  )
+}
+
+/** Header pill: which plan, and how many calls are left. Links to Plan & billing. */
+function PlanPill() {
+  const { business } = useBusiness()
+  if (!business) return null
+  const { active, planName, callsLeft } = business.plan
+  const empty = active && callsLeft === 0
+  return (
+    <Link
+      href="/dashboard/billing"
+      className={`btn whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ring-1 sm:text-sm ${
+        !active || empty ? 'bg-danfo text-ink ring-danfo' : 'bg-white/10 text-white ring-white/15 hover:bg-white/15'
+      }`}
+    >
+      {!active ? 'Choose a plan' : empty ? 'No calls left' : (
+        <>
+          <span className="hidden sm:inline">{planName} · </span>
+          {callsLeft} calls left
+        </>
+      )}
+    </Link>
+  )
+}
+
+/** Shown on every dashboard page (except billing) while calls can't go out. */
+function PlanBanner() {
+  const { business } = useBusiness()
+  const pathname = usePathname()
+  if (!business || pathname.startsWith('/dashboard/billing')) return null
+  const { active, callsLeft, callsIncluded, planName } = business.plan
+  if (active && callsLeft > 0) return null
+  return (
+    <div className="bg-danfo-soft px-4 py-3 text-center text-[15px] text-ink ring-1 ring-danfo/50 sm:px-8">
+      {active ? (
+        <>You’ve used all {callsIncluded} calls in your {planName} plan, so Tellero isn’t calling anyone right now. </>
+      ) : (
+        <>Tellero can’t call your customers until you choose a plan. You can add orders and customers now. </>
+      )}
+      <Link href="/dashboard/billing" className="font-semibold underline underline-offset-4">
+        {active ? 'Upgrade or renew' : 'Choose a plan'}
+      </Link>
+    </div>
+  )
 }
 
 function SignedInShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const { online, mockMode, checked } = useHealth()
+  const { business } = useBusiness()
 
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 bg-ink text-white shadow-[0_8px_24px_-12px_rgb(11_18_32/0.6)]">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-8">
-          <Link href="/dashboard" className="flex items-center gap-2.5 sm:gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-danfo text-ink sm:h-10 sm:w-10">
+          <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-danfo text-ink sm:h-10 sm:w-10">
               <PhoneIcon className="h-5 w-5" />
             </div>
-            <div className="leading-tight">
+            <div className="min-w-0 leading-tight">
               <div className="font-display text-lg font-bold tracking-tight text-white sm:text-xl">Tellero</div>
-              <div className="hidden text-xs font-medium text-white/55 sm:block">AI delivery calls · Lagos</div>
+              <div className="max-w-[9rem] truncate text-xs font-medium text-white/55 sm:max-w-[14rem]">{business?.name ?? ' '}</div>
             </div>
           </Link>
 
@@ -80,33 +136,20 @@ function SignedInShell({ children }: { children: ReactNode }) {
 
           <div className="ml-auto flex items-center gap-2">
             {mockMode && (
-              <span className="whitespace-nowrap rounded-full bg-danfo/15 px-3 py-1 text-xs font-bold text-danfo ring-1 ring-danfo/40 sm:text-sm">Demo<span className="hidden sm:inline"> mode</span></span>
+              <span className="hidden whitespace-nowrap rounded-full bg-danfo/15 px-3 py-1 text-xs font-bold text-danfo ring-1 ring-danfo/40 sm:inline sm:text-sm">Demo mode</span>
             )}
-            {checked && (
-              <span
-                className={`badge inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1 sm:text-sm ${
-                  online ? 'bg-white/10 text-white ring-white/15' : 'bg-bad text-white ring-bad'
-                }`}
-              >
-                <span className="relative flex h-2 w-2">
-                  {online && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3ccf86] opacity-60" />}
-                  <span className={`relative h-2 w-2 rounded-full ${online ? 'bg-[#3ccf86]' : 'bg-white'}`} />
-                </span>
-                {online ? 'Live' : 'Offline'}
-              </span>
-            )}
-            <Link href="/" className="btn hidden rounded-xl px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white md:inline">
-              Website
-            </Link>
-            <a href="/join" target="_blank" rel="noreferrer" className="btn hidden rounded-xl px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white md:inline">
-              Signup page ↗
-            </a>
-            <button onClick={clearToken} className="btn rounded-xl px-2.5 py-1.5 text-xs font-semibold text-white/70 ring-1 ring-white/15 hover:bg-white/10 hover:text-white sm:px-3 sm:py-2 sm:text-sm sm:ring-0">
-              Sign out
+            {checked && !online && <span className="rounded-full bg-bad px-3 py-1 text-xs font-semibold text-white sm:text-sm">Offline</span>}
+            <PlanPill />
+            <button
+              onClick={() => clearToken('business')}
+              className="btn rounded-xl px-2.5 py-1.5 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white sm:px-3 sm:py-2 sm:text-sm"
+            >
+              Log out
             </button>
           </div>
         </div>
       </header>
+      <PlanBanner />
 
       {checked && !online && (
         <div className="bg-bad px-4 py-3 text-center text-base font-semibold text-white">

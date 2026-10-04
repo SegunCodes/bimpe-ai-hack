@@ -1,4 +1,7 @@
 import type {
+  AdminOverview,
+  Billing,
+  Business,
   Call,
   Customer,
   CustomerDetail,
@@ -9,14 +12,17 @@ import type {
   OrderDetail,
   OrderRow,
 } from './types'
-import { clearToken, currentToken } from './session'
+import { clearToken, getToken, type SessionKind } from './session'
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/+$/, '')
+
+/** Admin routes use the owner's session; everything else uses the business's. */
+const sessionFor = (path: string): SessionKind => (path.startsWith('/admin') ? 'admin' : 'business')
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let res: Response
   try {
-    const token = currentToken()
+    const token = getToken(sessionFor(path))
     res = await fetch(API_URL + path, {
       ...options,
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },
@@ -26,7 +32,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   // The session expired or the password changed: go back to the sign-in screen.
-  if (res.status === 401 && !path.startsWith('/auth/')) clearToken()
+  if (res.status === 401 && !path.startsWith('/auth/') && !path.startsWith('/admin-auth/')) clearToken(sessionFor(path))
 
   if (!res.ok) {
     let message = `Request failed (${res.status})`
@@ -48,8 +54,19 @@ const post = <T>(path: string, body?: unknown) =>
 
 export const api = {
   health: () => request<Health>('/health'),
-  authStatus: () => request<{ passwordSet: boolean }>('/auth/status'),
-  login: (password: string) => post<{ token: string; expiresAt: string }>('/auth/login', { password }),
+  signup: (data: { business_name: string; email: string; password: string }) => post<{ token: string; business: Business }>('/auth/signup', data),
+  login: (data: { email: string; password: string }) => post<{ token: string; business: Business }>('/auth/login', data),
+  me: () => request<Business>('/auth/me'),
+
+  billing: () => request<Billing>('/billing'),
+  checkout: (plan: string) => post<{ url: string; reference: string }>('/billing/checkout', { plan }),
+  verifyPayment: (reference: string) =>
+    request<{ status: 'paid' | 'pending' | 'failed'; business: Business | null }>(`/billing/verify?reference=${encodeURIComponent(reference)}`),
+
+  adminStatus: () => request<{ passwordSet: boolean }>('/admin-auth/status'),
+  adminLogin: (password: string) => post<{ token: string }>('/admin-auth/login', { password }),
+  adminOverview: () => request<AdminOverview>('/admin/overview'),
+  adminSetPlan: (businessId: number, plan: string | null) => post<{ id: number }>(`/admin/businesses/${businessId}/plan`, { plan }),
 
   listCustomers: () => request<Customer[]>('/customers'),
   createCustomer: (data: NewCustomer) => post<Customer>('/customers', data),

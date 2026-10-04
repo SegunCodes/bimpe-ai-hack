@@ -1,18 +1,19 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
-import { api } from '../lib/api'
-import { formatDuration, languageName } from '../lib/format'
+import Link from 'next/link'
+import { useEffect, useState, type ReactNode } from 'react'
+import { api, errorMessage } from '../lib/api'
+import { formatDateTime, formatDuration, languageName } from '../lib/format'
 import { computeStats, type Range, type Stats } from '../lib/stats'
+import { SIGNED_OUT_EVENT, clearToken, getToken, type SessionKind } from '../lib/session'
+import type { AdminBusiness, AdminOverview } from '../lib/types'
 import { usePolling } from '../hooks/usePolling'
+import { AdminSignIn } from '../components/AdminSignIn'
+import { PhoneIcon } from '../components/Icons'
 import { PageHeader, StatCard } from '../components/Layout'
 import { Segmented } from '../components/Overlay'
 import { ErrorState, LoadingState, StaleBanner } from '../components/States'
-
-async function fetchAll() {
-  const [calls, orders, customers] = await Promise.all([api.listCalls(), api.listOrders(), api.listCustomers()])
-  return { calls, orders, customers }
-}
+import { useToast } from '../components/Toast'
 
 const RANGES: { value: Range; label: string }[] = [
   { value: 'today', label: 'Today' },
@@ -159,72 +160,151 @@ function Figure({ label, value, note }: { label: string; value: ReactNode; note?
   )
 }
 
-function Businesses({ stats }: { stats: Stats }) {
-  if (stats.businesses.length === 0) return <p className="py-6 text-center text-base text-ink-muted">No orders from businesses in this period.</p>
+const naira = (n: number) => `₦${n.toLocaleString('en-NG')}`
+
+function PlanCell({ business }: { business: AdminBusiness }) {
+  const p = business.plan
+  if (business.is_house) return <span className="text-ink-muted">Website demo, no plan needed</span>
+  if (!p.active) return <span className="font-semibold text-bad">{p.planName ? `${p.planName} ended` : 'No plan'}</span>
   return (
-    <>
-      {/* Phones: one row per business */}
-      <ul className="divide-y divide-line sm:hidden">
-        {stats.businesses.map((b) => (
-          <li key={b.name} className="py-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="truncate text-base font-semibold text-ink">{b.name}</span>
-              <span className="shrink-0 text-sm text-ink-muted">{b.orders} orders</span>
-            </div>
-            <div className="mt-1 text-sm text-ink-muted">
-              {b.calls} calls · {fmtPct(b.pickRate)} picked up · {fmtPct(b.goodRate)} went well
-            </div>
-          </li>
-        ))}
-      </ul>
-      <div className="hidden overflow-x-auto sm:block">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-line text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              <th className="py-3 pr-3">Business</th>
-              <th className="px-3 py-3 text-right">Orders</th>
-              <th className="px-3 py-3 text-right">Calls</th>
-              <th className="px-3 py-3 text-right">Picked up</th>
-              <th className="py-3 pl-3 text-right">Went well</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stats.businesses.map((b) => (
-              <tr key={b.name} className="border-b border-line last:border-0">
-                <td className="py-3 pr-3 text-base font-semibold text-ink">{b.name}</td>
-                <td className="px-3 py-3 text-right tabular-nums text-ink-soft">{b.orders}</td>
-                <td className="px-3 py-3 text-right tabular-nums text-ink-soft">{b.calls}</td>
-                <td className="px-3 py-3 text-right tabular-nums text-ink-soft">{fmtPct(b.pickRate)}</td>
-                <td className="py-3 pl-3 text-right tabular-nums text-ink-soft">{fmtPct(b.goodRate)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
+    <span className="text-ink-soft">
+      <span className="font-semibold text-ink">{p.planName}</span> · {p.callsUsed}/{p.callsIncluded} calls · until {formatDateTime(p.expiresAt)}
+    </span>
   )
 }
 
+/** Switch a plan on or off by hand (demos, bank transfers, or before Paystack is set up). */
+function PlanSwitch({ business, plans, onChanged }: { business: AdminBusiness; plans: AdminOverview['plans']; onChanged: () => void }) {
+  const toast = useToast()
+  const [busy, setBusy] = useState(false)
+  if (business.is_house) return null
+  const set = async (plan: string) => {
+    setBusy(true)
+    try {
+      await api.adminSetPlan(business.id, plan === 'none' ? null : plan)
+      toast.success(plan === 'none' ? `Turned off ${business.name}'s plan` : `${business.name} is on ${plans.find((p) => p.id === plan)?.name} for 30 days`)
+      onChanged()
+    } catch (err) {
+      toast.error(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <select
+      aria-label={`Change ${business.name}'s plan`}
+      disabled={busy}
+      value=""
+      onChange={(e) => e.target.value && set(e.target.value)}
+      className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-ink ring-1 ring-ink/20 disabled:opacity-50"
+    >
+      <option value="">{busy ? 'Saving…' : 'Set plan…'}</option>
+      {plans.map((p) => (
+        <option key={p.id} value={p.id}>
+          {p.name} ({p.calls} calls)
+        </option>
+      ))}
+      <option value="none">Turn plan off</option>
+    </select>
+  )
+}
+
+function Businesses({ overview, stats, onChanged }: { overview: AdminOverview; stats: Stats; onChanged: () => void }) {
+  const rate = new Map(stats.businesses.map((b) => [b.id, b]))
+  if (overview.businesses.length === 0) return <p className="py-6 text-center text-base text-ink-muted">No businesses have signed up yet.</p>
+  return (
+    <ul className="divide-y divide-line">
+      {overview.businesses.map((b) => {
+        const r = rate.get(b.id)
+        return (
+          <li key={b.id} className="flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-baseline gap-x-2">
+                <span className="text-base font-semibold text-ink">{b.name}</span>
+                {b.email && <span className="truncate text-sm text-ink-muted">{b.email}</span>}
+              </div>
+              <div className="mt-0.5 text-sm">
+                <PlanCell business={b} />
+              </div>
+              <div className="mt-1 text-sm text-ink-muted">
+                Joined {formatDateTime(b.created_at)} · {b.customers} customers · {b.orders} orders · {b.calls} calls
+                {r && r.calls > 0 && ` · ${fmtPct(r.pickRate)} picked up · ${fmtPct(r.goodRate)} went well (this period)`}
+              </div>
+            </div>
+            <PlanSwitch business={b} plans={overview.plans} onChanged={onChanged} />
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+/** /admin: the platform owner's own sign-in and frame, separate from business dashboards. */
 export function AdminPage() {
+  const [signedIn, setSignedIn] = useState<boolean | null>(null)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSignedIn(Boolean(getToken('admin')))
+    const onSignedOut = (e: Event) => {
+      if ((e as CustomEvent<SessionKind>).detail === 'admin') setSignedIn(false)
+    }
+    window.addEventListener(SIGNED_OUT_EVENT, onSignedOut)
+    return () => window.removeEventListener(SIGNED_OUT_EVENT, onSignedOut)
+  }, [])
+  if (signedIn === null) return <div className="min-h-screen bg-ink" />
+  if (!signedIn) return <AdminSignIn onSignedIn={() => setSignedIn(true)} />
+  return (
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-30 bg-ink text-white">
+        <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-4 py-3 sm:px-8">
+          <Link href="/" className="flex h-9 w-9 items-center justify-center rounded-xl bg-danfo text-ink" aria-label="Tellero home">
+            <PhoneIcon className="h-5 w-5" />
+          </Link>
+          <div className="leading-tight">
+            <div className="font-display text-lg font-bold">Tellero admin</div>
+            <div className="text-xs text-white/55">All businesses</div>
+          </div>
+          <button onClick={() => clearToken('admin')} className="btn ml-auto rounded-xl px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white">
+            Sign out
+          </button>
+        </div>
+      </header>
+      <main className="mx-auto max-w-[1500px] px-4 pb-10 pt-5 sm:px-8 sm:py-8">
+        <AdminDashboard />
+      </main>
+    </div>
+  )
+}
+
+function AdminDashboard() {
   const [range, setRange] = useState<Range>('7d')
-  const { data, error, loading, refresh } = usePolling(fetchAll, 'admin', 10_000)
+  const { data, error, loading, refresh } = usePolling(api.adminOverview, 'admin', 10_000)
 
   if (loading && !data) return <LoadingState label="Counting calls…" />
   if (error && !data) return <ErrorState message={error} onRetry={refresh} />
   if (!data) return null
 
-  const stats = computeStats(data.calls, data.orders, data.customers, range)
+  const names = new Map(data.businesses.filter((b) => !b.is_house).map((b) => [b.id, b.name]))
+  const stats = computeStats(data.calls, data.orders, data.customers, range, names)
+  const accounts = data.businesses.filter((b) => !b.is_house)
+  const paying = accounts.filter((b) => b.plan.active).length
   const { calls, customers, orders } = stats
 
   return (
     <>
       <PageHeader
         title="Admin"
-        subtitle="How Tellero's calls are going: who picked up, how the conversations went, and which businesses use it."
+        subtitle="Every business on Tellero: who signed up, who's paying, and how their calls are going."
         actions={<Segmented id="admin-range" options={RANGES} value={range} onChange={setRange} className="w-full sm:w-[420px]" />}
       />
       {error && <StaleBanner message={error} />}
 
+      <div className="mb-2.5 grid grid-cols-2 gap-2.5 sm:mb-3 sm:gap-3 lg:grid-cols-4">
+        <StatCard label="Businesses signed up" value={accounts.length} />
+        <StatCard label="On a paid plan" value={paying} />
+        <StatCard label="Without a plan" value={accounts.length - paying} />
+        <StatCard label="Revenue (all time)" value={naira(data.revenue.totalNaira)} />
+      </div>
       <div className="mb-4 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
         <StatCard label="Calls made" value={calls.total} />
         <StatCard label="Picked up" value={fmtPct(calls.pickRate)} />
@@ -275,12 +355,8 @@ export function AdminPage() {
           </div>
         </Card>
 
-        <Card
-          title={`Businesses (${stats.businesses.length})`}
-          hint="Every seller with orders in this period. Calls are delivery calls for their orders."
-          className="lg:col-span-3"
-        >
-          <Businesses stats={stats} />
+        <Card title={`Businesses (${accounts.length})`} hint="Every account, its plan and its calls. Use “Set plan” to switch a plan on by hand." className="lg:col-span-3">
+          <Businesses overview={{ ...data, businesses: accounts }} stats={stats} onChanged={refresh} />
         </Card>
       </div>
     </>

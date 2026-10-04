@@ -50,6 +50,7 @@ export interface Bucket {
 }
 
 export interface Business {
+  id: number
   name: string
   orders: number
   calls: number
@@ -90,7 +91,15 @@ export interface Stats {
   series: Bucket[]
 }
 
-export function computeStats(calls: Call[], orders: OrderRow[], customers: Customer[], range: Range, now = Date.now()): Stats {
+/** `names` lists the businesses to report on (id → name); calls and orders of other accounts are ignored for the business table. */
+export function computeStats(
+  calls: Call[],
+  orders: OrderRow[],
+  customers: Customer[],
+  range: Range,
+  names: Map<number, string> = new Map(),
+  now = Date.now(),
+): Stats {
   const from = rangeStart(range, now)
   const inRange = <T extends { created_at: string }>(items: T[]) => items.filter((i) => time(i.created_at) >= from)
   const rangeCalls = inRange(calls)
@@ -128,22 +137,18 @@ export function computeStats(calls: Call[], orders: OrderRow[], customers: Custo
     languageCounts.set(c.language, (languageCounts.get(c.language) ?? 0) + 1)
   }
 
-  // Businesses: every distinct seller on an order. Delivery calls are linked to sellers through their order.
-  const orderById = new Map(orders.map((o) => [o.id, o]))
-  const sellerKey = (name: string) => name.trim().toLowerCase()
-  const businesses = new Map<string, Business>()
-  const business = (name: string) => {
-    const key = sellerKey(name)
-    if (!businesses.has(key)) businesses.set(key, { name: name.trim(), orders: 0, calls: 0, picked: 0, good: 0, pickRate: null, goodRate: null })
-    return businesses.get(key)!
+  // Businesses: each account's orders and calls in this period (the website account is left out).
+  const businesses = new Map<number, Business>()
+  const business = (id: number) => {
+    if (!businesses.has(id)) businesses.set(id, { id, name: names.get(id) ?? `Business ${id}`, orders: 0, calls: 0, picked: 0, good: 0, pickRate: null, goodRate: null })
+    return businesses.get(id)!
   }
-  for (const o of rangeOrders) if (o.seller?.trim()) business(o.seller).orders++
+  for (const id of names.keys()) business(id)
+  for (const o of rangeOrders) business(o.business_id).orders++
   for (const c of rangeCalls) {
-    const seller = c.order_id ? orderById.get(c.order_id)?.seller : undefined
-    if (!seller?.trim()) continue
-    const b = business(seller)
     const r = results.get(c.id)
     if (r === 'live') continue
+    const b = business(c.business_id)
     b.calls++
     if (r === 'good' || r === 'incomplete') b.picked++
     if (r === 'good') b.good++
@@ -186,7 +191,7 @@ export function computeStats(calls: Call[], orders: OrderRow[], customers: Custo
       needsYou: rangeOrders.filter((o) => ['no_answer', 'failed'].includes(o.status)).length,
       retried: rangeOrders.filter((o) => (o.attempts ?? 0) > 1).length,
     },
-    businesses: [...businesses.values()].sort((a, b) => b.orders - a.orders || b.calls - a.calls),
+    businesses: [...businesses.values()].filter((b) => names.has(b.id)).sort((a, b) => b.calls - a.calls || b.orders - a.orders),
     series: buildSeries(rangeCalls, results, range, now),
   }
 }

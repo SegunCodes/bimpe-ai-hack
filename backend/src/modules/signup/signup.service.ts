@@ -3,6 +3,7 @@ import { normalizePhone } from "../../utils/phone";
 import { tooManyRequests } from "../../utils/errors";
 import { createCall } from "../calls/calls.service";
 import { customersRepository } from "../customers/customers.repository";
+import { businessesRepository } from "../businesses/businesses.repository";
 
 export const signupSchema = z.object({
   name: z.string().trim().min(1).max(160).optional(),
@@ -25,9 +26,11 @@ export async function signup(input: z.infer<typeof signupSchema>): Promise<void>
   const phone = normalizePhone(input.phone);
   checkRateLimit(phone);
 
-  let customer = await customersRepository.findByPhone(phone);
+  // The website's "Call me" form and /join belong to Tellero's own account, not a customer business.
+  const house = await businessesRepository.house();
+  let customer = await customersRepository.findByPhone(phone, house.id);
   if (!customer) {
-    const id = await customersRepository.insert({ name: input.name || "New customer", phone });
+    const id = await customersRepository.insert(house.id, { name: input.name || "New customer", phone });
     customer = await customersRepository.findById(id);
   }
   if (!customer) throw new Error("Could not create customer");

@@ -2,6 +2,7 @@ export type CallType = "delivery" | "onboarding";
 
 export interface Customer {
   id: number;
+  business_id: number;
   name: string;
   phone: string;
   language: string;
@@ -16,6 +17,7 @@ export interface Customer {
 
 export interface Order {
   id: number;
+  business_id: number;
   customer_id: number;
   item: string;
   seller: string;
@@ -41,6 +43,7 @@ export type OrderWithCustomer = Order & { customer_name: string; customer_phone:
 
 export interface Call {
   id: number;
+  business_id: number;
   call_type: CallType;
   customer_id: number;
   order_id: number | null;

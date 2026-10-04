@@ -1,7 +1,9 @@
 import { Router } from "express";
-import { authRoutes, requireAdmin } from "./modules/auth/auth";
+import { adminAuthRoutes, authRoutes, requireAdmin, requireBusiness } from "./modules/auth/auth";
+import { adminRoutes } from "./modules/admin/admin.routes";
 import { agentContextRoutes } from "./modules/agentContext/agentContext.routes";
 import { agentToolsRoutes, requireAgentToolSecret } from "./modules/agentTools/agentTools.routes";
+import { billingRoutes } from "./modules/billing/billing";
 import { bimpeSetupRoutes } from "./modules/bimpeSetup/bimpeSetup.routes";
 import { callsRoutes } from "./modules/calls/calls.routes";
 import { customersRoutes } from "./modules/customers/customers.routes";
@@ -9,14 +11,23 @@ import { ordersRoutes } from "./modules/orders/orders.routes";
 import { signupRoutes } from "./modules/signup/signup.routes";
 
 export const apiRoutes = Router();
-// Dashboard data needs the admin password (see modules/auth). Public, agent and cron
-// routes below have their own protection or are meant to be public.
+
+// Business accounts: sign up, sign in, and who am I.
 apiRoutes.use("/auth", authRoutes);
-apiRoutes.use("/customers", requireAdmin, customersRoutes);
-apiRoutes.use("/orders", requireAdmin, ordersRoutes);
-apiRoutes.use("/calls", requireAdmin, callsRoutes);
+// A business's own data. Every query inside is scoped to the signed-in business.
+apiRoutes.use("/customers", requireBusiness, customersRoutes);
+apiRoutes.use("/orders", requireBusiness, ordersRoutes);
+apiRoutes.use("/calls", requireBusiness, callsRoutes);
+apiRoutes.use("/billing", billingRoutes);
+
+// The website's "Call me" form and /join (Tellero's own account).
 apiRoutes.use("/public", signupRoutes);
-// Returns customer details by phone, so it is only for the agent (same secret as the tools).
+
+// Used by BimpeAI's agent during calls (its own secret).
 apiRoutes.use("/agent-context", requireAgentToolSecret, agentContextRoutes);
 apiRoutes.use("/agent-tools", agentToolsRoutes);
+
+// Platform owner. /admin/bimpe-setup keeps its CRON_SECRET check; everything else needs the admin session.
+apiRoutes.use("/admin-auth", adminAuthRoutes);
 apiRoutes.use("/admin", bimpeSetupRoutes);
+apiRoutes.use("/admin", requireAdmin, adminRoutes);

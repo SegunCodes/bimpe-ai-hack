@@ -18,16 +18,20 @@ const consentValue = (value: unknown): number | null => {
 };
 
 export const customersRepository = {
-  findAll: () => rows<Customer>("SELECT * FROM customers ORDER BY created_at DESC, id DESC"),
+  findAll: (businessId: number) => rows<Customer>("SELECT * FROM customers WHERE business_id = ? ORDER BY created_at DESC, id DESC", [businessId]),
 
+  /** Unscoped: for background work that already knows the customer exists. */
   findById: (id: number) => one<Customer>("SELECT * FROM customers WHERE id = ?", [id]),
 
-  findByPhone: (phone: string) => one<Customer>("SELECT * FROM customers WHERE phone = ?", [phone]),
+  /** Only returns the customer if it belongs to this business. */
+  findOwned: (id: number, businessId: number) => one<Customer>("SELECT * FROM customers WHERE id = ? AND business_id = ?", [id, businessId]),
 
-  async insert(data: { name: string; phone: string; language?: string; address?: string; landmark?: string }): Promise<number> {
+  findByPhone: (phone: string, businessId: number) => one<Customer>("SELECT * FROM customers WHERE phone = ? AND business_id = ?", [phone, businessId]),
+
+  async insert(businessId: number, data: { name: string; phone: string; language?: string; address?: string; landmark?: string }): Promise<number> {
     const result = await run(
-      "INSERT INTO customers (name, phone, language, address, landmark) VALUES (?, ?, ?, ?, ?)",
-      [data.name, data.phone, data.language || "en", data.address || null, data.landmark || null]
+      "INSERT INTO customers (business_id, name, phone, language, address, landmark) VALUES (?, ?, ?, ?, ?, ?)",
+      [businessId, data.name, data.phone, data.language || "en", data.address || null, data.landmark || null]
     );
     return result.insertId;
   },

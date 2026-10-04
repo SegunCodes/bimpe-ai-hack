@@ -34,8 +34,8 @@ export function Owners() {
               </li>
             ))}
           </ul>
-          <Link href="/dashboard" className="btn btn-ink mt-8 inline-flex h-12 items-center rounded-full px-6 text-base font-semibold">
-            Open the dashboard
+          <Link href="/signup" className="btn btn-ink mt-8 inline-flex h-12 items-center rounded-full px-6 text-base font-semibold">
+            Create your business account
           </Link>
         </Reveal>
 

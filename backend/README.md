@@ -65,6 +65,21 @@ On Vercel Pro you can use Vercel Cron instead: add `"crons": [{ "path": "/api/cr
 
 In the frontend's Vercel project set `NEXT_PUBLIC_API_URL` = `https://<your-api>.vercel.app/api` and redeploy it.
 
+## Businesses, plans and admin
+
+Tellero is multi-business. Each business signs up at `/signup` on the dashboard with its name,
+email and password, and only ever sees its own customers, orders and calls.
+
+- **Plans** (`src/modules/businesses/plans.ts`): Starter, Growth, Business. Prices there are
+  placeholders. No call goes out unless the business has an active plan with calls left; the
+  API answers HTTP 402 and scheduled orders are marked with the reason.
+- **Payments** (`src/modules/billing/billing.ts`): Paystack. Set `PAYSTACK_SECRET_KEY` and `APP_URL`,
+  and point Paystack's webhook at `https://<backend>/api/webhooks/paystack`. A payment starts its
+  plan exactly once, whether confirmed by the return page or the webhook.
+- **Admin** (`/admin` on the dashboard): signs in with `ADMIN_PASSWORD`. Shows every business,
+  its plan and calls, revenue, and lets you switch a plan on by hand (demos, bank transfers).
+- The website's "Call me" form and `/join` use a built-in "Tellero website" account that needs no plan.
+
 ## Scheduled calls
 
 Orders can carry a call time. The dashboard sends these extra fields on `POST /api/orders` and `POST /api/orders/bulk`:

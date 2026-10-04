@@ -1,41 +1,39 @@
 /**
- * The dashboard session token, kept in this browser only. Storage can be unavailable
- * (private mode, blocked site data), so every access is guarded.
+ * Sign-in tokens, kept in this browser only: one for a business (the dashboard) and one for
+ * the platform owner (/admin). Storage can be unavailable (private mode, blocked site data),
+ * so every access is guarded and falls back to this tab's memory.
  */
-const KEY = 'tellero-admin-session'
+export type SessionKind = 'business' | 'admin'
+
+const KEYS: Record<SessionKind, string> = { business: 'tellero-business-session', admin: 'tellero-admin-session' }
 export const SIGNED_OUT_EVENT = 'tellero:signed-out'
 
-export function getToken(): string | null {
+const memory: Record<SessionKind, string | null> = { business: null, admin: null }
+
+export function getToken(kind: SessionKind): string | null {
+  if (typeof window === 'undefined') return null
   try {
-    return window.localStorage.getItem(KEY)
+    return window.localStorage.getItem(KEYS[kind]) ?? memory[kind]
   } catch {
-    return null
+    return memory[kind]
   }
 }
 
-export function setToken(token: string): void {
+export function setToken(kind: SessionKind, token: string): void {
+  memory[kind] = token
   try {
-    window.localStorage.setItem(KEY, token)
+    window.localStorage.setItem(KEYS[kind], token)
   } catch {
     // Signed in for this tab only; a refresh will ask again.
   }
-  memoryToken = token
 }
 
-export function clearToken(): void {
+export function clearToken(kind: SessionKind): void {
+  memory[kind] = null
   try {
-    window.localStorage.removeItem(KEY)
+    window.localStorage.removeItem(KEYS[kind])
   } catch {
     // nothing stored
   }
-  memoryToken = null
-  window.dispatchEvent(new Event(SIGNED_OUT_EVENT))
-}
-
-let memoryToken: string | null = null
-
-/** Token to send with requests: storage first, then this tab's memory. */
-export function currentToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return getToken() ?? memoryToken
+  window.dispatchEvent(new CustomEvent(SIGNED_OUT_EVENT, { detail: kind }))
 }

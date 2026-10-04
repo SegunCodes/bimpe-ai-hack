@@ -12,6 +12,7 @@ import { webhooksRoutes } from "./modules/webhooks/webhooks.routes";
 import { agentSetupStatus } from "./modules/bimpeSetup/bimpeSetup.auto";
 import { apiRoutes } from "./routes";
 import { requireAdmin } from "./modules/auth/auth";
+import { paystackWebhookRoutes } from "./modules/billing/billing";
 
 export function createApp(): express.Express {
   const app = express();
@@ -53,6 +54,7 @@ export function createApp(): express.Express {
       cronSecretSet: Boolean(env.tick.cronSecret),
       bimpeKeySet: Boolean(env.bimpe.apiKey),
       adminPasswordSet: Boolean(env.admin.password),
+      paymentsSet: Boolean(env.paystack.secretKey),
       agentScript: database === "ok" ? await agentSetupStatus().catch(() => ({ status: "unknown" })) : { status: "waiting for the database" }
     });
   });
@@ -72,6 +74,8 @@ export function createApp(): express.Express {
   });
 
   // Webhooks need the raw body, so they are mounted BEFORE express.json().
+  // Paystack signs the raw body, so this must come before the JSON parser.
+  app.use("/api/webhooks/paystack", paystackWebhookRoutes);
   app.use(["/api/webhooks", "/webhooks"], express.raw({ type: "*/*", limit: "1mb" }), webhooksRoutes);
 
   app.use(express.json({ limit: "1mb" }));

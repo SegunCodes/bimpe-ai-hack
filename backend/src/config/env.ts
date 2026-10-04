@@ -40,9 +40,24 @@ export const env = {
   /** Public address of this API (used to tell BimpeAI where our tools live). */
   publicBaseUrl: (process.env.PUBLIC_BASE_URL || "").trim().replace(/\/+$/, ""),
   admin: {
-    // The dashboard password. Empty means nobody can sign in until it is set.
+    // Password for the platform owner's /admin page. Empty means nobody can open it.
     password: (process.env.ADMIN_PASSWORD || "").trim()
   },
+  auth: {
+    /**
+     * Signs business sign-in sessions. Defaults to a value derived from CRON_SECRET so no
+     * extra setting is needed; set SESSION_SECRET to rotate it (signs every business out).
+     */
+    sessionSecret:
+      (process.env.SESSION_SECRET || "").trim() ||
+      (process.env.CRON_SECRET ? createHash("sha256").update(`tellero-sessions:${process.env.CRON_SECRET}`).digest("hex") : "")
+  },
+  paystack: {
+    /** Paystack secret key (sk_test_… or sk_live_…). Without it, plans can only be switched on from /admin. */
+    secretKey: (process.env.PAYSTACK_SECRET_KEY || "").trim()
+  },
+  /** The dashboard's public address, for Paystack to send businesses back to after paying. */
+  appUrl: (process.env.APP_URL || "").trim().replace(/\/+$/, ""),
   agentTools: {
     /**
      * Bearer token BimpeAI sends when its agent calls our tools mid-call.

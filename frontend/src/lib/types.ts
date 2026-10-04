@@ -14,6 +14,7 @@ export type OrderStatus =
 
 export interface Customer {
   id: number
+  business_id: number
   name: string
   phone: string
   language: Language | null
@@ -28,6 +29,7 @@ export interface Customer {
 
 export interface Order {
   id: number
+  business_id: number
   customer_id: number
   item: string
   seller: string
@@ -51,6 +53,7 @@ export interface Order {
 
 export interface Call {
   id: number
+  business_id: number
   call_type: 'delivery' | 'onboarding'
   customer_id: number | null
   order_id: number | null
@@ -91,4 +94,57 @@ export interface NewOrder {
   delivery_at: string
   call_at: string
   call_plan: string
+}
+
+export interface PlanStatus {
+  plan: string | null
+  planName: string | null
+  active: boolean
+  expiresAt: string | null
+  callsUsed: number
+  callsIncluded: number
+  callsLeft: number
+}
+
+export interface Business {
+  id: number
+  name: string
+  email: string
+  created_at: string
+  plan: PlanStatus
+}
+
+export interface Plan {
+  id: string
+  name: string
+  priceNaira: number
+  calls: number
+  days: number
+}
+
+export interface Billing {
+  business: Business
+  plans: Plan[]
+  paymentsEnabled: boolean
+}
+
+export interface AdminBusiness {
+  id: number
+  name: string
+  email: string | null
+  is_house: boolean
+  created_at: string
+  customers: number
+  orders: number
+  calls: number
+  plan: PlanStatus
+}
+
+export interface AdminOverview {
+  businesses: AdminBusiness[]
+  calls: Call[]
+  orders: OrderRow[]
+  customers: Customer[]
+  plans: { id: string; name: string; priceNaira: number; calls: number }[]
+  revenue: { payments: number; totalNaira: number }
 }
