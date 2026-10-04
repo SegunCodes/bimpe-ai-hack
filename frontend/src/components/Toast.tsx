@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from 'motion/react'
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
+import { CheckIcon } from './Icons'
 
 type ToastKind = 'success' | 'error' | 'info'
 interface ToastItem {
@@ -20,8 +21,8 @@ const ToastContext = createContext<ToastApi | null>(null)
 
 let nextId = 1
 
-const STYLES: Record<ToastKind, { bg: string; icon: string }> = {
-  success: { bg: 'bg-ink', icon: '✓' },
+const STYLES: Record<ToastKind, { bg: string; icon: ReactNode }> = {
+  success: { bg: 'bg-ink', icon: <CheckIcon className="h-3.5 w-3.5" /> },
   error: { bg: 'bg-bad', icon: '!' },
   info: { bg: 'bg-ink', icon: 'i' },
 }

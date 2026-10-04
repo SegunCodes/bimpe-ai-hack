@@ -190,7 +190,7 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
             </Field>
             {schedule && (
               <p className="rounded-2xl bg-danfo-soft px-4 py-3 text-base text-ink ring-1 ring-danfo/50">
-                📞 Tellero AI will call {customerName || 'the customer'}{' '}
+                Tellero AI will call {customerName || 'the customer'}{' '}
                 <span className="font-bold">{plan === 'now' || schedule.late ? 'right away' : friendlyWhen(schedule.callAt)}</span>
                 {schedule.late && plan !== 'now' && <span className="block text-sm">(that time has already passed)</span>}
                 <span className="block text-sm text-ink-soft">If they don't pick up, it tries again twice, 30 minutes apart.</span>

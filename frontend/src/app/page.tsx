@@ -17,7 +17,7 @@ export default function Home() {
         <Hero />
         <Problem />
         <HowItWorks />
-        <section id="try" className="scroll-mt-20 px-4 py-24 sm:px-6">
+        <section id="try" className="scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
           <div className="mx-auto max-w-6xl">
             <Reveal className="mx-auto mb-10 max-w-2xl text-center">
               <h2 className="font-display text-4xl font-bold tracking-[-0.02em] text-ink sm:text-5xl">Listen in on a call.</h2>

@@ -15,7 +15,7 @@ import { Button } from '../components/Button'
 import { PageHeader, StatCard } from '../components/Layout'
 import { StatusBadge } from '../components/StatusBadge'
 import { EmptyState, ErrorState, LoadingState, Spinner, StaleBanner } from '../components/States'
-import { PhoneIcon, PlusIcon, UploadIcon } from '../components/Icons'
+import { CheckIcon, PhoneIcon, PlusIcon, UploadIcon } from '../components/Icons'
 import { LiveFeed } from '../components/LiveFeed'
 import { EASE_OUT } from '../components/Overlay'
 import { AddOrderModal } from './AddOrderModal'
@@ -71,7 +71,12 @@ function NextCallCell({ order, now, canCall = true }: { order: OrderRow; now: Da
   if (WAITING.includes(order.status)) {
     return <span className="text-sm text-ink-faint">Not scheduled</span>
   }
-  return <span className="text-sm font-semibold text-good">✓ Done</span>
+  return (
+    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-good">
+      <CheckIcon className="h-3.5 w-3.5" />
+      Done
+    </span>
+  )
 }
 
 export function OrdersPage() {

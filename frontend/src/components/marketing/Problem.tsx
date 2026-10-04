@@ -2,7 +2,7 @@ import { Reveal } from './Reveal'
 
 export function Problem() {
   return (
-    <section className="px-4 py-24 sm:px-6">
+    <section className="px-4 py-16 sm:px-6 sm:py-24">
       <Reveal className="mx-auto max-w-4xl" group>
         <p className="reveal-item text-base font-semibold text-ink-soft">Every failed delivery has the same story</p>
         <p className="reveal-item mt-4 font-display text-3xl font-semibold leading-[1.25] tracking-[-0.02em] text-ink sm:text-[2.6rem]">

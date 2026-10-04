@@ -36,7 +36,7 @@ export function CustomerDrawer({ id, onClose, onChanged }: { id: number; onClose
     }
   }
 
-  const consent = customer?.consent_to_calls == null ? null : customer.consent_to_calls ? '✅ Yes, happy to be called' : '❌ No'
+  const consent = customer?.consent_to_calls == null ? null : customer.consent_to_calls ? 'Yes, happy to be called' : 'No'
 
   return (
     <Drawer onClose={onClose}>

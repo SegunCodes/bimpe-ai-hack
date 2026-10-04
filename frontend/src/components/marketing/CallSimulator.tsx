@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { EASE_IN_OUT, EASE_OUT, Segmented } from '../Overlay'
 import { StatusBadge } from '../StatusBadge'
+import { CheckIcon, PhoneIcon, ReplayIcon } from '../Icons'
 import { SCENARIOS, type CardState } from './scenarios'
 
 type Phase = 'idle' | 'ringing' | 'live' | 'ended'
@@ -39,24 +40,26 @@ function AddressSwap({ from, to }: { from: string; to?: string }) {
   const typed = useTypewriter(to ?? '', !!to && !reduce, 28)
   const text = reduce ? to : typed
   return (
-    <div className="min-h-[3.25rem]">
+    <div>
       <span className={`relative inline transition-colors duration-300 ${to ? 'text-ink-soft/50' : 'text-ink'}`}>
         {from}
         {to && (
           <motion.span
             aria-hidden
-            className="absolute inset-x-0 top-1/2 h-[2px] origin-left rounded bg-red-500/80"
+            className="absolute inset-x-0 top-1/2 h-[2px] origin-left rounded bg-bad"
             initial={{ transform: 'scaleX(0)' }}
             animate={{ transform: 'scaleX(1)' }}
             transition={{ duration: 0.35, ease: EASE_IN_OUT }}
           />
         )}
       </span>
-      {to && (
+      {to ? (
         <div className="mt-1 font-semibold text-ink">
           {text}
           {!reduce && typed.length < (to?.length ?? 0) && <span className="caret" />}
         </div>
+      ) : (
+        <div className="mt-1 text-sm text-ink-soft/60">Checked on the call</div>
       )}
     </div>
   )
@@ -195,8 +198,8 @@ export function CallSimulator() {
         {/* Call panel */}
         <div className="flex min-h-[30rem] flex-col overflow-hidden rounded-[28px] bg-ink text-white shadow-[0_30px_70px_-35px_rgb(11_18_32/0.8)]">
           <div className="flex items-center gap-4 border-b border-white/10 px-5 py-4 sm:px-6">
-            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-danfo font-display text-lg font-bold text-ink">
-              T
+            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-danfo text-ink">
+              <PhoneIcon className="h-5 w-5" />
               {phase === 'ringing' && !reduce && (
                 <span className="absolute inset-0 animate-ping rounded-2xl bg-danfo/60" aria-hidden />
               )}
@@ -256,9 +259,10 @@ export function CallSimulator() {
             <p className="text-sm text-white/50">Sample call · names and numbers are made up</p>
             <button
               onClick={() => play(index)}
-              className="btn rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15"
+              className="btn inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15"
             >
-              ↻ Replay
+              <ReplayIcon className="h-4 w-4" />
+              Replay
             </button>
           </div>
         </div>
@@ -305,9 +309,10 @@ export function CallSimulator() {
                 animate={{ opacity: 1, transform: 'translateY(0px)' }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3, ease: EASE_OUT }}
-                className="mt-5 rounded-2xl bg-emerald-50 px-4 py-3 text-[15px] font-medium text-emerald-900 ring-1 ring-emerald-200"
+                className="mt-5 flex items-start gap-2.5 rounded-2xl bg-good-soft px-4 py-3 text-[15px] font-medium text-good ring-1 ring-good/20"
               >
-                ✓ Saved to the dashboard with the transcript. Nobody had to pick up a phone.
+                <CheckIcon className="mt-0.5 h-4 w-4 shrink-0" />
+                Saved to the dashboard with the transcript. Nobody had to pick up a phone.
               </motion.p>
             )}
           </AnimatePresence>

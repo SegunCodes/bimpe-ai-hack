@@ -12,7 +12,7 @@ import { CallHistory, InfoItem } from '../components/CallCard'
 import { Drawer } from '../components/Overlay'
 import { StatusBadge } from '../components/StatusBadge'
 import { ErrorState, LoadingState, StaleBanner } from '../components/States'
-import { PhoneIcon } from '../components/Icons'
+import { PhoneIcon, PinIcon } from '../components/Icons'
 import { MAX_ATTEMPTS, countdown, friendlyWhen, planLabel, useNow } from '../lib/schedule'
 
 export function OrderDrawer({ id, onClose, onChanged }: { id: number; onClose: () => void; onChanged: () => void }) {
@@ -66,7 +66,12 @@ export function OrderDrawer({ id, onClose, onChanged }: { id: number; onClose: (
               <p className="mt-2 text-base font-semibold text-ink sm:text-lg">
                 {order.cleaned_address || <span className="font-normal text-ink-faint">Not confirmed yet</span>}
               </p>
-              {order.landmark && <p className="mt-2 text-base text-ink-soft">📍 Landmark: {order.landmark}</p>}
+              {order.landmark && (
+                <p className="mt-2 flex items-start gap-1.5 text-base text-ink-soft">
+                  <PinIcon className="mt-1 h-4 w-4 shrink-0" />
+                  Landmark: {order.landmark}
+                </p>
+              )}
             </div>
           </section>
 

@@ -40,3 +40,22 @@ export const Wordmark = ({ className = '' }: { className?: string }) => (
     <span className="rounded-[0.22em] bg-danfo px-[0.2em] text-[0.82em] leading-[1.2] text-ink">AI</span>
   </span>
 )
+
+export const CheckIcon = ({ className = 'h-4 w-4' }) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={2.5} aria-hidden>
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+)
+
+export const ReplayIcon = ({ className = 'h-4 w-4' }) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden>
+    <path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" />
+  </svg>
+)
+
+export const PinIcon = ({ className = 'h-4 w-4' }) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden>
+    <path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21z" />
+    <circle cx="12" cy="9.5" r="2.5" />
+  </svg>
+)

@@ -29,7 +29,7 @@ export function SchedulePlayground() {
 
   return (
     <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-ink/10 sm:p-8">
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-6">
         <div>
           <p className="mb-2 text-sm font-semibold text-ink-soft">Delivery slot</p>
           <Segmented
@@ -41,13 +41,13 @@ export function SchedulePlayground() {
         </div>
         <div>
           <p className="mb-2 text-sm font-semibold text-ink-soft">When should Tellero AI call?</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             {RULES.map((r) => (
               <button
                 key={r.id}
                 onClick={() => setPlan(r.id)}
                 aria-pressed={plan === r.id}
-                className={`btn rounded-full px-3.5 py-2 text-sm font-semibold ${plan === r.id ? 'btn-ink' : 'btn-secondary bg-white text-ink'}`}
+                className={`btn rounded-full px-4 py-2 text-sm font-semibold last:col-span-2 sm:last:col-span-1 ${plan === r.id ? 'btn-ink' : 'btn-secondary bg-white text-ink'}`}
               >
                 {r.label.replace(' delivery', '').replace(' (8:00 am)', '').replace(' (6:00 pm)', '')}
               </button>
@@ -63,7 +63,7 @@ export function SchedulePlayground() {
         </div>
         {/* delivery slot block: left/width transition because the pill genuinely changes span; a scaleX would distort its rounded ends */}
         <div
-          className="absolute top-8 h-7 rounded-lg bg-indigo-500/90 transition-[left,width] duration-300 ease-[cubic-bezier(0.77,0,0.175,1)]"
+          className="absolute top-8 h-7 rounded-lg bg-ink transition-[left,width] duration-300 ease-[cubic-bezier(0.77,0,0.175,1)]"
           style={{ left: `${pct(deliveryAt.getTime())}%`, width: `${pct(slotEnd.getTime()) - pct(deliveryAt.getTime())}%` }}
         />
         {/* call marker: a full-width wrapper translated by a percentage of the track */}

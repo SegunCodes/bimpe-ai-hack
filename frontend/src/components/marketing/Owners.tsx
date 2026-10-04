@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { CheckIcon } from '../Icons'
 import { StatusBadge } from '../StatusBadge'
 import { Reveal } from './Reveal'
 
@@ -19,7 +20,7 @@ const points = [
 
 export function Owners() {
   return (
-    <section id="owners" className="scroll-mt-20 px-4 py-24 sm:px-6">
+    <section id="owners" className="scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <Reveal>
           <h2 className="font-display text-4xl font-bold tracking-[-0.02em] text-ink sm:text-5xl">One screen. You only read it.</h2>
@@ -29,7 +30,9 @@ export function Owners() {
           <ul className="mt-6 space-y-3">
             {points.map((p) => (
               <li key={p} className="flex gap-3 text-base text-ink">
-                <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">✓</span>
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-good-soft text-good">
+                  <CheckIcon className="h-3 w-3" />
+                </span>
                 {p}
               </li>
             ))}
@@ -51,14 +54,16 @@ export function Owners() {
               {rows.map((r) => (
                 <li
                   key={r.name}
-                  className={`reveal-item flex items-center gap-4 border-b border-ink/5 px-5 py-4 last:border-0 ${r.status === 'calling' ? 'animate-row-pulse' : ''}`}
+                  className={`reveal-item grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-ink/5 px-5 py-4 last:border-0 sm:grid-cols-[minmax(0,1fr)_11rem_9.5rem] ${r.status === 'calling' ? 'animate-row-pulse' : ''}`}
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-ink">{r.name}</p>
                     <p className="truncate text-sm text-ink-soft">{r.item}</p>
                   </div>
-                  <p className="hidden w-44 truncate text-sm text-ink-soft sm:block">{r.call}</p>
-                  <StatusBadge status={r.status} />
+                  <p className="hidden truncate text-sm text-ink-soft sm:block">{r.call}</p>
+                  <span className="justify-self-end">
+                    <StatusBadge status={r.status} />
+                  </span>
                 </li>
               ))}
             </ul>

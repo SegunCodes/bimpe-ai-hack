@@ -19,7 +19,7 @@ export function Languages() {
   const lang = LANGS.find((l) => l.code === code)!
 
   return (
-    <section id="languages" className="scroll-mt-20 bg-danfo px-4 py-24 sm:px-6">
+    <section id="languages" className="scroll-mt-20 bg-danfo px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
         <Reveal>
           <h2 className="font-display text-4xl font-bold tracking-[-0.02em] text-ink sm:text-5xl">Speaks the way your customers speak.</h2>
