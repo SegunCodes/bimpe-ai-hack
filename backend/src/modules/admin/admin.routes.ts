@@ -6,7 +6,7 @@ import { callsOnThePhone, currentMonth, minuteBudget, minutesUsedThisMonth, mont
 import { badRequest, notFound } from "../../utils/errors";
 import { asyncHandler, idParam } from "../../utils/http";
 import { grantPlan, planStatus } from "../businesses/access";
-import { documentFile, documentInfo, sendDocument } from "../onboarding/onboarding.service";
+import { documentFile, documentInfo, logoUrl, sendDocument } from "../onboarding/onboarding.service";
 import { emails } from "../../integrations/email";
 import { systemStatus } from "../status/status";
 import { businessesRepository } from "../businesses/businesses.repository";
@@ -30,6 +30,7 @@ adminRoutes.get("/overview", asyncHandler(async (_req, res) => {
       calls: Number(b.calls),
       plan: await planStatus(b),
       ownerName: b.owner_name,
+      logoUrl: await logoUrl(b.id),
       suspended: b.suspended_at ? { at: b.suspended_at, reason: b.suspended_reason } : null,
       emailVerified: Boolean(b.email_verified_at),
       verification: { status: b.verification_status, note: b.verification_note, updatedAt: b.verification_updated_at, document: await documentInfo(b.id) },

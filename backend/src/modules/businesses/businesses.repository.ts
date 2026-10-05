@@ -60,6 +60,7 @@ export const businessesRepository = {
       await db.query("DELETE FROM orders WHERE business_id = $1", [id]);
       await db.query("DELETE FROM customers WHERE business_id = $1", [id]);
       await db.query("DELETE FROM business_documents WHERE business_id = $1", [id]);
+      await db.query("DELETE FROM business_logos WHERE business_id = $1", [id]);
       await db.query("DELETE FROM email_codes WHERE business_id = $1", [id]);
       await db.query("DELETE FROM password_resets WHERE business_id = $1", [id]);
       await db.query("DELETE FROM businesses WHERE id = $1 AND NOT is_house", [id]);

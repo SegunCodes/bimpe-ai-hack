@@ -14,7 +14,8 @@ export function errorHandler(error: unknown, req: Request, res: Response, _next:
     return;
   }
   if (error && typeof error === "object" && "type" in error && error.type === "entity.too.large") {
-    res.status(413).json({ error: "That file is too big. The limit is 4 MB." });
+    const limit = "limit" in error && typeof error.limit === "number" ? error.limit : 4 * 1024 * 1024;
+    res.status(413).json({ error: `That file is too big. The limit is ${Math.round(limit / (1024 * 1024))} MB.` });
     return;
   }
   if (error instanceof HttpError) {

@@ -45,7 +45,16 @@ function StateBadge({ business }: { business: AdminBusiness }) {
   return <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${TONE[s.tone]}`}>{s.label}</span>
 }
 
-function Initials({ name }: { name: string }) {
+/** The business's logo if it uploaded one, otherwise its initials. */
+function Initials({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
+  if (logoUrl) {
+    return (
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-ink/10">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logoUrl} alt="" className="h-full w-full object-contain" loading="lazy" />
+      </span>
+    )
+  }
   const letters = name
     .split(/\s+/)
     .filter(Boolean)
@@ -148,7 +157,7 @@ export function BusinessesView({ overview, onChanged }: { overview: AdminOvervie
               {list.map((b) => (
                 <li key={b.id}>
                   <button onClick={() => setOpenId(b.id)} className="flex w-full items-start gap-3 px-4 py-4 text-left active:bg-paper">
-                    <Initials name={b.name} />
+                    <Initials name={b.name} logoUrl={b.logoUrl} />
                     <span className="min-w-0 flex-1">
                       <span className="flex items-start justify-between gap-2">
                         <span className="truncate font-semibold text-ink">{b.name}</span>
@@ -182,7 +191,7 @@ export function BusinessesView({ overview, onChanged }: { overview: AdminOvervie
                     <tr key={b.id} onClick={() => setOpenId(b.id)} className="cursor-pointer border-b border-line last:border-0 hover:bg-paper">
                       <td className="py-3 pl-5 pr-3">
                         <div className="flex items-center gap-3">
-                          <Initials name={b.name} />
+                          <Initials name={b.name} logoUrl={b.logoUrl} />
                           <div className="min-w-0">
                             <div className="truncate font-semibold text-ink">{b.name}</div>
                             <div className="truncate text-sm text-ink-muted">{[b.ownerName, b.email].filter(Boolean).join(' · ')}</div>
@@ -268,7 +277,7 @@ function BusinessPanel({
     <Drawer onClose={onClose}>
       <div className="flex flex-col gap-4 p-4 pt-5 sm:p-8">
         <header className="flex items-start gap-3 pr-12">
-          <Initials name={b.name} />
+          <Initials name={b.name} logoUrl={b.logoUrl} />
           <div className="min-w-0">
             <h2 className="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">{b.name}</h2>
             <p className="mt-0.5 text-[15px] text-ink-soft">

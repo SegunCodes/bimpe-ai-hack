@@ -150,6 +150,85 @@ function ReviewStep({ business }: { business: Business }) {
   )
 }
 
+const LOGO_ACCEPT = 'image/png,image/jpeg,image/webp'
+const MAX_LOGO_BYTES = 1024 * 1024
+
+/** Optional: the business's logo, shown in its dashboard and to the Tellero AI team. Can be changed any time. */
+function LogoStep({ business, onDone }: { business: Business; onDone: () => Promise<void> }) {
+  const toast = useToast()
+  const input = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState<'upload' | 'remove' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const send = async (file: File | undefined) => {
+    if (!file) return
+    setError(null)
+    if (!LOGO_ACCEPT.split(',').includes(file.type)) return setError('Use a PNG, JPG or WebP image.')
+    if (file.size > MAX_LOGO_BYTES) return setError('That image is too big. The limit is 1 MB.')
+    setBusy('upload')
+    try {
+      await api.uploadLogo(file)
+      toast.success('Logo saved')
+      await onDone()
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setBusy(null)
+      if (input.current) input.current.value = ''
+    }
+  }
+  const remove = async () => {
+    setBusy('remove')
+    setError(null)
+    try {
+      await api.removeLogo()
+      toast.success('Logo removed')
+      await onDone()
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-4">
+        <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-paper ring-1 ring-ink/10">
+          {business.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={business.logoUrl} alt={`${business.name} logo`} className="h-full w-full object-contain" />
+          ) : (
+            <span className="font-display text-2xl font-bold text-ink-faint">
+              {business.name
+                .split(/\s+/)
+                .slice(0, 2)
+                .map((w) => w[0]?.toUpperCase())
+                .join('')}
+            </span>
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] text-ink-soft">A square image works best. PNG, JPG or WebP, up to 1 MB.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <label className={`btn btn-secondary inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl bg-white px-4 text-sm font-semibold text-ink ${busy ? 'pointer-events-none opacity-60' : ''}`}>
+              {busy === 'upload' ? <Spinner className="h-4 w-4" /> : <UploadIcon className="h-4 w-4" />}
+              {business.logoUrl ? 'Change logo' : 'Upload logo'}
+              <input ref={input} type="file" accept={LOGO_ACCEPT} className="sr-only" disabled={busy !== null} onChange={(e) => send(e.target.files?.[0])} />
+            </label>
+            {business.logoUrl && (
+              <Button size="sm" variant="ghost" onClick={remove} loading={busy === 'remove'} disabled={busy !== null}>
+                Remove
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+      {error && <p className="mt-3 text-sm font-medium text-bad">{error}</p>}
+    </>
+  )
+}
+
 function Steps() {
   const { business, refresh } = useBusiness()
   const params = useSearchParams()
@@ -167,15 +246,18 @@ function Steps() {
         title={approved ? 'You’re all set' : 'Set up your account'}
         subtitle={
           approved
-            ? 'Your business is verified.'
-            : 'Two quick steps so we know you’re a real, registered business. Your customers trust calls that come from verified sellers.'
+            ? 'Your business is verified. You can change your logo here any time.'
+            : 'Upload your CAC certificate so we know you’re a real, registered business, and add your logo if you like. Your customers trust calls from verified sellers.'
         }
       />
       <ol className="flex max-w-3xl flex-col gap-3">
         <Step n={1} title="Upload your CAC certificate" state={docDone ? 'done' : emailDone ? 'current' : 'waiting'}>
           {emailDone && !docDone && <DocumentStep business={business} onDone={refresh} />}
         </Step>
-        <Step n={2} title={approved ? 'Approved' : 'We review it'} state={approved ? 'done' : docDone ? 'current' : 'waiting'}>
+        <Step n={2} title="Add your business logo (optional)" state={business.logoUrl ? 'done' : emailDone ? 'current' : 'waiting'}>
+          {emailDone && <LogoStep business={business} onDone={refresh} />}
+        </Step>
+        <Step n={3} title={approved ? 'Approved' : 'We review it'} state={approved ? 'done' : docDone ? 'current' : 'waiting'}>
           {docDone && <ReviewStep business={business} />}
         </Step>
       </ol>

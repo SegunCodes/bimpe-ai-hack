@@ -7,7 +7,7 @@ import { asyncHandler } from "../../utils/http";
 import { planStatus } from "../businesses/access";
 import { Business, businessesRepository } from "../businesses/businesses.repository";
 import { hashPassword, passwordMatches } from "../businesses/passwords";
-import { documentInfo, hashCode, sendEmailCode } from "../onboarding/onboarding.service";
+import { documentInfo, hashCode, logoUrl, sendEmailCode } from "../onboarding/onboarding.service";
 import { one, run } from "../../db/pool";
 import { emails } from "../../integrations/email";
 
@@ -148,6 +148,7 @@ export async function publicBusiness(business: Business) {
     name: business.name,
     email: business.email,
     ownerName: business.owner_name,
+    logoUrl: await logoUrl(business.id),
     created_at: business.created_at,
     emailVerified: Boolean(business.email_verified_at),
     verification: {

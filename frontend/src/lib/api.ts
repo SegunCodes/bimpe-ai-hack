@@ -70,6 +70,8 @@ export const api = {
   verifyEmail: (code: string) => post<{ ok: true }>('/onboarding/verify-email', { code }),
   resendCode: () => post<{ ok: true }>('/onboarding/resend-code'),
   uploadDocument: (file: File) => upload('/onboarding/document', file),
+  uploadLogo: (file: File) => upload('/onboarding/logo', file) as Promise<{ logoUrl: string }>,
+  removeLogo: () => request<{ ok: true }>('/onboarding/logo', { method: 'DELETE' }),
   myDocument: () => download('/onboarding/document'),
 
   billing: () => request<Billing>('/billing'),

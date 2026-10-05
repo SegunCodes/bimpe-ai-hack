@@ -12,8 +12,13 @@ import {
   MAX_CODE_TRIES,
   MAX_DOCUMENT_BYTES,
   RESEND_GAP_SECONDS,
+  LOGO_TYPES,
+  MAX_LOGO_BYTES,
   documentFile,
   documentInfo,
+  logoUrl,
+  removeLogo,
+  saveLogo,
   hashCode,
   looksLike,
   sendDocument,
@@ -109,6 +114,26 @@ onboardingRoutes.post(
     res.status(201).json({ ok: true, document: await documentInfo(business.id) });
   })
 );
+
+/** Upload or replace the business logo (raw body, Content-Type: image/png, image/jpeg or image/webp). */
+onboardingRoutes.post(
+  "/logo",
+  express.raw({ type: LOGO_TYPES, limit: MAX_LOGO_BYTES }),
+  asyncHandler(async (req, res) => {
+    const id = businessIdOf(req);
+    const contentType = String(req.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
+    const data = req.body as Buffer;
+    if (!LOGO_TYPES.includes(contentType) || !Buffer.isBuffer(data) || data.length === 0) throw badRequest("Upload a PNG, JPG or WebP image.");
+    if (!looksLike(contentType, data)) throw badRequest("That file doesn’t look like an image. Try saving it as PNG or JPG.");
+    await saveLogo(id, contentType, data);
+    res.status(201).json({ ok: true, logoUrl: await logoUrl(id) });
+  })
+);
+
+onboardingRoutes.delete("/logo", asyncHandler(async (req, res) => {
+  await removeLogo(businessIdOf(req));
+  res.json({ ok: true });
+}));
 
 onboardingRoutes.get("/document", asyncHandler(async (req, res) => {
   const file = await documentFile(businessIdOf(req));

@@ -177,6 +177,15 @@ async function createTables(db: PoolClient): Promise<void> {
   await db.query(`UPDATE payments p SET payer_name = b.name, payer_email = b.email
     FROM businesses b WHERE b.id = p.business_id AND p.payer_name IS NULL`);
 
+  // The business's logo (optional; PNG, JPEG or WebP up to 1 MB). Shown in its dashboard and on /admin.
+  await db.query(`CREATE TABLE IF NOT EXISTS business_logos (
+    business_id INT PRIMARY KEY REFERENCES businesses(id),
+    content_type VARCHAR(40) NOT NULL,
+    size_bytes INT NOT NULL,
+    data BYTEA NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`);
+
   // The CAC certificate itself (PDF or photo, up to 4 MB). Only the latest upload is kept.
   await db.query(`CREATE TABLE IF NOT EXISTS business_documents (
     business_id INT PRIMARY KEY REFERENCES businesses(id),

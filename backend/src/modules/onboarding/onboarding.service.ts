@@ -82,3 +82,44 @@ export function looksLike(contentType: string, data: Buffer): boolean {
   return false;
 }
 
+
+// ---------- Business logo ----------
+
+export const MAX_LOGO_BYTES = 1024 * 1024;
+export const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+/**
+ * A logo's address is /api/public/logo/<id>/<signature>. The signature can't be guessed (so
+ * logos can't be listed by counting ids) and changes with every upload (so browsers never show
+ * an old one). Logos aren't secret, which lets a plain <img> load them without a session.
+ */
+function logoSignature(businessId: number, updatedAt: Date): string {
+  return createHmac("sha256", env.auth.sessionSecret || "tellero-dev").update(`logo:${businessId}:${updatedAt.getTime()}`).digest("base64url").slice(0, 22);
+}
+
+export async function logoUrl(businessId: number): Promise<string | null> {
+  const row = await one<{ updated_at: Date }>("SELECT updated_at FROM business_logos WHERE business_id = ?", [businessId]);
+  return row ? `/api/public/logo/${businessId}/${logoSignature(businessId, new Date(row.updated_at))}` : null;
+}
+
+export async function logoFile(businessId: number, signature: string): Promise<{ contentType: string; data: Buffer } | null> {
+  const row = await one<{ content_type: string; data: Buffer; updated_at: Date }>(
+    "SELECT content_type, data, updated_at FROM business_logos WHERE business_id = ?",
+    [businessId]
+  );
+  if (!row || logoSignature(businessId, new Date(row.updated_at)) !== signature) return null;
+  return { contentType: row.content_type, data: row.data };
+}
+
+export async function saveLogo(businessId: number, contentType: string, data: Buffer): Promise<void> {
+  await run(
+    `INSERT INTO business_logos (business_id, content_type, size_bytes, data, updated_at) VALUES (?, ?, ?, ?, now())
+     ON CONFLICT (business_id) DO UPDATE SET content_type = EXCLUDED.content_type, size_bytes = EXCLUDED.size_bytes, data = EXCLUDED.data, updated_at = now()
+     RETURNING business_id`,
+    [businessId, contentType, data.length, data]
+  );
+}
+
+export async function removeLogo(businessId: number): Promise<void> {
+  await run("DELETE FROM business_logos WHERE business_id = ?", [businessId]);
+}

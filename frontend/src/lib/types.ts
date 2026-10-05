@@ -124,6 +124,8 @@ export interface Business {
   name: string
   email: string
   ownerName: string | null
+  /** Address of the business's logo, or null if none uploaded */
+  logoUrl: string | null
   created_at: string
   emailVerified: boolean
   verification: Verification
@@ -163,6 +165,7 @@ export interface AdminBusiness {
   calls: number
   plan: PlanStatus
   ownerName: string | null
+  logoUrl: string | null
   emailVerified: boolean
   verification: Verification
   /** Set while the account is suspended (log-in and calls blocked) */

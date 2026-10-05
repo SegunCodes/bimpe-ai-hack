@@ -138,7 +138,13 @@ function SignedInShell({ children }: { children: ReactNode }) {
             </div>
             <div className="min-w-0 leading-tight">
               <Wordmark className="text-lg text-white sm:text-xl" />
-              <div className="max-w-[9rem] truncate text-xs font-medium text-white/55 sm:max-w-[14rem]">{business?.name ?? ' '}</div>
+              <div className="flex max-w-[9rem] items-center gap-1.5 text-xs font-medium text-white/55 sm:max-w-[14rem]">
+                {business?.logoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={business.logoUrl} alt="" className="h-4 w-4 shrink-0 rounded bg-white object-contain" />
+                )}
+                <span className="truncate">{business?.name ?? ' '}</span>
+              </div>
             </div>
           </Link>
 
