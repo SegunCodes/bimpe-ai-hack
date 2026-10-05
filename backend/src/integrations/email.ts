@@ -159,6 +159,52 @@ export const emails = {
     });
   },
 
+  accountSuspended(to: string, name: string, business: string) {
+    return sendEmail({
+      to,
+      subject: `Your Tellero AI account for ${business} is suspended`,
+      html: layout({
+        heading: "Your account is suspended",
+        paragraphs: [
+          `Hi ${escape(name)}, we’ve suspended the Tellero AI account for <b>${escape(business)}</b>.`,
+          "While it’s suspended you can’t log in and Tellero AI won’t call your customers. Your data hasn’t been deleted.",
+          `If you think this is a mistake, reply to this email or write to <a href="mailto:${env.email.replyTo}">${env.email.replyTo}</a>.`
+        ]
+      }),
+      text: `Hi ${name}, we've suspended the Tellero AI account for ${business}. You can't log in and no calls will be made while it's suspended. Your data hasn't been deleted. If you think this is a mistake, email ${env.email.replyTo}.`
+    });
+  },
+
+  accountRestored(to: string, name: string, business: string) {
+    return sendEmail({
+      to,
+      subject: `Your Tellero AI account for ${business} is active again`,
+      html: layout({
+        heading: "Your account is active again",
+        paragraphs: [`Hi ${escape(name)}, the suspension on <b>${escape(business)}</b> has been lifted. You can log in and Tellero AI can call your customers again.`],
+        button: { label: "Log in", url: `${APP_URL()}/login` }
+      }),
+      text: `Hi ${name}, the suspension on ${business} has been lifted. You can log in again at ${APP_URL()}/login`
+    });
+  },
+
+  accountDeleted(to: string, name: string, business: string) {
+    return sendEmail({
+      to,
+      subject: `Your Tellero AI account for ${business} has been deleted`,
+      html: layout({
+        heading: "Your account has been deleted",
+        paragraphs: [
+          `Hi ${escape(name)}, the Tellero AI account for <b>${escape(business)}</b> has been permanently deleted.`,
+          "Your data has been completely removed from Tellero AI, with nothing left behind: your login, business details, CAC certificate, customers, orders, call transcripts and the name and email on your payment records. This can’t be undone.",
+          "Payment receipts held by our payment provider are kept by them as the law requires.",
+          `Questions? Write to <a href="mailto:${env.email.replyTo}">${env.email.replyTo}</a>.`
+        ]
+      }),
+      text: `Hi ${name}, the Tellero AI account for ${business} has been permanently deleted. Your data has been completely removed from Tellero AI, with nothing left behind: your login, business details, CAC certificate, customers, orders, call transcripts and the name and email on your payment records. Payment receipts held by our payment provider are kept by them as the law requires. Questions? ${env.email.replyTo}`
+    });
+  },
+
   planActive(to: string, name: string, plan: string, calls: number) {
     return sendEmail({
       to,

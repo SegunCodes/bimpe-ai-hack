@@ -65,7 +65,8 @@ export default function Page() {
       <h2>How long we keep it</h2>
       <p>
         We keep account and call information while a business has an account, so its dashboard history stays complete. A business can ask us to delete its
-        account and its customers’ information at any time; payment records may be kept for as long as tax and accounting law requires.
+        account and its customers’ information at any time. When an account is deleted, everything in it is removed, and the name and email on its payment
+        records are erased; only the amount and date are kept for our accounts.
       </p>
 
       <h2>Your choices</h2>

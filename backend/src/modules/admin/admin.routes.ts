@@ -108,6 +108,8 @@ adminRoutes.post("/businesses/:id/suspend", asyncHandler(async (req, res) => {
   const business = await businessesRepository.findById(id);
   if (!business || business.is_house) throw notFound("Business");
   await businessesRepository.setSuspended(id, true, reason || null);
+  // The reason is for the admin only; the email doesn't include it.
+  if (!business.suspended_at) await emails.accountSuspended(business.email, business.owner_name || business.name, business.name);
   res.json({ ok: true });
 }));
 
@@ -116,6 +118,7 @@ adminRoutes.post("/businesses/:id/unsuspend", asyncHandler(async (req, res) => {
   const business = await businessesRepository.findById(id);
   if (!business || business.is_house) throw notFound("Business");
   await businessesRepository.setSuspended(id, false, null);
+  if (business.suspended_at) await emails.accountRestored(business.email, business.owner_name || business.name, business.name);
   res.json({ ok: true });
 }));
 
@@ -131,6 +134,8 @@ adminRoutes.delete("/businesses/:id", asyncHandler(async (req, res) => {
   if (!business.suspended_at) throw badRequest("Suspend the business first, then delete it.");
   if (confirmName.trim().toLowerCase() !== business.name.trim().toLowerCase()) throw badRequest("Type the business name exactly to confirm.");
   await businessesRepository.deleteForever(id);
+  // Sent after the delete succeeds, using details read beforehand (they no longer exist).
+  await emails.accountDeleted(business.email, business.owner_name || business.name, business.name);
   res.json({ ok: true });
 }));
 

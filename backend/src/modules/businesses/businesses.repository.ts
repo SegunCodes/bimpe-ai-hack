@@ -50,12 +50,12 @@ export const businessesRepository = {
   },
 
   /**
-   * Permanently removes a business and everything it owns, in one transaction. Payment records
-   * stay (with the payer's name and email) for the accounts; they just lose the link.
+   * Permanently removes a business and everything it owns, in one transaction. Payment rows keep
+   * only the amount, plan and date (for revenue totals): the link, name and email are erased.
    */
   async deleteForever(id: number): Promise<void> {
     await transaction(async (db) => {
-      await db.query("UPDATE payments SET business_id = NULL WHERE business_id = $1", [id]);
+      await db.query("UPDATE payments SET business_id = NULL, payer_name = NULL, payer_email = NULL WHERE business_id = $1", [id]);
       await db.query("DELETE FROM calls WHERE business_id = $1", [id]);
       await db.query("DELETE FROM orders WHERE business_id = $1", [id]);
       await db.query("DELETE FROM customers WHERE business_id = $1", [id]);

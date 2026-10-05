@@ -445,7 +445,7 @@ function AccountActions({ business, onChanged }: { business: AdminBusiness; onCh
               Cancel
             </Button>
           </div>
-          <p className="text-xs text-ink-muted sm:hidden">They’re signed out and calls stop straight away. Nothing is deleted.</p>
+          <p className="text-xs text-ink-muted sm:hidden">They’re signed out, calls stop straight away, and we email them. Nothing is deleted.</p>
         </div>
       )}
 
@@ -453,8 +453,8 @@ function AccountActions({ business, onChanged }: { business: AdminBusiness; onCh
         <div className="mt-2 rounded-2xl bg-bad-soft p-4 ring-1 ring-bad/20">
           <p className="text-[15px] font-semibold text-bad">Delete {business.name} forever?</p>
           <p className="mt-1 text-sm text-ink-soft">
-            This removes the account, its log-in, CAC certificate, {business.customers} customers, {business.orders} orders and {business.calls} calls. It can’t be undone.
-            Payment records are kept for your accounts.
+            This removes the account, its log-in, CAC certificate, {business.customers} customers, {business.orders} orders and {business.calls} calls, and erases the
+            name and email from its payments (amounts stay in your revenue total). It can’t be undone. We’ll email {business.email ?? 'them'} to confirm.
           </p>
           <label className="mt-3 block text-sm font-semibold text-ink-soft">
             Type <span className="text-ink">{business.name}</span> to confirm
