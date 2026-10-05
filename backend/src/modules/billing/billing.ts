@@ -120,7 +120,15 @@ billingRoutes.post("/checkout", asyncHandler(async (req, res) => {
     callback_url: callback,
     metadata: { business_id: business.id, plan, kind }
   });
-  await run("INSERT INTO payments (business_id, reference, plan, kind, amount_kobo) VALUES (?, ?, ?, ?, ?)", [business.id, reference, plan, kind, amountKobo]);
+  await run("INSERT INTO payments (business_id, reference, plan, kind, amount_kobo, payer_name, payer_email) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+    business.id,
+    reference,
+    plan,
+    kind,
+    amountKobo,
+    business.name,
+    business.email
+  ]);
   res.json({ url: tx.authorization_url, reference });
 }));
 

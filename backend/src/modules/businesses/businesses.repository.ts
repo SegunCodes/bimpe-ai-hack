@@ -1,4 +1,4 @@
-import { one, rows, run } from "../../db/pool";
+import { one, rows, run, transaction } from "../../db/pool";
 import { HOUSE_BUSINESS_EMAIL } from "../../db/schema";
 
 export interface Business {
@@ -13,6 +13,8 @@ export interface Business {
   call_credits: number;
   owner_name: string | null;
   password_changed_at: Date | null;
+  suspended_at: Date | null;
+  suspended_reason: string | null;
   email_verified_at: Date | null;
   verification_status: "none" | "pending" | "approved" | "rejected";
   verification_note: string | null;
@@ -40,6 +42,28 @@ export const businessesRepository = {
       ownerName
     ]);
     return result.insertId;
+  },
+
+  setSuspended: async (id: number, suspended: boolean, reason: string | null): Promise<void> => {
+    if (suspended) await run("UPDATE businesses SET suspended_at = now(), suspended_reason = ? WHERE id = ?", [reason, id]);
+    else await run("UPDATE businesses SET suspended_at = NULL, suspended_reason = NULL WHERE id = ?", [id]);
+  },
+
+  /**
+   * Permanently removes a business and everything it owns, in one transaction. Payment records
+   * stay (with the payer's name and email) for the accounts; they just lose the link.
+   */
+  async deleteForever(id: number): Promise<void> {
+    await transaction(async (db) => {
+      await db.query("UPDATE payments SET business_id = NULL WHERE business_id = $1", [id]);
+      await db.query("DELETE FROM calls WHERE business_id = $1", [id]);
+      await db.query("DELETE FROM orders WHERE business_id = $1", [id]);
+      await db.query("DELETE FROM customers WHERE business_id = $1", [id]);
+      await db.query("DELETE FROM business_documents WHERE business_id = $1", [id]);
+      await db.query("DELETE FROM email_codes WHERE business_id = $1", [id]);
+      await db.query("DELETE FROM password_resets WHERE business_id = $1", [id]);
+      await db.query("DELETE FROM businesses WHERE id = $1 AND NOT is_house", [id]);
+    });
   },
 
   setPassword: async (id: number, passwordHash: string): Promise<void> => {

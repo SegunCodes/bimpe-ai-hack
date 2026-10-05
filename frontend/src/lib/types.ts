@@ -165,6 +165,8 @@ export interface AdminBusiness {
   ownerName: string | null
   emailVerified: boolean
   verification: Verification
+  /** Set while the account is suspended (log-in and calls blocked) */
+  suspended: { at: string; reason: string | null } | null
   usage: { minutesThisMonth: number; answeredThisMonth: number; costThisMonthNaira: number; revenueNaira: number }
 }
 

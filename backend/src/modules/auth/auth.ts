@@ -22,6 +22,7 @@ declare global {
 }
 
 const BUSINESS_SESSION_DAYS = 30;
+const SUSPENDED_MESSAGE = "This account is suspended. Contact support@usetellero.com if you think this is a mistake.";
 const ADMIN_SESSION_DAYS = 7;
 const MAX_ATTEMPTS = 10;
 const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
@@ -103,6 +104,7 @@ export function requireBusiness(req: Request, _res: Response, next: NextFunction
     .findById(session.businessId)
     .then((business) => {
       if (!business) return next(unauthorized("Please sign in."));
+      if (business.suspended_at) return next(unauthorized(SUSPENDED_MESSAGE));
       const changed = business.password_changed_at ? new Date(business.password_changed_at).getTime() : 0;
       if (changed > session.issuedAt) return next(unauthorized("Your password was changed. Please sign in again."));
       req.businessId = session.businessId;
@@ -189,6 +191,7 @@ authRoutes.post("/login", asyncHandler(async (req, res) => {
   if (!business || business.is_house || !(await passwordMatches(input.password, business.password_hash))) {
     throw unauthorized("That email and password don't match.");
   }
+  if (business.suspended_at) throw new HttpError(403, SUSPENDED_MESSAGE);
   attempts.delete(`login:${clientIp(req)}:${input.email}`);
   res.json({ token: sessionFor(business), business: await publicBusiness(business) });
 }));

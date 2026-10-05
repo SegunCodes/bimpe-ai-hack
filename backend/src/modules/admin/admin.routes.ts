@@ -29,6 +29,7 @@ adminRoutes.get("/overview", asyncHandler(async (_req, res) => {
       calls: Number(b.calls),
       plan: await planStatus(b),
       ownerName: b.owner_name,
+      suspended: b.suspended_at ? { at: b.suspended_at, reason: b.suspended_reason } : null,
       emailVerified: Boolean(b.email_verified_at),
       verification: { status: b.verification_status, note: b.verification_note, updatedAt: b.verification_updated_at, document: await documentInfo(b.id) },
       usage: {
@@ -97,6 +98,39 @@ adminRoutes.post("/businesses/:id/verification", asyncHandler(async (req, res) =
   const name = business.owner_name || business.name;
   if (input.status === "approved") await emails.approved(business.email, name, business.name);
   else await emails.rejected(business.email, name, input.note as string);
+  res.json({ ok: true });
+}));
+
+/** Suspend: blocks log-in and calls straight away, keeps all data. Undo with /unsuspend. */
+adminRoutes.post("/businesses/:id/suspend", asyncHandler(async (req, res) => {
+  const id = idParam(req);
+  const { reason } = z.object({ reason: z.string().trim().max(500).optional() }).parse(req.body ?? {});
+  const business = await businessesRepository.findById(id);
+  if (!business || business.is_house) throw notFound("Business");
+  await businessesRepository.setSuspended(id, true, reason || null);
+  res.json({ ok: true });
+}));
+
+adminRoutes.post("/businesses/:id/unsuspend", asyncHandler(async (req, res) => {
+  const id = idParam(req);
+  const business = await businessesRepository.findById(id);
+  if (!business || business.is_house) throw notFound("Business");
+  await businessesRepository.setSuspended(id, false, null);
+  res.json({ ok: true });
+}));
+
+/**
+ * Delete forever. Only for a suspended business, and the request must repeat the business's
+ * name, so a slip of the mouse can't wipe an account.
+ */
+adminRoutes.delete("/businesses/:id", asyncHandler(async (req, res) => {
+  const id = idParam(req);
+  const { confirmName } = z.object({ confirmName: z.string() }).parse(req.body ?? {});
+  const business = await businessesRepository.findById(id);
+  if (!business || business.is_house) throw notFound("Business");
+  if (!business.suspended_at) throw badRequest("Suspend the business first, then delete it.");
+  if (confirmName.trim().toLowerCase() !== business.name.trim().toLowerCase()) throw badRequest("Type the business name exactly to confirm.");
+  await businessesRepository.deleteForever(id);
   res.json({ ok: true });
 }));
 

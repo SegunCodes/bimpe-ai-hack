@@ -82,6 +82,10 @@ export const api = {
   adminDocument: (businessId: number) => download(`/admin/businesses/${businessId}/document`),
   adminSetVerification: (businessId: number, status: 'approved' | 'rejected', note?: string) =>
     post<{ ok: true }>(`/admin/businesses/${businessId}/verification`, { status, note }),
+  adminSuspend: (businessId: number, reason?: string) => post<{ ok: true }>(`/admin/businesses/${businessId}/suspend`, { reason }),
+  adminUnsuspend: (businessId: number) => post<{ ok: true }>(`/admin/businesses/${businessId}/unsuspend`),
+  adminDeleteBusiness: (businessId: number, confirmName: string) =>
+    request<{ ok: true }>(`/admin/businesses/${businessId}`, { method: 'DELETE', body: JSON.stringify({ confirmName }) }),
   adminSetCapacity: (minutes: number) => post<{ ok: true }>('/admin/capacity', { minutes }),
 
   listCustomers: () => request<Customer[]>('/customers'),

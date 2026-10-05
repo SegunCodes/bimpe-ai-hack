@@ -167,6 +167,16 @@ async function createTables(db: PoolClient): Promise<void> {
     sent_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
 
+  // Suspension: blocks log-in and calls but keeps the data (the admin can lift it or delete later).
+  await db.query("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMPTZ NULL");
+  await db.query("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS suspended_reason TEXT NULL");
+  // Payment records outlive a deleted business: keep who paid, let the link go.
+  await db.query("ALTER TABLE payments ADD COLUMN IF NOT EXISTS payer_name VARCHAR(160) NULL");
+  await db.query("ALTER TABLE payments ADD COLUMN IF NOT EXISTS payer_email VARCHAR(254) NULL");
+  await db.query("ALTER TABLE payments ALTER COLUMN business_id DROP NOT NULL");
+  await db.query(`UPDATE payments p SET payer_name = b.name, payer_email = b.email
+    FROM businesses b WHERE b.id = p.business_id AND p.payer_name IS NULL`);
+
   // The CAC certificate itself (PDF or photo, up to 4 MB). Only the latest upload is kept.
   await db.query(`CREATE TABLE IF NOT EXISTS business_documents (
     business_id INT PRIMARY KEY REFERENCES businesses(id),

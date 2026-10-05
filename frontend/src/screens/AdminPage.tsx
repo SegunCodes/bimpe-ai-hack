@@ -371,6 +371,115 @@ function VerificationActions({ business, onChanged }: { business: AdminBusiness;
   )
 }
 
+/**
+ * Suspend (reversible: blocks log-in and calls, keeps data) and, once suspended, delete forever.
+ * Deleting asks for the business name to be typed, so it can't happen by accident.
+ */
+function AccountActions({ business, onChanged }: { business: AdminBusiness; onChanged: () => void }) {
+  const toast = useToast()
+  const [mode, setMode] = useState<'idle' | 'suspending' | 'deleting'>('idle')
+  const [reason, setReason] = useState('')
+  const [confirmName, setConfirmName] = useState('')
+  const [busy, setBusy] = useState(false)
+  if (business.is_house) return null
+
+  const run = async (action: () => Promise<unknown>, done: string) => {
+    setBusy(true)
+    try {
+      await action()
+      toast.success(done)
+      setMode('idle')
+      setReason('')
+      setConfirmName('')
+      onChanged()
+    } catch (err) {
+      toast.error(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const nameMatches = confirmName.trim().toLowerCase() === business.name.trim().toLowerCase()
+
+  return (
+    <div className="mt-2">
+      {business.suspended ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="rounded-full bg-bad px-2.5 py-0.5 text-xs font-semibold text-white">Suspended</span>
+          <span className="text-ink-muted">
+            since {formatDateTime(business.suspended.at)}
+            {business.suspended.reason ? ` · ${business.suspended.reason}` : ''}
+          </span>
+          {mode === 'idle' && (
+            <>
+              <Button size="sm" variant="secondary" loading={busy} onClick={() => run(() => api.adminUnsuspend(business.id), `${business.name} can log in again`)}>
+                Unsuspend
+              </Button>
+              <Button size="sm" variant="ghost" className="text-bad" onClick={() => setMode('deleting')}>
+                Delete permanently
+              </Button>
+            </>
+          )}
+        </div>
+      ) : (
+        mode === 'idle' && (
+          <button onClick={() => setMode('suspending')} className="text-sm font-semibold text-ink-muted underline-offset-4 hover:text-bad hover:underline">
+            Suspend account
+          </button>
+        )
+      )}
+
+      {mode === 'suspending' && (
+        <div className="mt-1 flex flex-col gap-2 rounded-2xl bg-paper p-3 sm:flex-row sm:items-center">
+          <input
+            autoFocus
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Reason (only you see this), optional"
+            className={`${inputClass} sm:max-w-sm`}
+          />
+          <div className="flex gap-2">
+            <Button size="sm" variant="danger" loading={busy} onClick={() => run(() => api.adminSuspend(business.id, reason.trim() || undefined), `${business.name} suspended`)}>
+              Suspend now
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setMode('idle')}>
+              Cancel
+            </Button>
+          </div>
+          <p className="text-xs text-ink-muted sm:hidden">They’re signed out and calls stop straight away. Nothing is deleted.</p>
+        </div>
+      )}
+
+      {mode === 'deleting' && (
+        <div className="mt-2 rounded-2xl bg-bad-soft p-4 ring-1 ring-bad/20">
+          <p className="text-[15px] font-semibold text-bad">Delete {business.name} forever?</p>
+          <p className="mt-1 text-sm text-ink-soft">
+            This removes the account, its log-in, CAC certificate, {business.customers} customers, {business.orders} orders and {business.calls} calls. It can’t be undone.
+            Payment records are kept for your accounts.
+          </p>
+          <label className="mt-3 block text-sm font-semibold text-ink-soft">
+            Type <span className="text-ink">{business.name}</span> to confirm
+            <input value={confirmName} onChange={(e) => setConfirmName(e.target.value)} autoFocus className={`${inputClass} mt-1.5 sm:max-w-sm`} />
+          </label>
+          <div className="mt-3 flex gap-2">
+            <Button
+              size="sm"
+              variant="danger"
+              disabled={!nameMatches}
+              loading={busy}
+              onClick={() => run(() => api.adminDeleteBusiness(business.id, confirmName), `${business.name} deleted`)}
+            >
+              Delete forever
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setMode('idle')}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Businesses({ overview, stats, onChanged }: { overview: AdminOverview; stats: Stats; onChanged: () => void }) {
   const rate = new Map(stats.businesses.map((b) => [b.id, b]))
   const [onlyPending, setOnlyPending] = useState(false)
@@ -399,6 +508,7 @@ function Businesses({ overview, stats, onChanged }: { overview: AdminOverview; s
                 {b.email && <span className="truncate text-sm text-ink-muted">{b.email}</span>}
               </div>
               <VerificationActions business={b} onChanged={onChanged} />
+              <AccountActions business={b} onChanged={onChanged} />
               <div className="mt-0.5 text-sm">
                 <PlanCell business={b} />
               </div>
