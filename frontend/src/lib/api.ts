@@ -1,5 +1,6 @@
 import type {
   AdminOverview,
+  SystemStatus,
   Billing,
   Business,
   Call,
@@ -14,12 +15,13 @@ import type {
 } from './types'
 import { clearToken, getToken, type SessionKind } from './session'
 
-/** The live backend. Used by production builds when NEXT_PUBLIC_API_URL wasn't set for that build. */
-const PRODUCTION_API = 'https://tellero-ai-2q8u.vercel.app/api'
-
-export const API_URL = (
-  process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? PRODUCTION_API : 'http://localhost:3001/api')
-).replace(/\/+$/, '')
+/**
+ * Live site: always this site's own /api, which next.config.ts forwards to the backend, so the
+ * backend's address never appears in the browser. Local development can point straight at a
+ * backend with NEXT_PUBLIC_API_URL.
+ */
+export const API_URL =
+  process.env.NODE_ENV === 'production' ? '/api' : (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/+$/, '')
 
 /** Admin routes use the owner's session; everything else uses the business's. */
 const sessionFor = (path: string): SessionKind => (path.startsWith('/admin') ? 'admin' : 'business')
@@ -33,7 +35,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },
     })
   } catch {
-    throw new Error(`Can't reach the server at ${API_URL}. Is the backend running?`)
+    throw new Error("Can't reach Tellero AI right now. Check your connection and try again.")
   }
 
   // The session expired or the password changed: go back to the sign-in screen.
@@ -78,6 +80,7 @@ export const api = {
   adminStatus: () => request<{ passwordSet: boolean }>('/admin-auth/status'),
   adminLogin: (password: string) => post<{ token: string }>('/admin-auth/login', { password }),
   adminOverview: () => request<AdminOverview>('/admin/overview'),
+  adminSystemStatus: () => request<SystemStatus>('/admin/status'),
   adminSetPlan: (businessId: number, plan: string | null) => post<{ id: number }>(`/admin/businesses/${businessId}/plan`, { plan }),
   adminDocument: (businessId: number) => download(`/admin/businesses/${businessId}/document`),
   adminSetVerification: (businessId: number, status: 'approved' | 'rejected', note?: string) =>

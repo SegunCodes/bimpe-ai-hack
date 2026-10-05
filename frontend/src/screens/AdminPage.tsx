@@ -3,15 +3,16 @@
 import Link from 'next/link'
 import { useEffect, useState, type ReactNode } from 'react'
 import { api, errorMessage } from '../lib/api'
-import { formatDateTime, formatDuration, languageName } from '../lib/format'
+import { formatDuration, languageName, timeAgo } from '../lib/format'
 import { computeStats, type Range, type Stats } from '../lib/stats'
 import { SIGNED_OUT_EVENT, clearToken, getToken, type SessionKind } from '../lib/session'
-import type { AdminBusiness, AdminOverview, Capacity } from '../lib/types'
+import type { AdminOverview, Capacity } from '../lib/types'
 import { Button } from '../components/Button'
 import { inputClass } from '../components/Overlay'
 import { usePolling } from '../hooks/usePolling'
 import { AdminSignIn } from '../components/AdminSignIn'
-import { PhoneIcon, Wordmark } from '../components/Icons'
+import { CheckIcon, PhoneIcon, Wordmark } from '../components/Icons'
+import { BusinessesView } from './admin/Businesses'
 import { PageHeader, StatCard } from '../components/Layout'
 import { Segmented } from '../components/Overlay'
 import { ErrorState, LoadingState, StaleBanner } from '../components/States'
@@ -164,54 +165,6 @@ function Figure({ label, value, note }: { label: string; value: ReactNode; note?
 
 const naira = (n: number) => `₦${n.toLocaleString('en-NG')}`
 
-function PlanCell({ business }: { business: AdminBusiness }) {
-  const p = business.plan
-  if (business.is_house) return <span className="text-ink-muted">Website demo, no plan needed</span>
-  if (!p.active) return <span className="font-semibold text-bad">{p.planName ? `${p.planName} ended` : 'No plan'}</span>
-  return (
-    <span className="text-ink-soft">
-      <span className="font-semibold text-ink">{p.planName}</span> · until {formatDateTime(p.expiresAt)}
-      {p.outOfCredits && <span className="font-semibold text-bad"> · out of credits</span>}
-    </span>
-  )
-}
-
-/** Switch a plan on or off by hand (demos, bank transfers, or before Paystack is set up). */
-function PlanSwitch({ business, plans, onChanged }: { business: AdminBusiness; plans: AdminOverview['plans']; onChanged: () => void }) {
-  const toast = useToast()
-  const [busy, setBusy] = useState(false)
-  if (business.is_house) return null
-  const set = async (plan: string) => {
-    setBusy(true)
-    try {
-      await api.adminSetPlan(business.id, plan === 'none' ? null : plan)
-      toast.success(plan === 'none' ? `Turned off ${business.name}'s plan` : `${business.name} is on ${plans.find((p) => p.id === plan)?.name} for 30 days`)
-      onChanged()
-    } catch (err) {
-      toast.error(errorMessage(err))
-    } finally {
-      setBusy(false)
-    }
-  }
-  return (
-    <select
-      aria-label={`Change ${business.name}'s plan`}
-      disabled={busy}
-      value=""
-      onChange={(e) => e.target.value && set(e.target.value)}
-      className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-ink ring-1 ring-ink/20 disabled:opacity-50"
-    >
-      <option value="">{busy ? 'Saving…' : 'Set plan…'}</option>
-      {plans.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name} ({p.calls} calls)
-        </option>
-      ))}
-      <option value="none">Turn plan off</option>
-    </select>
-  )
-}
-
 /**
  * Tellero AI's shared BimpeAI minutes this month. All businesses' calls come out of one BimpeAI
  * account, so this is the number to watch: when it fills up, new calls pause for everyone.
@@ -282,254 +235,6 @@ function CapacityCard({ capacity, onChanged }: { capacity: Capacity; onChanged: 
   )
 }
 
-const VERIFICATION: Record<string, { label: string; className: string }> = {
-  none: { label: 'No CAC yet', className: 'bg-mist text-ink-soft' },
-  pending: { label: 'CAC to review', className: 'bg-danfo-soft text-ink ring-1 ring-danfo' },
-  approved: { label: 'Verified', className: 'bg-good-soft text-good' },
-  rejected: { label: 'CAC rejected', className: 'bg-bad-soft text-bad' },
-}
-
-/** View the uploaded CAC certificate and approve or reject it (a reason is required to reject). */
-function VerificationActions({ business, onChanged }: { business: AdminBusiness; onChanged: () => void }) {
-  const toast = useToast()
-  const [busy, setBusy] = useState<'view' | 'approve' | 'reject' | null>(null)
-  const [rejecting, setRejecting] = useState(false)
-  const [reason, setReason] = useState('')
-  const v = business.verification
-  if (business.is_house) return null
-
-  const view = async () => {
-    setBusy('view')
-    try {
-      window.open(await api.adminDocument(business.id), '_blank', 'noopener')
-    } catch (err) {
-      toast.error(errorMessage(err))
-    } finally {
-      setBusy(null)
-    }
-  }
-  const decide = async (status: 'approved' | 'rejected') => {
-    if (status === 'rejected' && reason.trim().length < 5) return toast.error('Say why, so the business knows what to fix.')
-    setBusy(status === 'approved' ? 'approve' : 'reject')
-    try {
-      await api.adminSetVerification(business.id, status, status === 'rejected' ? reason.trim() : undefined)
-      toast.success(status === 'approved' ? `${business.name} approved and emailed` : `${business.name} asked to upload again`)
-      setRejecting(false)
-      setReason('')
-      onChanged()
-    } catch (err) {
-      toast.error(errorMessage(err))
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  return (
-    <div className="mt-2 flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${VERIFICATION[v.status].className}`}>{VERIFICATION[v.status].label}</span>
-        {!business.emailVerified && <span className="text-xs text-ink-muted">email not confirmed</span>}
-        {v.document && (
-          <button onClick={view} disabled={busy !== null} className="font-semibold text-ink underline-offset-4 hover:underline">
-            {busy === 'view' ? 'Opening…' : `View CAC (${v.document.filename})`}
-          </button>
-        )}
-        {v.document && v.status !== 'approved' && (
-          <>
-            <Button size="sm" onClick={() => decide('approved')} loading={busy === 'approve'} disabled={busy !== null}>
-              Approve
-            </Button>
-            {!rejecting && (
-              <Button size="sm" variant="secondary" onClick={() => setRejecting(true)} disabled={busy !== null}>
-                Reject
-              </Button>
-            )}
-          </>
-        )}
-      </div>
-      {v.status === 'rejected' && v.note && <p className="text-sm text-bad">Rejected: {v.note}</p>}
-      {rejecting && (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <input
-            autoFocus
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Reason, e.g. the certificate is blurry or the name doesn’t match"
-            className={`${inputClass} sm:max-w-md`}
-          />
-          <div className="flex gap-2">
-            <Button size="sm" variant="danger" onClick={() => decide('rejected')} loading={busy === 'reject'}>
-              Reject and email
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setRejecting(false)}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/**
- * Suspend (reversible: blocks log-in and calls, keeps data) and, once suspended, delete forever.
- * Deleting asks for the business name to be typed, so it can't happen by accident.
- */
-function AccountActions({ business, onChanged }: { business: AdminBusiness; onChanged: () => void }) {
-  const toast = useToast()
-  const [mode, setMode] = useState<'idle' | 'suspending' | 'deleting'>('idle')
-  const [reason, setReason] = useState('')
-  const [confirmName, setConfirmName] = useState('')
-  const [busy, setBusy] = useState(false)
-  if (business.is_house) return null
-
-  const run = async (action: () => Promise<unknown>, done: string) => {
-    setBusy(true)
-    try {
-      await action()
-      toast.success(done)
-      setMode('idle')
-      setReason('')
-      setConfirmName('')
-      onChanged()
-    } catch (err) {
-      toast.error(errorMessage(err))
-    } finally {
-      setBusy(false)
-    }
-  }
-  const nameMatches = confirmName.trim().toLowerCase() === business.name.trim().toLowerCase()
-
-  return (
-    <div className="mt-2">
-      {business.suspended ? (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="rounded-full bg-bad px-2.5 py-0.5 text-xs font-semibold text-white">Suspended</span>
-          <span className="text-ink-muted">
-            since {formatDateTime(business.suspended.at)}
-            {business.suspended.reason ? ` · ${business.suspended.reason}` : ''}
-          </span>
-          {mode === 'idle' && (
-            <>
-              <Button size="sm" variant="secondary" loading={busy} onClick={() => run(() => api.adminUnsuspend(business.id), `${business.name} can log in again`)}>
-                Unsuspend
-              </Button>
-              <Button size="sm" variant="ghost" className="text-bad" onClick={() => setMode('deleting')}>
-                Delete permanently
-              </Button>
-            </>
-          )}
-        </div>
-      ) : (
-        mode === 'idle' && (
-          <button onClick={() => setMode('suspending')} className="text-sm font-semibold text-ink-muted underline-offset-4 hover:text-bad hover:underline">
-            Suspend account
-          </button>
-        )
-      )}
-
-      {mode === 'suspending' && (
-        <div className="mt-1 flex flex-col gap-2 rounded-2xl bg-paper p-3 sm:flex-row sm:items-center">
-          <input
-            autoFocus
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Reason (only you see this), optional"
-            className={`${inputClass} sm:max-w-sm`}
-          />
-          <div className="flex gap-2">
-            <Button size="sm" variant="danger" loading={busy} onClick={() => run(() => api.adminSuspend(business.id, reason.trim() || undefined), `${business.name} suspended`)}>
-              Suspend now
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setMode('idle')}>
-              Cancel
-            </Button>
-          </div>
-          <p className="text-xs text-ink-muted sm:hidden">They’re signed out, calls stop straight away, and we email them. Nothing is deleted.</p>
-        </div>
-      )}
-
-      {mode === 'deleting' && (
-        <div className="mt-2 rounded-2xl bg-bad-soft p-4 ring-1 ring-bad/20">
-          <p className="text-[15px] font-semibold text-bad">Delete {business.name} forever?</p>
-          <p className="mt-1 text-sm text-ink-soft">
-            This removes the account, its log-in, CAC certificate, {business.customers} customers, {business.orders} orders and {business.calls} calls, and erases the
-            name and email from its payments (amounts stay in your revenue total). It can’t be undone. We’ll email {business.email ?? 'them'} to confirm.
-          </p>
-          <label className="mt-3 block text-sm font-semibold text-ink-soft">
-            Type <span className="text-ink">{business.name}</span> to confirm
-            <input value={confirmName} onChange={(e) => setConfirmName(e.target.value)} autoFocus className={`${inputClass} mt-1.5 sm:max-w-sm`} />
-          </label>
-          <div className="mt-3 flex gap-2">
-            <Button
-              size="sm"
-              variant="danger"
-              disabled={!nameMatches}
-              loading={busy}
-              onClick={() => run(() => api.adminDeleteBusiness(business.id, confirmName), `${business.name} deleted`)}
-            >
-              Delete forever
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setMode('idle')}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function Businesses({ overview, stats, onChanged }: { overview: AdminOverview; stats: Stats; onChanged: () => void }) {
-  const rate = new Map(stats.businesses.map((b) => [b.id, b]))
-  const [onlyPending, setOnlyPending] = useState(false)
-  const pending = overview.businesses.filter((b) => b.verification.status === 'pending')
-  const list = onlyPending ? pending : overview.businesses
-  if (overview.businesses.length === 0) return <p className="py-6 text-center text-base text-ink-muted">No businesses have signed up yet.</p>
-  return (
-    <>
-    {pending.length > 0 && (
-      <button
-        onClick={() => setOnlyPending((v) => !v)}
-        className="mb-2 rounded-full bg-danfo-soft px-3 py-1 text-sm font-semibold text-ink ring-1 ring-danfo"
-      >
-        {onlyPending ? 'Show all businesses' : `${pending.length} CAC certificate${pending.length === 1 ? '' : 's'} to review`}
-      </button>
-    )}
-    <ul className="divide-y divide-line">
-      {list.map((b) => {
-        const r = rate.get(b.id)
-        return (
-          <li key={b.id} className="flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-baseline gap-x-2">
-                <span className="text-base font-semibold text-ink">{b.name}</span>
-                {b.ownerName && <span className="text-sm text-ink-soft">{b.ownerName}</span>}
-                {b.email && <span className="truncate text-sm text-ink-muted">{b.email}</span>}
-              </div>
-              <VerificationActions business={b} onChanged={onChanged} />
-              <AccountActions business={b} onChanged={onChanged} />
-              <div className="mt-0.5 text-sm">
-                <PlanCell business={b} />
-              </div>
-              <div className="mt-1 text-sm text-ink-muted">
-                Joined {formatDateTime(b.created_at)} · {b.customers} customers · {b.orders} orders · {b.calls} calls
-                {r && r.calls > 0 && ` · ${fmtPct(r.pickRate)} picked up · ${fmtPct(r.goodRate)} went well (this period)`}
-              </div>
-              <div className="mt-1 text-sm text-ink-soft">
-                This month: <b className="text-ink">{b.usage.answeredThisMonth}</b> answered calls · <b className="text-ink">{b.usage.minutesThisMonth}</b> min · costs you ≈{' '}
-                {naira(b.usage.costThisMonthNaira)} · paid you {naira(b.usage.revenueNaira)} in total · <b className="text-ink">{b.plan.callsLeft}</b> credits left
-              </div>
-            </div>
-            <PlanSwitch business={b} plans={overview.plans} onChanged={onChanged} />
-          </li>
-        )
-      })}
-    </ul>
-    </>
-  )
-}
-
 /** /admin: the platform owner's own sign-in and frame, separate from business dashboards. */
 export function AdminPage() {
   const [signedIn, setSignedIn] = useState<boolean | null>(null)
@@ -567,35 +272,57 @@ export function AdminPage() {
   )
 }
 
+type AdminTab = 'businesses' | 'usage' | 'system'
+const TABS: { value: AdminTab; label: string }[] = [
+  { value: 'businesses', label: 'Businesses' },
+  { value: 'usage', label: 'Usage' },
+  { value: 'system', label: 'System' },
+]
+
 function AdminDashboard() {
-  const [range, setRange] = useState<Range>('7d')
+  const [tab, setTab] = useState<AdminTab>('businesses')
   const { data, error, loading, refresh } = usePolling(api.adminOverview, 'admin', 10_000)
 
-  if (loading && !data) return <LoadingState label="Counting calls…" />
+  if (loading && !data) return <LoadingState label="Loading businesses…" />
   if (error && !data) return <ErrorState message={error} onRetry={refresh} />
   if (!data) return null
-
-  const names = new Map(data.businesses.filter((b) => !b.is_house).map((b) => [b.id, b.name]))
-  const stats = computeStats(data.calls, data.orders, data.customers, range, names)
-  const accounts = data.businesses.filter((b) => !b.is_house)
-  const paying = accounts.filter((b) => b.plan.active).length
-  const { calls, customers, orders } = stats
+  const review = data.businesses.filter((b) => b.verification.status === 'pending' && !b.suspended).length
 
   return (
     <>
       <PageHeader
         title="Admin"
-        subtitle="Every business on Tellero AI: who signed up, who's paying, and how their calls are going."
-        actions={<Segmented id="admin-range" options={RANGES} value={range} onChange={setRange} className="w-full sm:w-[420px]" />}
+        subtitle="Every business on Tellero AI, their calls, and the health of the service."
+        actions={
+          <Segmented
+            id="admin-tab"
+            options={TABS.map((t) => ({ ...t, label: t.value === 'businesses' && review > 0 ? `Businesses · ${review}` : t.label }))}
+            value={tab}
+            onChange={setTab}
+            className="w-full sm:w-[460px]"
+          />
+        }
       />
       {error && <StaleBanner message={error} />}
-      <CapacityCard capacity={data.capacity} onChanged={refresh} />
+      {tab === 'businesses' && <BusinessesView overview={data} onChanged={refresh} />}
+      {tab === 'usage' && <UsageView data={data} onChanged={refresh} />}
+      {tab === 'system' && <SystemView />}
+    </>
+  )
+}
 
-      <div className="mb-2.5 grid grid-cols-2 gap-2.5 sm:mb-3 sm:gap-3 lg:grid-cols-4">
-        <StatCard label="Businesses signed up" value={accounts.length} />
-        <StatCard label="On a paid plan" value={paying} />
-        <StatCard label="Without a plan" value={accounts.length - paying} />
-        <StatCard label="Revenue (all time)" value={naira(data.revenue.totalNaira)} />
+function UsageView({ data, onChanged }: { data: AdminOverview; onChanged: () => void }) {
+  const [range, setRange] = useState<Range>('7d')
+  const names = new Map(data.businesses.filter((b) => !b.is_house).map((b) => [b.id, b.name]))
+  const stats = computeStats(data.calls, data.orders, data.customers, range, names)
+  const { calls, customers, orders } = stats
+
+  return (
+    <>
+      <CapacityCard capacity={data.capacity} onChanged={onChanged} />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-xl font-bold text-ink">Calls across every business</h2>
+        <Segmented id="admin-range" options={RANGES} value={range} onChange={setRange} className="w-full sm:w-[420px]" />
       </div>
       <div className="mb-4 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
         <StatCard label="Calls made" value={calls.total} />
@@ -646,11 +373,70 @@ function AdminDashboard() {
             <Figure label="Orders needing you" value={orders.needsYou} note={`${orders.retried} needed a retry`} />
           </div>
         </Card>
-
-        <Card title={`Businesses (${accounts.length})`} hint="Every account, its plan and its calls. Use “Set plan” to switch a plan on by hand." className="lg:col-span-3">
-          <Businesses overview={{ ...data, businesses: accounts }} stats={stats} onChanged={refresh} />
-        </Card>
       </div>
     </>
+  )
+}
+
+/** What used to be the public status page, now for the admin only. */
+function SystemView() {
+  const { data, error, loading, refresh } = usePolling(api.adminSystemStatus, 'admin-system', 15_000)
+  if (loading && !data) return <LoadingState label="Checking the service…" />
+  if (error && !data) return <ErrorState message={error} onRetry={refresh} />
+  if (!data) return null
+
+  const run = data.lastBackgroundRun
+  const runAge = run ? (Date.now() - new Date(run.at).getTime()) / 60_000 : Infinity
+  const timerOk = run !== null && runAge < 3
+  const checks: { label: string; ok: boolean; detail: string }[] = [
+    { label: 'Database', ok: data.database === 'ok', detail: data.database === 'ok' ? 'Connected' : data.database },
+    {
+      label: 'Background job',
+      ok: timerOk && run?.ok !== false,
+      detail: !run
+        ? 'Hasn’t run yet. Check the every-minute timer.'
+        : `Last ran ${timeAgo(run.at)}${run.ok ? '' : ' with errors'}${timerOk ? '' : '. It should run every minute: check the timer.'}`,
+    },
+    { label: 'Call script on the phone agent', ok: data.agentScript.status === 'up to date', detail: data.agentScript.problem ?? data.agentScript.status },
+    { label: 'Calling', ok: data.settings.callProviderKey && !data.mockMode, detail: data.mockMode ? 'Demo mode: calls are simulated' : data.settings.callProviderKey ? 'Real calls on' : 'Key missing' },
+    { label: 'Payments', ok: data.settings.payments, detail: data.settings.payments ? 'Online payments on' : 'Key missing: plans can only be switched on by hand' },
+    { label: 'Email', ok: data.settings.email, detail: data.settings.email ? 'Sending' : 'Key missing: sign-up codes can’t be sent' },
+    { label: 'Admin password', ok: data.settings.adminPassword, detail: data.settings.adminPassword ? 'Set' : 'Missing' },
+    { label: 'Timer secret', ok: data.settings.cronSecret, detail: data.settings.cronSecret ? 'Set' : 'Missing: the every-minute job can’t be called' },
+  ]
+  const problems = checks.filter((c) => !c.ok).length
+
+  return (
+    <section className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-ink/10">
+      <div className={`px-5 py-4 sm:px-6 ${problems ? 'bg-bad-soft' : 'bg-good-soft'}`}>
+        <p className={`font-display text-xl font-bold ${problems ? 'text-bad' : 'text-good'}`}>
+          {problems ? `${problems} thing${problems === 1 ? '' : 's'} need${problems === 1 ? 's' : ''} attention` : 'Everything is working'}
+        </p>
+        <p className="text-sm text-ink-soft">Updates every 15 seconds. Setting values are never shown, only whether they’re present.</p>
+      </div>
+      <ul className="divide-y divide-line">
+        {checks.map((c) => (
+          <li key={c.label} className="flex items-start gap-3 px-5 py-3.5 sm:px-6">
+            <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${c.ok ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>
+              {c.ok ? <CheckIcon className="h-3 w-3" /> : <span className="text-xs font-bold">!</span>}
+            </span>
+            <div className="min-w-0">
+              <p className="font-semibold text-ink">{c.label}</p>
+              <p className="text-sm text-ink-muted">{c.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {run?.errors && run.errors.length > 0 && (
+        <div className="border-t border-line px-5 py-4 sm:px-6">
+          <p className="text-sm font-semibold text-bad">Last background run errors</p>
+          <ul className="mt-1 list-disc pl-5 text-sm text-ink-soft">
+            {run.errors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   )
 }

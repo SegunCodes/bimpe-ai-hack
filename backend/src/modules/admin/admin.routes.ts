@@ -8,6 +8,7 @@ import { asyncHandler, idParam } from "../../utils/http";
 import { grantPlan, planStatus } from "../businesses/access";
 import { documentFile, documentInfo, sendDocument } from "../onboarding/onboarding.service";
 import { emails } from "../../integrations/email";
+import { systemStatus } from "../status/status";
 import { businessesRepository } from "../businesses/businesses.repository";
 import { PLAN_DAYS, PLANS, isPlanId, type PlanId } from "../businesses/plans";
 import { ordersRepository } from "../orders/orders.repository";
@@ -78,6 +79,11 @@ adminRoutes.post("/capacity", asyncHandler(async (req, res) => {
   const { minutes } = z.object({ minutes: z.coerce.number().int().min(0).max(1_000_000) }).parse(req.body);
   await setMinuteBudget(minutes);
   res.json({ ok: true, minuteBudget: minutes });
+}));
+
+/** Detailed service health (what the public "/" used to show). */
+adminRoutes.get("/status", asyncHandler(async (_req, res) => {
+  res.json(await systemStatus());
 }));
 
 /** The business's CAC certificate, for review. */

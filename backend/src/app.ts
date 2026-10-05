@@ -1,26 +1,17 @@
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
-import { databaseSettingNames, env } from "./config/env";
+import { env } from "./config/env";
 import { ensureDatabase } from "./db/schema";
-import { one, pool } from "./db/pool";
 import { errorHandler } from "./middleware/errorHandler";
 import { runInBackground } from "./utils/background";
 import { devRoutes } from "./modules/dev/dev.routes";
 import { runTick, tickIsDue } from "./modules/tick/tick.service";
 import { tickRoutes } from "./modules/tick/tick.routes";
 import { webhooksRoutes } from "./modules/webhooks/webhooks.routes";
-import { agentSetupStatus } from "./modules/bimpeSetup/bimpeSetup.auto";
 import { apiRoutes } from "./routes";
+import { systemStatus } from "./modules/status/status";
 import { requireAdmin } from "./modules/auth/auth";
 import { paystackWebhookRoutes } from "./modules/billing/billing";
-
-/** When the background job last ran and whether every step worked (counts and error messages only). */
-async function lastTick(): Promise<unknown> {
-  const row = await one<{ value: string; updated_at: Date }>("SELECT value, updated_at FROM app_settings WHERE key = 'last_tick'");
-  if (!row) return null;
-  const summary = JSON.parse(row.value) as { errors?: string[] };
-  return { at: row.updated_at, ok: !summary.errors?.length, ...summary };
-}
 
 export function createApp(): express.Express {
   const app = express();
@@ -31,42 +22,11 @@ export function createApp(): express.Express {
   };
   app.get(["/health", "/api/health"], health);
 
-  // Deployment check: says whether settings are present and the database answers.
-  // Reports error *types* only, never URLs, hosts or passwords.
+  // Public check: just whether the service and its database are up. The detailed version
+  // (settings, background job, agent script) is only for the admin: GET /api/admin/status.
   app.get("/", async (_req: Request, res: Response) => {
-    let database = "not configured (set DATABASE_URL)";
-    if (env.databaseUrl) {
-      try {
-        await pool.query("SELECT 1");
-        await ensureDatabase();
-        database = "ok";
-      } catch (error) {
-        const code = (error as { code?: string }).code || "";
-        const reasons: Record<string, string> = {
-          ENOTFOUND: "host not found (check the connection string)",
-          ECONNREFUSED: "connection refused (check the connection string)",
-          ETIMEDOUT: "timed out reaching the database",
-          "28P01": "wrong username or password",
-          "3D000": "database name does not exist",
-          "28000": "access denied"
-        };
-        database = `error: ${reasons[code] || code || (error as Error).message.slice(0, 120)}`;
-      }
-    }
-    res.json({
-      ok: database === "ok",
-      service: "tellero-call-api",
-      database,
-      databaseSettingsFound: databaseSettingNames(),
-      mockMode: env.mockCalls,
-      cronSecretSet: Boolean(env.tick.cronSecret),
-      bimpeKeySet: Boolean(env.bimpe.apiKey),
-      adminPasswordSet: Boolean(env.admin.password),
-      paymentsSet: Boolean(env.paystack.secretKey),
-      emailSet: Boolean(env.email.resendApiKey),
-      agentScript: database === "ok" ? await agentSetupStatus().catch(() => ({ status: "unknown" })) : { status: "waiting for the database" },
-      lastBackgroundRun: database === "ok" ? await lastTick().catch(() => null) : null
-    });
+    const status = await systemStatus();
+    res.status(status.ok ? 200 : 503).json({ ok: status.ok });
   });
 
   // Tables are created on the first request an instance serves (cheap no-op afterwards).

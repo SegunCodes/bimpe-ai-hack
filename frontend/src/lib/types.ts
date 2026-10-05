@@ -185,6 +185,16 @@ export interface Capacity {
   minutesNeededForCredits: number
 }
 
+export interface SystemStatus {
+  ok: boolean
+  database: string
+  databaseSettingsFound: string[]
+  mockMode: boolean
+  settings: { cronSecret: boolean; callProviderKey: boolean; adminPassword: boolean; payments: boolean; email: boolean }
+  agentScript: { status: string; lastSentAt?: string | null; problem?: string }
+  lastBackgroundRun: { at: string; ok: boolean; errors?: string[]; scheduled?: number; dialled?: number; liveFinished?: number } | null
+}
+
 export interface AdminOverview {
   businesses: AdminBusiness[]
   calls: Call[]

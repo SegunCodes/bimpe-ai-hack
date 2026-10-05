@@ -4,7 +4,6 @@ import { motion } from 'motion/react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
-import { API_URL } from '../lib/api'
 import { useHealth } from '../hooks/useHealth'
 import { PhoneIcon, Wordmark } from './Icons'
 import { LoadingState } from './States'
@@ -187,7 +186,7 @@ function SignedInShell({ children }: { children: ReactNode }) {
 
       {checked && !online && (
         <div className="bg-bad px-4 py-3 text-center text-base font-semibold text-white">
-          Can&apos;t reach the backend at {API_URL}. Start the backend server, and this page will reconnect on its own.
+          Can&apos;t reach Tellero AI right now. Check your connection; this page reconnects on its own.
         </div>
       )}
 
