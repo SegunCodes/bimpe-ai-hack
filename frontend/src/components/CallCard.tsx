@@ -24,7 +24,7 @@ export function CallCard({ call, highlight }: { call: Call; highlight?: boolean 
     <article className={`rounded-3xl bg-white p-4 shadow-sm ring-1 ring-ink/10 sm:p-6 ${highlight ? 'animate-flash' : ''}`}>
       <header className="mb-4 flex flex-wrap items-center gap-2">
         <span className="rounded-lg bg-ink px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white">
-          {call.call_type === 'onboarding' ? 'Onboarding' : 'Delivery'}
+          {call.call_type === 'onboarding' ? 'Onboarding' : call.call_type === 'rider' ? `Rider${call.rider_name ? ` · ${call.rider_name}` : ''}` : 'Delivery'}
         </span>
         <StatusBadge status={call.status} />
         {call.outcome && <StatusBadge status={call.outcome} />}

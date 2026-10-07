@@ -12,6 +12,9 @@ import type {
   Order,
   OrderDetail,
   OrderRow,
+  CallSettings,
+  Rider,
+  RiderDelivery,
 } from './types'
 import { clearToken, getToken, type SessionKind } from './session'
 
@@ -104,6 +107,17 @@ export const api = {
   getOrder: (id: number) => request<OrderDetail>(`/orders/${id}`),
   callOrder: (id: number) => post<Call>(`/orders/${id}/call`),
   callAllPending: () => post<{ started: number }>('/orders/call-all-pending'),
+
+  listRiders: () => request<Rider[]>('/riders'),
+  createRider: (data: { name: string; phone: string }) => post<Rider>('/riders', data),
+  deleteRider: (id: number) => request<{ ok: true }>(`/riders/${id}`, { method: 'DELETE' }),
+  setOrderRider: (orderId: number, riderId: number | null) =>
+    request<OrderDetail>(`/orders/${orderId}/rider`, { method: 'PUT', body: JSON.stringify({ rider_id: riderId }) }),
+  callRider: (orderId: number) => post<Call>(`/orders/${orderId}/rider-call`),
+  callSettings: () => request<CallSettings>('/settings/calls'),
+  saveCallSettings: (data: { call_notes?: string; rider_calls?: boolean }) =>
+    request<CallSettings>('/settings/calls', { method: 'PATCH', body: JSON.stringify(data) }),
+  riderDelivery: (orderId: string, signature: string) => request<RiderDelivery>(`/public/rider/${orderId}/${signature}`),
 
   listCalls: () => request<Call[]>('/calls'),
   getCall: (id: number) => request<Call>(`/calls/${id}`),

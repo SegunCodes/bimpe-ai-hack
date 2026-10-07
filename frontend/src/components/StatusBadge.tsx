@@ -24,6 +24,8 @@ const STATUS: Record<string, Tone> = {
   new: 'waiting',
   called: 'waiting',
   verified: 'done',
+  // rider calls
+  briefed: 'done',
   // calls
   queued: 'waiting',
   initiated: 'live',

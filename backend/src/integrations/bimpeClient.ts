@@ -20,7 +20,8 @@ export interface ParsedWebhook {
 }
 
 function agentIdFor(callType: CallType): string {
-  const agentId = callType === "delivery"
+  // Rider calls are about a delivery, so they use the delivery agent.
+  const agentId = callType !== "onboarding"
     ? env.bimpe.deliveryAgentId || env.bimpe.agentId
     : env.bimpe.onboardingAgentId || env.bimpe.agentId;
   if (!agentId) throw new Error(`Missing BimpeAI agent ID for ${callType} calls`);

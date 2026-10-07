@@ -1,4 +1,4 @@
-import { CallType } from "../types/models";
+import { CustomerCallType as CallType } from "../types/models";
 
 /**
  * Reads a finished call's transcript without any AI service. Used when the agent did not

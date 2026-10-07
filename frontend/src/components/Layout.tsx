@@ -15,6 +15,7 @@ const tabs = [
   { href: '/dashboard', label: 'Orders' },
   { href: '/dashboard/customers', label: 'Customers' },
   { href: '/dashboard/calls', label: 'Calls' },
+  { href: '/dashboard/settings', label: 'Settings' },
   { href: '/dashboard/billing', label: 'Plan' },
 ]
 
@@ -148,14 +149,14 @@ function SignedInShell({ children }: { children: ReactNode }) {
             </div>
           </Link>
 
-          <nav className="order-last grid w-full grid-cols-4 gap-1 rounded-2xl bg-white/[0.06] p-1 sm:order-none sm:flex sm:w-auto sm:bg-transparent sm:p-0">
+          <nav className="order-last grid w-full grid-cols-5 gap-1 rounded-2xl bg-white/[0.06] p-1 sm:order-none sm:flex sm:w-auto sm:bg-transparent sm:p-0">
             {tabs.map((t) => {
               const active = t.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(t.href)
               return (
                 <Link
                   key={t.href}
                   href={t.href}
-                  className={`btn relative whitespace-nowrap rounded-xl px-0.5 py-2 text-center text-[13px] font-semibold tracking-[-0.01em] sm:px-4 sm:text-base ${
+                  className={`btn relative whitespace-nowrap rounded-xl px-0 py-2 text-center text-[12px] font-semibold tracking-[-0.01em] sm:px-4 sm:text-base ${
                     active ? 'text-ink' : 'text-white/70 hover:bg-white/10 hover:text-white'
                   }`}
                 >

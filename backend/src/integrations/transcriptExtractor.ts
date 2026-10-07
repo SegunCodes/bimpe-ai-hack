@@ -1,5 +1,5 @@
 import { env } from "../config/env";
-import { CallType } from "../types/models";
+import { CustomerCallType as CallType } from "../types/models";
 
 const INSTRUCTIONS: Record<CallType, string> = {
   delivery: `This is a transcript of a delivery-confirmation call. Return a JSON object with exactly these keys:

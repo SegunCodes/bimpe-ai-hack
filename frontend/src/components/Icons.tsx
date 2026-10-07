@@ -59,3 +59,11 @@ export const PinIcon = ({ className = 'h-4 w-4' }) => (
     <circle cx="12" cy="9.5" r="2.5" />
   </svg>
 )
+
+export const BikeIcon = ({ className = 'h-5 w-5' }) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden>
+    <circle cx="5.5" cy="17" r="3.5" />
+    <circle cx="18.5" cy="17" r="3.5" />
+    <path d="M5.5 17 9 9h5l4.5 8M9 9 7.5 6H5M14 9l1.5-3H18" />
+  </svg>
+)

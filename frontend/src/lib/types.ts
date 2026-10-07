@@ -47,6 +47,7 @@ export interface Order {
   reschedule_time: string | null
   outcome_notes: string | null
   attempts: number
+  rider_id: number | null
   created_at: string
   updated_at: string
 }
@@ -54,9 +55,14 @@ export interface Order {
 export interface Call {
   id: number
   business_id: number
-  call_type: 'delivery' | 'onboarding'
+  call_type: 'delivery' | 'onboarding' | 'rider'
   customer_id: number | null
   order_id: number | null
+  /** Rider calls: who was called and about which order (order_id stays null). */
+  rider_id?: number | null
+  rider_order_id?: number | null
+  rider_name?: string | null
+  rider_phone?: string | null
   provider_call_id: string | null
   status: string
   outcome: string | null
@@ -68,8 +74,41 @@ export interface Call {
   updated_at: string
 }
 
-export type OrderRow = Order & { customer_name: string; customer_phone: string }
-export type OrderDetail = OrderRow & { calls: Call[] }
+export type OrderRow = Order & { customer_name: string; customer_phone: string; rider_name: string | null; rider_phone: string | null }
+/** rider_link is relative (/r/…); the page lives on this site. */
+export type OrderDetail = OrderRow & { calls: Call[]; rider_calls: Call[]; rider_link: string | null }
+
+export interface Rider {
+  id: number
+  name: string
+  phone: string
+  /** Orders still in play that name this rider */
+  open_orders?: number
+  created_at: string
+}
+
+export interface CallSettings {
+  callNotes: string
+  riderCalls: boolean
+}
+
+/** What /r/[order]/[signature] shows a rider. */
+export interface RiderDelivery {
+  business: { name: string; logoUrl: string | null }
+  order: {
+    id: number
+    item: string
+    status: string
+    customerName: string
+    customerPhone: string
+    address: string
+    landmark: string | null
+    deliveryWindow: string
+    deliveryAt: string | null
+    rescheduleTime: string | null
+  }
+  riderName: string | null
+}
 export type CustomerDetail = Customer & { calls: Call[] }
 
 export interface Health {
@@ -88,12 +127,14 @@ export interface NewCustomer {
 export interface NewOrder {
   customer_id: number
   item: string
-  seller: string
+  /** Optional: the business's own name is used when empty */
+  seller?: string
   address_on_file: string
   delivery_window: string
   delivery_at: string
   call_at: string
   call_plan: string
+  rider_id?: number | null
 }
 
 export interface PlanStatus {

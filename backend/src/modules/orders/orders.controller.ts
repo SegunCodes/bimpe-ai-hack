@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { idParam } from "../../utils/http";
 import { businessIdOf } from "../auth/auth";
-import { bulkOrdersSchema, createOrderSchema } from "./orders.schema";
+import { bulkOrdersSchema, createOrderSchema, setRiderSchema } from "./orders.schema";
 import { ordersService } from "./orders.service";
 
 export const ordersController = {
@@ -20,6 +20,13 @@ export const ordersController = {
   },
   startCall: async (req: Request, res: Response): Promise<void> => {
     res.status(201).json(await ordersService.startDeliveryCall(businessIdOf(req), idParam(req)));
+  },
+  setRider: async (req: Request, res: Response): Promise<void> => {
+    await ordersService.setRider(businessIdOf(req), idParam(req), setRiderSchema.parse(req.body).rider_id);
+    res.json(await ordersService.getWithCalls(businessIdOf(req), idParam(req)));
+  },
+  callRider: async (req: Request, res: Response): Promise<void> => {
+    res.status(201).json(await ordersService.callRider(businessIdOf(req), idParam(req)));
   },
   callAllPending: async (req: Request, res: Response): Promise<void> => {
     res.json(await ordersService.callAllPending(businessIdOf(req)));

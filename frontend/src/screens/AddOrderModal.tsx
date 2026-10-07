@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../lib/api'
 import { formatPhone, toE164 } from '../lib/phone'
@@ -13,7 +14,7 @@ import {
   friendlyWhen,
   lagosToDate,
 } from '../lib/schedule'
-import type { Customer } from '../lib/types'
+import type { Customer, Rider } from '../lib/types'
 import { useToast } from '../components/Toast'
 import { PhoneIcon } from '../components/Icons'
 import { Button } from '../components/Button'
@@ -27,7 +28,8 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('+234 ')
   const [item, setItem] = useState('')
-  const [seller, setSeller] = useState('')
+  const [riders, setRiders] = useState<Rider[] | null>(null)
+  const [riderId, setRiderId] = useState('')
   const [address, setAddress] = useState('')
   const [deliveryDate, setDeliveryDate] = useState(() => defaultDelivery().date)
   const [slotId, setSlotId] = useState(() => defaultDelivery().slot)
@@ -46,6 +48,10 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
         setCustomers([])
         setMode('new')
       })
+    api
+      .listRiders()
+      .then(setRiders)
+      .catch(() => setRiders([]))
   }, [])
 
   // Pre-fill the address from the customer's profile when picking an existing customer
@@ -63,7 +69,7 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setFormError(null)
-    if (!item.trim() || !seller.trim() || !address.trim()) return setFormError('Item, seller and address are required.')
+    if (!item.trim() || !address.trim()) return setFormError('Item and address are required.')
     if (!deliveryAt || !schedule) return setFormError('Pick a delivery date.')
     if (deliveryAt.getTime() < Date.now() - 60 * 60 * 1000) return setFormError('That delivery time is in the past.')
 
@@ -92,12 +98,12 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
       await api.createOrder({
         customer_id: cid,
         item: item.trim(),
-        seller: seller.trim(),
         address_on_file: address.trim(),
         delivery_window: deliveryWindowText(deliveryAt, slot.label),
         delivery_at: deliveryAt.toISOString(),
         call_at: callAt.toISOString(),
         call_plan: plan,
+        rider_id: riderId ? Number(riderId) : null,
       })
       toast.success(`Order added. Tellero AI will call ${plan === 'now' ? 'right away' : friendlyWhen(callAt)}`)
       onCreated()
@@ -148,8 +154,24 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
           <Field label="Item">
             <input className={inputClass} value={item} onChange={(e) => setItem(e.target.value)} placeholder="Bluetooth speaker" />
           </Field>
-          <Field label="Seller">
-            <input className={inputClass} value={seller} onChange={(e) => setSeller(e.target.value)} placeholder="Jumia" />
+          <Field label="Rider (optional)">
+            <select className={inputClass} value={riderId} onChange={(e) => setRiderId(e.target.value)} disabled={riders === null}>
+              <option value="">{riders === null ? 'Loading riders…' : riders.length === 0 ? 'No riders yet' : 'Choose later'}</option>
+              {riders?.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+            {riders?.length === 0 && (
+              <span className="mt-1 block text-sm text-ink-muted">
+                Add riders in{' '}
+                <Link href="/dashboard/settings" className="font-semibold text-ink underline underline-offset-4">
+                  Settings
+                </Link>
+                .
+              </span>
+            )}
           </Field>
         </div>
         <Field label="Delivery address">
@@ -194,6 +216,11 @@ export function AddOrderModal({ onClose, onCreated }: { onClose: () => void; onC
                 <span className="font-bold">{plan === 'now' || schedule.late ? 'right away' : friendlyWhen(schedule.callAt)}</span>
                 {schedule.late && plan !== 'now' && <span className="block text-sm">(that time has already passed)</span>}
                 <span className="block text-sm text-ink-soft">If they don't pick up, it tries again twice, 30 minutes apart.</span>
+                {riderId && (
+                  <span className="block text-sm text-ink-soft">
+                    Once they confirm, {riders?.find((r) => String(r.id) === riderId)?.name ?? 'the rider'} gets the details.
+                  </span>
+                )}
               </p>
             )}
           </div>

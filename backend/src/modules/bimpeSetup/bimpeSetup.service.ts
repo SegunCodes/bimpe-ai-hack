@@ -26,7 +26,7 @@ async function bimpe<T>(method: string, path: string, body?: unknown): Promise<T
 
 const CONTEXT_TOOL = {
   name: TOOL_NAMES.context,
-  description: "Call this first on every call. Returns the call_id, call type, customer name, preferred language and, for deliveries, the item, seller, address on file and delivery window.",
+  description: "Call this before saying anything on every call. Returns opening_line (your exact first words), call_id, call_type, business_name, about_business, and the customer, order or rider details.",
   http_method: "GET",
   url_template: "/context?phone={{phone}}",
   url_params: [{ name: "phone", type: "string", description: "The number you are calling, E.164 format e.g. +2348031234567. Leave empty if unknown.", required: false }],
@@ -40,7 +40,7 @@ const RESULT_TOOL = {
   url_template: "/result",
   body_params: [
     { name: "call_id", type: "integer", description: "call_id from Get call context", required: false },
-    { name: "outcome", type: "string", description: "confirmed, address_updated, rescheduled, failed (delivery) or verified (onboarding)", required: true },
+    { name: "outcome", type: "string", description: "confirmed, address_updated, rescheduled, failed (delivery), verified (onboarding) or briefed (rider)", required: true },
     { name: "cleaned_address", type: "string", description: "Full street address with house number and area", required: false },
     { name: "landmark", type: "string", description: "A landmark a rider can see", required: false },
     { name: "reschedule_time", type: "string", description: "New delivery day and time if rescheduled", required: false },
@@ -113,6 +113,16 @@ export async function runBimpeSetup(publicBaseUrl: string): Promise<{ ok: boolea
       // 2. The script
       await bimpe("PATCH", `/workflows/${encodeURIComponent(workflowId as string)}`, { system_prompt: TELLERO_SYSTEM_PROMPT });
       record("wrote the Tellero AI call script", true);
+
+      // 2b. A copied template can bring its own canned flows and rules (such as an inbound
+      // "How can I help you today?" greeting). Clear them so only our script decides what is said.
+      try {
+        await bimpe("PATCH", `/workflows/${encodeURIComponent(workflowId as string)}`, { flows: [], rules: [] });
+        record("cleared template greetings and flows", true);
+      } catch (error) {
+        // Not fatal: the script still tells the agent how to open.
+        steps.push({ step: "clear template greetings and flows", ok: true, detail: `skipped: ${(error as Error).message}` });
+      }
 
       // 3. Business profile
       await bimpe("PATCH", a, AGENT_PROFILE);

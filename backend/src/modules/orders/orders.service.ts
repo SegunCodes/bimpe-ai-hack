@@ -2,7 +2,9 @@ import { Call, Order, OrderWithCustomer } from "../../types/models";
 import { badRequest, notFound } from "../../utils/errors";
 import { customersRepository } from "../customers/customers.repository";
 import { callsRepository } from "../calls/calls.repository";
-import { createCall } from "../calls/calls.service";
+import { createCall, createRiderCall } from "../calls/calls.service";
+import { businessesRepository } from "../businesses/businesses.repository";
+import { ridersRepository, riderLinkPath } from "../riders/riders";
 import { ordersRepository } from "./orders.repository";
 import { CreateOrderInput } from "./orders.schema";
 
@@ -12,7 +14,9 @@ export const ordersService = {
   async create(businessId: number, input: CreateOrderInput): Promise<Order> {
     // A business can only add orders for its own customers.
     if (!(await customersRepository.findOwned(input.customer_id, businessId))) throw badRequest("That customer isn't in your list");
-    const id = await ordersRepository.insert(businessId, input);
+    if (input.rider_id && !(await ridersRepository.findOwned(input.rider_id, businessId))) throw badRequest("That rider isn't in your list");
+    const business = await businessesRepository.findById(businessId);
+    const id = await ordersRepository.insert(businessId, { ...input, seller: input.seller?.trim() || business?.name || "" });
     return (await ordersRepository.findById(id)) as Order;
   },
 
@@ -22,11 +26,23 @@ export const ordersService = {
     return created;
   },
 
-  async getWithCalls(businessId: number, id: number): Promise<OrderWithCustomer & { calls: Call[] }> {
+  async getWithCalls(businessId: number, id: number): Promise<OrderWithCustomer & { calls: Call[]; rider_calls: Call[]; rider_link: string | null }> {
     const order = await ordersRepository.findByIdWithCustomer(id, businessId);
     if (!order) throw notFound("Order");
     const calls = await callsRepository.findByOrder(order.id);
-    return { ...order, calls };
+    const riderCalls = await callsRepository.findRiderCalls(order.id);
+    return { ...order, calls, rider_calls: riderCalls, rider_link: order.rider_id === null ? null : riderLinkPath(order.id, order.rider_id) };
+  },
+
+  async setRider(businessId: number, id: number, riderId: number | null): Promise<void> {
+    if (!(await ordersRepository.findOwned(id, businessId))) throw notFound("Order");
+    if (riderId !== null && !(await ridersRepository.findOwned(riderId, businessId))) throw badRequest("That rider isn't in your list");
+    await ordersRepository.setRider(id, riderId);
+  },
+
+  async callRider(businessId: number, id: number): Promise<Call> {
+    if (!(await ordersRepository.findOwned(id, businessId))) throw notFound("Order");
+    return createRiderCall(id);
   },
 
   async startDeliveryCall(businessId: number, id: number): Promise<Call> {

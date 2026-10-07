@@ -4,8 +4,8 @@ import { Order, OrderWithCustomer } from "../../types/models";
 import { CreateOrderInput } from "./orders.schema";
 import { CAN_CALL_SQL } from "../businesses/access";
 
-const WITH_CUSTOMER = `SELECT o.*, c.name AS customer_name, c.phone AS customer_phone
-  FROM orders o JOIN customers c ON c.id = o.customer_id`;
+const WITH_CUSTOMER = `SELECT o.*, c.name AS customer_name, c.phone AS customer_phone, r.name AS rider_name, r.phone AS rider_phone
+  FROM orders o JOIN customers c ON c.id = o.customer_id LEFT JOIN riders r ON r.id = o.rider_id`;
 
 /** Scheduling DATETIMEs leave the API as ISO 8601 UTC strings. */
 function serialize<T extends Order | undefined>(order: T): T {
@@ -30,12 +30,12 @@ export const ordersRepository = {
   findPending: (businessId: number) =>
     rows<{ id: number; customer_id: number }>("SELECT id, customer_id FROM orders WHERE status = 'pending' AND business_id = ? ORDER BY id", [businessId]),
 
-  async insert(businessId: number, input: CreateOrderInput): Promise<number> {
+  async insert(businessId: number, input: CreateOrderInput & { seller: string }): Promise<number> {
     // An order with a call time waits for the scheduler; one without stays pending for a manual call.
     const callAt = input.call_at ? toDbUtc(new Date(input.call_at)) : null;
     const result = await run(
-      `INSERT INTO orders (business_id, customer_id, item, seller, address_on_file, delivery_window, delivery_at, call_at, call_plan, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (business_id, customer_id, item, seller, address_on_file, delivery_window, delivery_at, call_at, call_plan, status, rider_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         businessId,
         input.customer_id,
@@ -46,10 +46,15 @@ export const ordersRepository = {
         input.delivery_at ? toDbUtc(new Date(input.delivery_at)) : null,
         callAt,
         input.call_plan ?? null,
-        callAt ? "scheduled" : "pending"
+        callAt ? "scheduled" : "pending",
+        input.rider_id ?? null
       ]
     );
     return result.insertId;
+  },
+
+  setRider: async (id: number, riderId: number | null): Promise<void> => {
+    await run("UPDATE orders SET rider_id = ? WHERE id = ?", [riderId, id]);
   },
 
   /** Clears call_at so a manual "Call now" also cancels any pending scheduled call. */

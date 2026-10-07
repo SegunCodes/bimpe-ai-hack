@@ -102,7 +102,8 @@ export function computeStats(
 ): Stats {
   const from = rangeStart(range, now)
   const inRange = <T extends { created_at: string }>(items: T[]) => items.filter((i) => time(i.created_at) >= from)
-  const rangeCalls = inRange(calls)
+  // Customer numbers only: rider briefings are calls to the business's own riders.
+  const rangeCalls = inRange(calls.filter((c) => c.call_type !== 'rider'))
   const rangeOrders = inRange(orders)
   const results = new Map(rangeCalls.map((c) => [c.id, classifyCall(c)]))
   const count = (r: CallResult) => [...results.values()].filter((x) => x === r).length

@@ -16,7 +16,9 @@ export interface DispatchInfo {
 }
 
 export const callsRepository = {
-  findAll: (businessId: number) => rows<Call>("SELECT * FROM calls WHERE business_id = ? ORDER BY created_at DESC, id DESC", [businessId]),
+  findAll: (businessId: number) => rows<Call & { rider_name: string | null; rider_phone: string | null }>(
+    `SELECT c.*, r.name AS rider_name, r.phone AS rider_phone FROM calls c LEFT JOIN riders r ON r.id = c.rider_id
+     WHERE c.business_id = ? ORDER BY c.created_at DESC, c.id DESC`, [businessId]),
 
   /** Unscoped: for background work and the agent's tools. */
   findById: (id: number) => one<Call>("SELECT * FROM calls WHERE id = ?", [id]),
@@ -25,23 +27,41 @@ export const callsRepository = {
 
   findByProviderId: (providerCallId: string) => one<Call>("SELECT * FROM calls WHERE provider_call_id = ?", [providerCallId]),
 
-  findByCustomer: (customerId: number) => rows<Call>("SELECT * FROM calls WHERE customer_id = ? ORDER BY created_at DESC, id DESC", [customerId]),
+  /** The customer's own calls (rider calls about their orders are left out). */
+  findByCustomer: (customerId: number) =>
+    rows<Call>("SELECT * FROM calls WHERE customer_id = ? AND call_type <> 'rider' ORDER BY created_at DESC, id DESC", [customerId]),
+
+  findRiderCalls: (orderId: number) =>
+    rows<Call & { rider_name: string | null }>(
+      `SELECT c.*, r.name AS rider_name FROM calls c LEFT JOIN riders r ON r.id = c.rider_id
+       WHERE c.rider_order_id = ? ORDER BY c.created_at DESC, c.id DESC`, [orderId]),
 
   findByOrder: (orderId: number) => rows<Call>("SELECT * FROM calls WHERE order_id = ? ORDER BY created_at DESC, id DESC", [orderId]),
 
-  async insert(businessId: number, callType: CallType, customerId: number, orderId: number | null, creditCharged: boolean): Promise<number> {
+  async insert(
+    businessId: number,
+    callType: CallType,
+    customerId: number,
+    orderId: number | null,
+    creditCharged: boolean,
+    rider?: { riderId: number; orderId: number }
+  ): Promise<number> {
     const result = await run(
-      "INSERT INTO calls (business_id, call_type, customer_id, order_id, status, credit_charged) VALUES (?, ?, ?, ?, 'queued', ?)",
-      [businessId, callType, customerId, orderId, creditCharged]
+      `INSERT INTO calls (business_id, call_type, customer_id, order_id, status, credit_charged, rider_id, rider_order_id)
+       VALUES (?, ?, ?, ?, 'queued', ?, ?, ?)`,
+      [businessId, callType, customerId, orderId, creditCharged, rider?.riderId ?? null, rider?.orderId ?? null]
     );
     return result.insertId;
   },
 
+  /** For a rider call, phone is the rider's: that is who gets dialled. */
   findDispatchInfo: (callId: number) => one<DispatchInfo>(`SELECT c.id, c.call_type, c.customer_id, c.order_id,
-      cu.phone, cu.language, cu.name AS customer_name, o.item, o.seller,
-      o.address_on_file, o.delivery_window
+      CASE WHEN c.call_type = 'rider' THEN r.phone ELSE cu.phone END AS phone,
+      CASE WHEN c.call_type = 'rider' THEN 'en' ELSE cu.language END AS language,
+      cu.name AS customer_name, o.item, o.seller, o.address_on_file, o.delivery_window
     FROM calls c JOIN customers cu ON cu.id = c.customer_id
-    LEFT JOIN orders o ON o.id = c.order_id
+    LEFT JOIN riders r ON r.id = c.rider_id
+    LEFT JOIN orders o ON o.id = COALESCE(c.order_id, c.rider_order_id)
     WHERE c.id = ?`, [callId]),
 
   /** Oldest calls still waiting to be dialled. */
@@ -85,9 +105,10 @@ export const callsRepository = {
   /** The call the agent is most likely on: the customer's active call, else the most recent active call. */
   findActiveForAgent: (phone: string | null) =>
     one<Call & { phone: string }>(
-      `SELECT c.*, cu.phone FROM calls c JOIN customers cu ON cu.id = c.customer_id
+      `SELECT c.*, CASE WHEN c.call_type = 'rider' THEN r.phone ELSE cu.phone END AS phone
+       FROM calls c JOIN customers cu ON cu.id = c.customer_id LEFT JOIN riders r ON r.id = c.rider_id
        WHERE c.status IN ('queued','in_progress') AND c.created_at > now() - interval '30 minutes'
-       ${phone ? "AND cu.phone = ?" : ""}
+       ${phone ? "AND (CASE WHEN c.call_type = 'rider' THEN r.phone ELSE cu.phone END) = ?" : ""}
        ORDER BY (c.status = 'in_progress') DESC, c.created_at DESC, c.id DESC LIMIT 1`,
       phone ? [phone] : []
     ),
@@ -116,7 +137,7 @@ export const callsRepository = {
   /** Returns false if the call was not in progress (already completed: idempotency guard). */
   /** Calls flagged "result could not be determined" that have not been re-read yet. */
   findUndetermined: (limit: number) =>
-    rows<Call>(`SELECT * FROM calls WHERE status = 'failed' AND transcript IS NOT NULL
+    rows<Call>(`SELECT * FROM calls WHERE status = 'failed' AND call_type <> 'rider' AND transcript IS NOT NULL
       AND extracted_json LIKE '%could not be determined%' AND extracted_json NOT LIKE '%"rechecked"%'
       ORDER BY id DESC LIMIT ?`, [limit]),
 

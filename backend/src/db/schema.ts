@@ -199,7 +199,35 @@ async function createTables(db: PoolClient): Promise<void> {
   // A payment is either a monthly plan or a top-up pack of extra calls.
   await db.query("ALTER TABLE payments ADD COLUMN IF NOT EXISTS kind VARCHAR(10) NOT NULL DEFAULT 'plan'");
 
+  // What the AI may tell customers about the business (opening hours, delivery fee, returns...).
+  await db.query("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS call_notes TEXT NULL");
+  // Whether a rider gets an automatic call once the customer confirms (the rider link always works).
+  await db.query("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS rider_calls BOOLEAN NOT NULL DEFAULT true");
+
+  // A business's delivery riders. An order can name one; they hear the confirmed details.
+  await db.query(`CREATE TABLE IF NOT EXISTS riders (
+    id SERIAL PRIMARY KEY,
+    business_id INT NOT NULL REFERENCES businesses(id),
+    name VARCHAR(160) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (business_id, phone)
+  )`);
+  await db.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS rider_id INT NULL REFERENCES riders(id) ON DELETE SET NULL");
+  // Rider calls keep order_id NULL (so they never touch the order's own call logic) and point here instead.
+  await db.query("ALTER TABLE calls ADD COLUMN IF NOT EXISTS rider_id INT NULL REFERENCES riders(id) ON DELETE SET NULL");
+  await db.query("ALTER TABLE calls ADD COLUMN IF NOT EXISTS rider_order_id INT NULL REFERENCES orders(id)");
+  const callTypeCheck = await db.query(
+    "SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conname = 'calls_call_type_check'"
+  );
+  if (!String(callTypeCheck.rows[0]?.def ?? "").includes("rider")) {
+    await db.query("ALTER TABLE calls DROP CONSTRAINT IF EXISTS calls_call_type_check");
+    await db.query("ALTER TABLE calls ADD CONSTRAINT calls_call_type_check CHECK (call_type IN ('delivery','onboarding','rider'))");
+  }
+
   await db.query("CREATE INDEX IF NOT EXISTS idx_customers_business ON customers (business_id)");
+  await db.query("CREATE INDEX IF NOT EXISTS idx_riders_business ON riders (business_id)");
+  await db.query("CREATE INDEX IF NOT EXISTS idx_calls_rider_order ON calls (rider_order_id)");
   await db.query("CREATE INDEX IF NOT EXISTS idx_orders_business ON orders (business_id, created_at)");
   await db.query("CREATE INDEX IF NOT EXISTS idx_calls_business ON calls (business_id, created_at)");
 

@@ -9,3 +9,5 @@ ordersRoutes.post("/bulk", asyncHandler(c.createBulk));
 ordersRoutes.post("/call-all-pending", asyncHandler(c.callAllPending));
 ordersRoutes.get("/:id", asyncHandler(c.get));
 ordersRoutes.post("/:id/call", asyncHandler(c.startCall));
+ordersRoutes.put("/:id/rider", asyncHandler(c.setRider));
+ordersRoutes.post("/:id/rider-call", asyncHandler(c.callRider));

@@ -1,4 +1,7 @@
-export type CallType = "delivery" | "onboarding";
+/** Calls to a customer. */
+export type CustomerCallType = "delivery" | "onboarding";
+/** A rider call tells the order's rider the details the customer just confirmed. */
+export type CallType = CustomerCallType | "rider";
 
 export interface Customer {
   id: number;
@@ -35,11 +38,20 @@ export interface Order {
   reschedule_time: string | null;
   outcome_notes: string | null;
   attempts: number;
+  rider_id: number | null;
   created_at: Date;
   updated_at: Date;
 }
 
-export type OrderWithCustomer = Order & { customer_name: string; customer_phone: string };
+export interface Rider {
+  id: number;
+  business_id: number;
+  name: string;
+  phone: string;
+  created_at: Date;
+}
+
+export type OrderWithCustomer = Order & { customer_name: string; customer_phone: string; rider_name: string | null; rider_phone: string | null };
 
 export interface Call {
   id: number;
@@ -47,6 +59,9 @@ export interface Call {
   call_type: CallType;
   customer_id: number;
   order_id: number | null;
+  /** Rider calls only: who was called, and about which order (order_id stays null). */
+  rider_id: number | null;
+  rider_order_id: number | null;
   provider_call_id: string | null;
   status: string;
   outcome: string | null;

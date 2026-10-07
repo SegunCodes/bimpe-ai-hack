@@ -8,7 +8,7 @@ import { formatPhone } from '../lib/phone'
 import type { Call } from '../lib/types'
 import { usePolling } from '../hooks/usePolling'
 import { useChangedIds } from '../hooks/useChangedIds'
-import { BoxIcon, UserPlusIcon } from './Icons'
+import { BikeIcon, BoxIcon, UserPlusIcon } from './Icons'
 import { CallCard } from './CallCard'
 import { EASE_IN_OUT, EASE_OUT, Modal } from './Overlay'
 import { StatusBadge } from './StatusBadge'
@@ -55,8 +55,11 @@ export function LiveFeed({ compact, limit }: { compact?: boolean; limit?: number
           {/* initial={false}: no entrance on page load, only for calls that arrive while watching */}
           <AnimatePresence initial={false}>
           {calls.map((call) => {
-            const who = call.customer_id ? data.names[call.customer_id] : undefined
-            const item = call.order_id ? data.items[call.order_id] : undefined
+            const rider = call.call_type === 'rider'
+            const customer = call.customer_id ? data.names[call.customer_id] : undefined
+            // A rider call is listed under the rider, about the customer's order.
+            const who = rider ? (call.rider_name ? { name: call.rider_name, phone: call.rider_phone ?? '' } : undefined) : customer
+            const item = (call.order_id ?? call.rider_order_id) ? data.items[(call.order_id ?? call.rider_order_id)!] : undefined
             const active = isActiveCall(call.status)
             return (
               <motion.li
@@ -80,14 +83,20 @@ export function LiveFeed({ compact, limit }: { compact?: boolean; limit?: number
                   >
                     {call.call_type === 'onboarding' ? (
                       <UserPlusIcon className={compact ? 'h-5 w-5' : 'h-5 w-5 sm:h-7 sm:w-7'} />
+                    ) : rider ? (
+                      <BikeIcon className={compact ? 'h-5 w-5' : 'h-5 w-5 sm:h-7 sm:w-7'} />
                     ) : (
                       <BoxIcon className={compact ? 'h-5 w-5' : 'h-5 w-5 sm:h-7 sm:w-7'} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className={`truncate font-bold ${compact ? 'text-base' : 'text-base sm:text-xl'}`}>{who?.name ?? 'Unknown customer'}</div>
+                    <div className={`truncate font-bold ${compact ? 'text-base' : 'text-base sm:text-xl'}`}>{who?.name ?? (rider ? 'Removed rider' : 'Unknown customer')}</div>
                     <div className={`truncate text-ink-muted ${compact ? 'text-xs' : 'text-sm sm:text-base'}`}>
-                      {call.call_type === 'onboarding' ? 'Onboarding' : `Delivery${item ? ` · ${item}` : ''}`}
+                      {call.call_type === 'onboarding'
+                        ? 'Onboarding'
+                        : rider
+                          ? `Rider briefing${customer ? ` · for ${customer.name.split(' ')[0]}` : ''}`
+                          : `Delivery${item ? ` · ${item}` : ''}`}
                       {!compact && who && ` · ${formatPhone(who.phone)}`}
                     </div>
                   </div>

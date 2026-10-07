@@ -20,8 +20,11 @@ export async function simulateMockResult(callId: number, requestedOutcome?: stri
   const call = await callsRepository.findById(callId);
   if (!call || call.status !== "in_progress") return;
 
-  const outcome = requestedOutcome || RANDOM_OUTCOMES[Math.floor(Math.random() * RANDOM_OUTCOMES.length)];
-  const extracted = call.call_type === "delivery"
+  const choices = call.call_type === "rider" ? ["briefed", "briefed", "no_answer"] : RANDOM_OUTCOMES;
+  const outcome = requestedOutcome || choices[Math.floor(Math.random() * choices.length)];
+  const extracted = call.call_type === "rider"
+    ? { outcome }
+    : call.call_type === "delivery"
     ? {
         outcome,
         cleaned_address: "12 Admiralty Way, Lekki Phase 1, Lagos",

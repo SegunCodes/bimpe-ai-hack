@@ -19,6 +19,10 @@ export interface Business {
   verification_status: "none" | "pending" | "approved" | "rejected";
   verification_note: string | null;
   verification_updated_at: Date | null;
+  /** What the AI may tell customers about the business. */
+  call_notes: string | null;
+  /** Call the order's rider automatically once the customer confirms. */
+  rider_calls: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -44,6 +48,11 @@ export const businessesRepository = {
     return result.insertId;
   },
 
+  setCallSettings: async (id: number, settings: { callNotes?: string | null; riderCalls?: boolean }): Promise<void> => {
+    if (settings.callNotes !== undefined) await run("UPDATE businesses SET call_notes = ? WHERE id = ?", [settings.callNotes, id]);
+    if (settings.riderCalls !== undefined) await run("UPDATE businesses SET rider_calls = ? WHERE id = ?", [settings.riderCalls, id]);
+  },
+
   setSuspended: async (id: number, suspended: boolean, reason: string | null): Promise<void> => {
     if (suspended) await run("UPDATE businesses SET suspended_at = now(), suspended_reason = ? WHERE id = ?", [reason, id]);
     else await run("UPDATE businesses SET suspended_at = NULL, suspended_reason = NULL WHERE id = ?", [id]);
@@ -59,6 +68,7 @@ export const businessesRepository = {
       await db.query("DELETE FROM calls WHERE business_id = $1", [id]);
       await db.query("DELETE FROM orders WHERE business_id = $1", [id]);
       await db.query("DELETE FROM customers WHERE business_id = $1", [id]);
+      await db.query("DELETE FROM riders WHERE business_id = $1", [id]);
       await db.query("DELETE FROM business_documents WHERE business_id = $1", [id]);
       await db.query("DELETE FROM business_logos WHERE business_id = $1", [id]);
       await db.query("DELETE FROM email_codes WHERE business_id = $1", [id]);

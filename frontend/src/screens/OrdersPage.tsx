@@ -179,7 +179,7 @@ export function OrdersPage() {
                       <div className="min-w-0 text-[15px] text-ink">
                         {o.item}
                         <span className="block truncate text-sm text-ink-muted">
-                          {o.seller} · {o.cleaned_address || o.address_on_file || 'no address'}
+                          {o.rider_name ? `Rider: ${o.rider_name} · ` : ''}{o.cleaned_address || o.address_on_file || 'no address'}
                         </span>
                       </div>
                       <div className="flex w-full flex-wrap items-end justify-between gap-x-4 gap-y-1 rounded-2xl bg-paper px-3 py-2.5">
@@ -228,7 +228,7 @@ export function OrdersPage() {
                           <td className="max-w-[220px] px-3 py-4">
                             <div className="text-base">{o.item}</div>
                             <div className="truncate text-sm text-ink-muted" title={o.cleaned_address || o.address_on_file || ''}>
-                              {o.seller} · {o.cleaned_address || o.address_on_file || 'no address'}
+                              {o.rider_name ? `Rider: ${o.rider_name} · ` : ''}{o.cleaned_address || o.address_on_file || 'no address'}
                             </div>
                           </td>
                           <td className="px-3 py-4">

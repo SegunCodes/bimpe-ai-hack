@@ -9,6 +9,7 @@ import { bimpeSetupRoutes } from "./modules/bimpeSetup/bimpeSetup.routes";
 import { callsRoutes } from "./modules/calls/calls.routes";
 import { customersRoutes } from "./modules/customers/customers.routes";
 import { ordersRoutes } from "./modules/orders/orders.routes";
+import { callSettingsRoutes, riderLinkRoutes, ridersRoutes } from "./modules/riders/riders";
 import { signupRoutes } from "./modules/signup/signup.routes";
 
 export const apiRoutes = Router();
@@ -19,12 +20,16 @@ apiRoutes.use("/auth", authRoutes);
 apiRoutes.use("/customers", requireBusiness, customersRoutes);
 apiRoutes.use("/orders", requireBusiness, ordersRoutes);
 apiRoutes.use("/calls", requireBusiness, callsRoutes);
+apiRoutes.use("/riders", requireBusiness, ridersRoutes);
+apiRoutes.use("/settings", requireBusiness, callSettingsRoutes);
 apiRoutes.use("/billing", billingRoutes);
 // Confirm email and upload the CAC certificate.
 apiRoutes.use("/onboarding", onboardingRoutes);
 
 // The website's "Call me" form and /join (Tellero AI's own account).
 apiRoutes.use("/public", signupRoutes);
+// The rider's delivery page (signed link, no sign-in).
+apiRoutes.use("/public", riderLinkRoutes);
 
 // Used by BimpeAI's agent during calls (its own secret).
 apiRoutes.use("/agent-context", requireAgentToolSecret, agentContextRoutes);

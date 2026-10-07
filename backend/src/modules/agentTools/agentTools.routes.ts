@@ -6,6 +6,7 @@ import { asyncHandler } from "../../utils/http";
 import { normalizePhone } from "../../utils/phone";
 import { callsRepository } from "../calls/calls.repository";
 import { agentContextRepository } from "../agentContext/agentContext.repository";
+import { callBriefing } from "../agentContext/callBriefing";
 
 /**
  * Tools BimpeAI's agent calls DURING a phone call (registered by /api/admin/bimpe-setup):
@@ -18,8 +19,6 @@ export function requireAgentToolSecret(req: Request, _res: Response, next: NextF
   if ((req.headers.authorization || "") !== `Bearer ${env.agentTools.secret}`) return next(forbidden("Invalid agent tool token"));
   next();
 }
-
-const LANGUAGE_NAMES: Record<string, string> = { en: "English", pcm: "Nigerian Pidgin", yo: "Yoruba", ha: "Hausa", ig: "Igbo" };
 
 function phoneFrom(value: unknown): string | null {
   if (typeof value !== "string" || !value.trim()) return null;
@@ -34,28 +33,9 @@ agentToolsRoutes.get("/context", asyncHandler(async (req, res) => {
   // If the agent could not pass the number (or passed it oddly), fall back to the latest active call.
   const call = (phone && (await callsRepository.findActiveForAgent(phone))) || (await callsRepository.findActiveForAgent(null));
   if (!call) throw notFound("Active call");
-  const context = (await agentContextRepository.findByCallId(String(call.id))) as Record<string, unknown> | undefined;
+  const context = await agentContextRepository.findByCallId(String(call.id));
   if (!context) throw notFound("Active call");
-  const isDelivery = context.call_type === "delivery";
-  res.json({
-    call_id: call.id,
-    call_type: context.call_type,
-    customer_name: context.customer_name,
-    phone: context.phone,
-    preferred_language: LANGUAGE_NAMES[String(context.language)] ?? "English",
-    ...(isDelivery
-      ? {
-          item: context.item,
-          seller: context.seller,
-          address_on_file: context.address_on_file,
-          delivery_window: context.delivery_window,
-          what_to_do: "Confirm availability in the delivery window, confirm or clean up the address, get a landmark, then use Save call result with this call_id."
-        }
-      : {
-          address_on_file: context.address_on_file,
-          what_to_do: "Welcome them, collect language, address with landmark, best time to call and consent, then use Save call result with this call_id."
-        })
-  });
+  res.json(callBriefing(call.id, context));
 }));
 
 const truthy = z.preprocess((v) => (typeof v === "string" ? /^(yes|true|y|1)$/i.test(v.trim()) : v), z.boolean());
@@ -64,7 +44,7 @@ const resultSchema = z.object({
   phone: z.string().optional(),
   outcome: z.preprocess(
     (v) => (typeof v === "string" ? v.trim().toLowerCase().replace(/[ -]/g, "_") : v),
-    z.enum(["confirmed", "rescheduled", "address_updated", "failed", "verified"])
+    z.enum(["confirmed", "rescheduled", "address_updated", "failed", "verified", "briefed"])
   ),
   cleaned_address: z.string().max(2000).optional(),
   landmark: z.string().max(255).optional(),

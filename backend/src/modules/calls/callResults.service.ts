@@ -1,11 +1,13 @@
 import { extractFromTranscript } from "../../integrations/transcriptExtractor";
 import { extractWithRules } from "../../integrations/transcriptRules";
 import { env } from "../../config/env";
-import { CallResult, CallType } from "../../types/models";
+import { CallResult, CustomerCallType as CallType } from "../../types/models";
 import { callsRepository } from "./calls.repository";
 import { customersRepository } from "../customers/customers.repository";
 import { ordersRepository } from "../orders/orders.repository";
 import { refundCredit } from "../businesses/access";
+import { businessesRepository } from "../businesses/businesses.repository";
+import { createRiderCall } from "./calls.service";
 
 
 function storedReport(value: unknown): Record<string, unknown> | undefined {
@@ -33,7 +35,7 @@ export function outcomeFrom(extracted: Record<string, unknown> | undefined, stat
   const value = extracted?.outcome ?? extracted?.status ?? status;
   const normalized = String(value).toLowerCase().replace(/[ -]/g, "_");
   if (["busy", "voicemail", "no_answer", "unanswered"].includes(normalized)) return "no_answer";
-  if (["confirmed", "rescheduled", "address_updated", "failed", "verified"].includes(normalized)) return normalized;
+  if (["confirmed", "rescheduled", "address_updated", "failed", "verified", "briefed"].includes(normalized)) return normalized;
   return status.toLowerCase().includes("fail") ? "failed" : null;
 }
 
@@ -48,8 +50,16 @@ export async function applyCallResult(result: CallResult): Promise<void> {
   // Prefer, in order: what the provider sent, what the agent reported mid-call via our
   // "Save call result" tool, then a best-effort read of the transcript.
   let extracted = result.extracted ?? storedReport(call.extracted_json);
-  if (!extracted && result.transcript) extracted = await readTranscript(call.call_type, result.transcript);
-  let outcome = outcomeFrom(extracted, result.status);
+  let outcome: string | null;
+  if (call.call_type === "rider") {
+    // A rider call only passes details on: if the rider picked up, they were briefed.
+    const status = result.status.toLowerCase();
+    outcome = ["busy", "no_answer"].includes(status) ? "no_answer" : status.includes("fail") ? "failed" : "briefed";
+    extracted = { ...(extracted || {}), outcome };
+  } else {
+    if (!extracted && result.transcript) extracted = await readTranscript(call.call_type, result.transcript);
+    outcome = outcomeFrom(extracted, result.status);
+  }
   if (outcome === null) {
     // Never guess "confirmed". Flag it so staff review the transcript.
     outcome = "failed";
@@ -82,6 +92,7 @@ export async function applyCallResult(result: CallResult): Promise<void> {
 async function applyDeliveryOutcome(_customerId: number, orderId: number, outcome: string, data: Record<string, unknown>): Promise<void> {
   const orderStatus = outcome === "verified" ? "confirmed" : outcome;
   await ordersRepository.applyDeliveryResult(orderId, orderStatus, data);
+  if (["confirmed", "address_updated", "rescheduled"].includes(orderStatus)) await briefRider(orderId);
 
   if (outcome !== "no_answer") return;
   // Retries live in the database (status 'scheduled' + call_at), so they survive a restart.
@@ -92,6 +103,20 @@ async function applyDeliveryOutcome(_customerId: number, orderId: number, outcom
     const retryAt = new Date(Date.now() + retryDelayMinutes * 60_000);
     const hhmm = retryAt.toLocaleTimeString("en-GB", { timeZone: "Africa/Lagos", hour: "2-digit", minute: "2-digit" });
     await ordersRepository.scheduleRetry(orderId, retryAt, `No answer. Retry ${attempts + 1} of ${maxAttempts} at ${hhmm} (Lagos).`);
+  }
+}
+
+/** The customer has confirmed: call the order's rider with the details, if the business wants that. */
+async function briefRider(orderId: number): Promise<void> {
+  const order = await ordersRepository.findById(orderId);
+  if (!order || order.rider_id === null) return;
+  const business = await businessesRepository.findById(order.business_id);
+  if (!business?.rider_calls) return;
+  try {
+    await createRiderCall(orderId);
+  } catch (error) {
+    // No credit left, or the line is full for the month: the rider link still has everything.
+    console.warn(`Rider call for order ${orderId} not placed:`, (error as Error).message);
   }
 }
 
@@ -109,6 +134,7 @@ async function applyOnboardingOutcome(customerId: number, outcome: string, data:
 export async function repairUndeterminedCalls(limit = 5): Promise<number> {
   let repaired = 0;
   for (const call of await callsRepository.findUndetermined(limit)) {
+    if (call.call_type === "rider") continue;
     const extracted = await readTranscript(call.call_type, call.transcript as string);
     const outcome = outcomeFrom(extracted, "");
     if (outcome === null || outcome === "failed") {
