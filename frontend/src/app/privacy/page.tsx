@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <LegalPage title="Privacy policy" updated="4 October 2026">
+    <LegalPage title="Privacy policy" updated="7 October 2026">
       <p>
         Tellero AI (“we”, “us”) calls the customers of online sellers in Nigeria to confirm deliveries and collect delivery details. This policy explains what
         information we handle, why, and what you can do about it. We aim to follow the Nigeria Data Protection Act 2023.
@@ -40,6 +40,7 @@ export default function Page() {
         <li>What the customer says on the call: corrected address, landmark, preferred language, best time to call, and whether they agree to delivery calls.</li>
         <li>The call’s transcript and duration.</li>
       </ul>
+      <p>About riders, as entered by a business: name and phone number, so Tellero AI can call them with the details of the deliveries the business gives them.</p>
       <p>If you ask Tellero AI to call you from our website, we collect your phone number (and name, if you give it) to place that call.</p>
 
       <h2>How we use it</h2>

@@ -9,6 +9,7 @@ import { Pricing } from '@/components/marketing/Pricing'
 import { Faq } from '@/components/marketing/Faq'
 import { Problem } from '@/components/marketing/Problem'
 import { Reveal } from '@/components/marketing/Reveal'
+import { Riders } from '@/components/marketing/Riders'
 import { SiteNav } from '@/components/marketing/SiteNav'
 
 export default function Home() {
@@ -28,6 +29,7 @@ export default function Home() {
             <CallSimulator />
           </div>
         </section>
+        <Riders />
         <Languages />
         <Owners />
         <Pricing />

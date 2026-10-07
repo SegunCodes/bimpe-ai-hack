@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <LegalPage title="Terms of service" updated="4 October 2026">
+    <LegalPage title="Terms of service" updated="7 October 2026">
       <p>
         These terms apply when a business creates a Tellero AI account or uses Tellero AI to call its customers. By creating an account, you agree to them. If
         you’re signing up for a company, you confirm you’re allowed to agree for it.
@@ -43,7 +43,7 @@ export default function Page() {
       <ul>
         <li>
           Plans are paid in advance and last {PLAN_DAYS} days from payment. Each plan includes a number of calls. A call only uses one of your calls if the
-          customer answers; calls nobody answers, and calls that fail to connect, don’t count.
+          person you’re calling (a customer or one of your riders) answers; calls nobody answers, and calls that fail to connect, don’t count.
         </li>
         <li>Unused calls carry over while you keep an active plan. Top-ups add calls to an active plan.</li>
         <li>Plans don’t renew automatically. There’s nothing to cancel: if you don’t pay again, calls stop when the plan ends.</li>

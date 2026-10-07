@@ -6,7 +6,7 @@ import { Reveal } from './Reveal'
 const QUESTIONS: { q: string; a: ReactNode }[] = [
   {
     q: 'Is it a real person on the phone?',
-    a: 'No. Tellero AI is an AI voice agent. It introduces itself as Tellero AI calling for your business, speaks naturally, and keeps calls short: usually under two minutes.',
+    a: 'No. Tellero AI is an AI voice agent. Every call opens with your business’s name and the reason for the call, for example “Hi Chidinma, I’m Tellero AI, calling from Mama Put Kitchen to confirm the delivery of your jollof rice tray.” It speaks naturally and keeps calls short: usually under two minutes.',
   },
   {
     q: 'What happens if the customer doesn’t pick up?',
@@ -23,6 +23,14 @@ const QUESTIONS: { q: string; a: ReactNode }[] = [
   {
     q: 'What do I get back after a call?',
     a: 'Each order shows whether the customer confirmed, gave a new time or corrected the address, plus a landmark a rider can see, and the full transcript of the call.',
+  },
+  {
+    q: 'Can Tellero AI tell my rider the details?',
+    a: 'Yes. Add your riders in Settings and pick one on an order. As soon as the customer confirms, Tellero AI calls the rider with the confirmed address, landmark, delivery time and the customer’s number. A rider call uses one of your plan’s calls, only if the rider picks up. You can switch rider calls off and just send the link instead.',
+  },
+  {
+    q: 'Does my rider need to download an app?',
+    a: 'No. Every order with a rider has a private link with the delivery details, a button to open the address in maps and a button to call the customer. Send it on WhatsApp from the order in one tap. The link stops working a few days after the delivery, or as soon as you change the order’s rider.',
   },
   {
     q: 'What happens when I run out of calls?',
